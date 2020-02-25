@@ -27,7 +27,7 @@ SHARED_OBJS= $(addprefix $(BUILD_DIR)/shared/, config_block.o spi_flash.o shared
 
 APP_OBJS=$(BUILD_DIR)/application/main.o $(ASF4_OBJS) $(SHARED_OBJS) $(LORAWAN_OBJS) 
 
-BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o $(ASF4_BL_OBJS) $(SHARED_OBJS) 
+BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o $(BUILD_DIR)/bootloader/bootloader_driver_init.o $(ASF4_BL_OBJS) $(SHARED_OBJS) 
 
 # List the dependency files
 DEPS := $(OBJS:%.o=%.d)
@@ -98,6 +98,8 @@ ifneq ($(strip $(BL_DEPS)),)
 endif
 
 endif
+
+
 
 $(MKDIRS):
 	mkdir -p "$@"

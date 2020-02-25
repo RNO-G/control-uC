@@ -1,7 +1,6 @@
 # This is mostly ported from asf4/gcc/Makefile with the relevant modifications. 
 
 ASF4_DIRS = \
-hpl/usb \
 hpl/tc \
 hpl/systick \
 samd21a/gcc/gcc \
@@ -16,7 +15,8 @@ hpl/gclk \
 hpl/wdt \
 hpl/rtc \
 hpl/nvmctrl \
-hpl/core
+hpl/core \
+
 
 ASF4_INCLUDES = \
 -Iasf4/ \
@@ -35,7 +35,6 @@ ASF4_INCLUDES = \
 -Iasf4/hpl/sysctrl \
 -Iasf4/hpl/systick \
 -Iasf4/hpl/tc \
--Iasf4/hpl/usb \
 -Iasf4/hpl/wdt \
 -Iasf4/hri \
 -Iasf4/CMSIS/Core/Include \
@@ -56,7 +55,6 @@ hal/utils/src/utils_syscalls.o \
 samd21a/gcc/system_samd21.o \
 hpl/nvmctrl/hpl_nvmctrl.o \
 hal/src/hal_spi_m_sync.o \
-hpl/usb/hpl_usb.o \
 hal/src/hal_timer.o \
 hal/src/hal_i2c_m_sync.o \
 hal/src/hal_delay.o \
@@ -71,7 +69,6 @@ hal/src/hal_usart_async.o \
 hpl/gclk/hpl_gclk.o \
 hal/src/hal_flash.o \
 hal/src/hal_init.o \
-hal/src/hal_usb_device.o \
 hal/utils/src/utils_list.o \
 hpl/rtc/hpl_rtc.o \
 hpl/tc/hpl_tc.o \
@@ -82,7 +79,7 @@ hal/src/hal_gpio.o \
 hal/utils/src/utils_event.o \
 hal/src/hal_sleep.o \
 atmel_start.o \
-hal/src/hal_atomic.o
+hal/src/hal_atomic.o \
 
 ##todo, cull 
 ASF4_RAW_BL_OBJS =  \
@@ -103,16 +100,14 @@ hpl/gclk/hpl_gclk.o \
 hal/src/hal_flash.o \
 hal/src/hal_init.o \
 hal/utils/src/utils_list.o \
-bl_driver_init.o \
 hpl/sercom/hpl_sercom.o \
 hal/utils/src/utils_ringbuffer.o \
 hal/src/hal_gpio.o \
 hal/utils/src/utils_event.o \
 hal/src/hal_sleep.o \
 hpl/tc/hpl_tc.o \
-hal/src/hal_atomic.o
-
+hal/src/hal_atomic.o \
 
 ASF4_OBJS := $(foreach obj, $(ASF4_RAW_OBJS), $(addprefix $(BUILD_DIR)/asf4/, $(obj)))
-ASF4_BL_OBJS := $(foreach obj, $(ASF4_RAW_BL_OBJS), $(addprefix $(BL_BUILD_DIR)/asf4/, $(obj)))
+ASF4_BL_OBJS := $(foreach obj, $(ASF4_RAW_BL_OBJS), $(addprefix $(BUILD_DIR)/asf4/, $(obj)))
 

@@ -30,7 +30,6 @@ endif
 # List the subdirectories for creating object files
 SUB_DIRS +=  \
  \
-hpl/usb \
 hpl/tc \
 hpl/systick \
 hpl/dmac \
@@ -60,7 +59,6 @@ samd21a/gcc/system_samd21.o \
 hpl/nvmctrl/hpl_nvmctrl.o \
 hal/src/hal_spi_m_sync.o \
 hal/src/hal_timer.o \
-hpl/usb/hpl_usb.o \
 hal/src/hal_i2c_m_sync.o \
 hal/src/hal_delay.o \
 hpl/sysctrl/hpl_sysctrl.o \
@@ -73,7 +71,6 @@ hpl/pm/hpl_pm.o \
 hpl/gclk/hpl_gclk.o \
 hal/src/hal_flash.o \
 hal/src/hal_init.o \
-hal/src/hal_usb_device.o \
 main.o \
 hal/utils/src/utils_list.o \
 hpl/rtc/hpl_rtc.o \
@@ -100,7 +97,6 @@ OBJS_AS_ARGS +=  \
 "hpl/nvmctrl/hpl_nvmctrl.o" \
 "hal/src/hal_spi_m_sync.o" \
 "hal/src/hal_timer.o" \
-"hpl/usb/hpl_usb.o" \
 "hal/src/hal_i2c_m_sync.o" \
 "hal/src/hal_delay.o" \
 "hpl/sysctrl/hpl_sysctrl.o" \
@@ -113,7 +109,6 @@ OBJS_AS_ARGS +=  \
 "hpl/gclk/hpl_gclk.o" \
 "hal/src/hal_flash.o" \
 "hal/src/hal_init.o" \
-"hal/src/hal_usb_device.o" \
 "main.o" \
 "hal/utils/src/utils_list.o" \
 "hpl/rtc/hpl_rtc.o" \
@@ -147,7 +142,6 @@ DIR_INCLUDES +=  \
 -I"../hpl/sysctrl" \
 -I"../hpl/systick" \
 -I"../hpl/tc" \
--I"../hpl/usb" \
 -I"../hpl/wdt" \
 -I"../hri" \
 -I"../" \
@@ -166,7 +160,6 @@ DEPS_AS_ARGS +=  \
 "hpl/systick/hpl_systick.d" \
 "hal/utils/src/utils_syscalls.d" \
 "hal/src/hal_i2c_m_sync.d" \
-"hpl/usb/hpl_usb.d" \
 "hpl/nvmctrl/hpl_nvmctrl.d" \
 "hal/src/hal_timer.d" \
 "hal/src/hal_spi_m_sync.d" \
@@ -179,7 +172,6 @@ DEPS_AS_ARGS +=  \
 "hpl/sysctrl/hpl_sysctrl.d" \
 "hal/src/hal_flash.d" \
 "hpl/gclk/hpl_gclk.d" \
-"hal/src/hal_usb_device.d" \
 "hal/src/hal_init.d" \
 "driver_init.d" \
 "hal/src/hal_usart_async.d" \

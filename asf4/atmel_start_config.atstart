@@ -28,9 +28,9 @@ drivers:
     configuration:
       enable_gclk_gen_0: true
       enable_gclk_gen_0__externalclock: 1000000
-      enable_gclk_gen_1: false
+      enable_gclk_gen_1: true
       enable_gclk_gen_1__externalclock: 1000000
-      enable_gclk_gen_2: false
+      enable_gclk_gen_2: true
       enable_gclk_gen_2__externalclock: 1000000
       enable_gclk_gen_3: true
       enable_gclk_gen_3__externalclock: 1000000
@@ -48,12 +48,12 @@ drivers:
       gclk_arch_gen_0_oe: false
       gclk_arch_gen_0_oov: false
       gclk_arch_gen_1_RUNSTDBY: false
-      gclk_arch_gen_1_enable: false
+      gclk_arch_gen_1_enable: true
       gclk_arch_gen_1_idc: false
       gclk_arch_gen_1_oe: false
       gclk_arch_gen_1_oov: false
-      gclk_arch_gen_2_RUNSTDBY: false
-      gclk_arch_gen_2_enable: false
+      gclk_arch_gen_2_RUNSTDBY: true
+      gclk_arch_gen_2_enable: true
       gclk_arch_gen_2_idc: false
       gclk_arch_gen_2_oe: false
       gclk_arch_gen_2_oov: false
@@ -90,7 +90,7 @@ drivers:
       gclk_gen_1_oscillator: 8MHz Internal Oscillator (OSC8M)
       gclk_gen_2_div: 1
       gclk_gen_2_div_sel: false
-      gclk_gen_2_oscillator: External Crystal Oscillator 0.4-32MHz (XOSC)
+      gclk_gen_2_oscillator: 32kHz Ultra Low Power Internal Oscillator (OSCULP32K)
       gclk_gen_3_div: 1
       gclk_gen_3_div_sel: false
       gclk_gen_3_oscillator: 32kHz External Crystal Oscillator (XOSC32K)
@@ -135,7 +135,7 @@ drivers:
       cpu_clock_source: Generic clock generator 0
       cpu_div: '1'
       enable_cpu_clock: true
-      nvm_wait_states: '0'
+      nvm_wait_states: '1'
     optional_signals: []
     variant: null
     clocks:
@@ -152,7 +152,7 @@ drivers:
     functionality: USART
     api: HAL:Driver:USART_Async
     configuration:
-      usart_advanced: false
+      usart_advanced: true
       usart_arch_clock_mode: USART with internal clock
       usart_arch_cloden: false
       usart_arch_dbgstop: Keep running
@@ -185,7 +185,7 @@ drivers:
       domain_group:
         nodes:
         - name: Core
-          input: Generic clock generator 0
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         - name: Slow
@@ -193,7 +193,7 @@ drivers:
           external: false
           external_frequency: 0
         configuration:
-          core_gclk_selection: Generic clock generator 0
+          core_gclk_selection: Generic clock generator 1
           slow_gclk_selection: Generic clock generator 3
   LTE_UART:
     user_label: LTE_UART
@@ -235,7 +235,7 @@ drivers:
       domain_group:
         nodes:
         - name: Core
-          input: Generic clock generator 0
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         - name: Slow
@@ -243,7 +243,7 @@ drivers:
           external: false
           external_frequency: 0
         configuration:
-          core_gclk_selection: Generic clock generator 0
+          core_gclk_selection: Generic clock generator 1
           slow_gclk_selection: Generic clock generator 3
   SPI_FLASH:
     user_label: SPI_FLASH
@@ -279,7 +279,7 @@ drivers:
       domain_group:
         nodes:
         - name: Core
-          input: Generic clock generator 0
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         - name: Slow
@@ -287,7 +287,7 @@ drivers:
           external: false
           external_frequency: 0
         configuration:
-          core_gclk_selection: Generic clock generator 0
+          core_gclk_selection: Generic clock generator 1
           slow_gclk_selection: Generic clock generator 3
   SBC_UART_CONSOLE:
     user_label: SBC_UART_CONSOLE
@@ -295,7 +295,7 @@ drivers:
     functionality: USART
     api: HAL:Driver:USART_Async
     configuration:
-      usart_advanced: false
+      usart_advanced: true
       usart_arch_clock_mode: USART with internal clock
       usart_arch_cloden: false
       usart_arch_dbgstop: Keep running
@@ -328,7 +328,7 @@ drivers:
       domain_group:
         nodes:
         - name: Core
-          input: Generic clock generator 0
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         - name: Slow
@@ -336,7 +336,7 @@ drivers:
           external: false
           external_frequency: 0
         configuration:
-          core_gclk_selection: Generic clock generator 0
+          core_gclk_selection: Generic clock generator 1
           slow_gclk_selection: Generic clock generator 3
   LORA_SPI:
     user_label: LORA_SPI
@@ -372,7 +372,7 @@ drivers:
       domain_group:
         nodes:
         - name: Core
-          input: Generic clock generator 0
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         - name: Slow
@@ -380,7 +380,7 @@ drivers:
           external: false
           external_frequency: 0
         configuration:
-          core_gclk_selection: Generic clock generator 0
+          core_gclk_selection: Generic clock generator 1
           slow_gclk_selection: Generic clock generator 3
   I2C:
     user_label: I2C
@@ -412,7 +412,7 @@ drivers:
       domain_group:
         nodes:
         - name: Core
-          input: Generic clock generator 0
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         - name: Slow
@@ -420,7 +420,7 @@ drivers:
           external: false
           external_frequency: 0
         configuration:
-          core_gclk_selection: Generic clock generator 0
+          core_gclk_selection: Generic clock generator 1
           slow_gclk_selection: Generic clock generator 3
   DELAY:
     user_label: DELAY
@@ -800,7 +800,7 @@ drivers:
       enable_dfll48m: true
       enable_fdpll96m: false
       enable_osc32k: false
-      enable_osc8m: false
+      enable_osc8m: true
       enable_osculp32k: true
       enable_xosc: false
       enable_xosc32k: true
@@ -822,7 +822,7 @@ drivers:
       osc32k_arch_startup: 3 Clock Cycles (92us)
       osc32k_arch_wrtlock: false
       osc8m_arch_calib: 0
-      osc8m_arch_enable: false
+      osc8m_arch_enable: true
       osc8m_arch_ondemand: true
       osc8m_arch_overwrite_calibration: false
       osc8m_arch_runstdby: false
@@ -851,49 +851,6 @@ drivers:
     variant: null
     clocks:
       domain_group: null
-  USB_DBG:
-    user_label: USB_DBG
-    definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::USB::driver_config_definition::USB.Device::HAL:Driver:USB.Device
-    functionality: USB
-    api: HAL:Driver:USB_Device
-    configuration:
-      usb_arch_ep0_cache: Cached by 64 bytes buffer
-      usb_arch_ep1_cache: Cached by 64 bytes buffer
-      usb_arch_ep2_cache: Cached by 64 bytes buffer
-      usb_arch_ep3_cache: Cached by 64 bytes buffer
-      usb_arch_ep4_cache: Cached by 64 bytes buffer
-      usb_arch_ep5_cache: Cached by 64 bytes buffer
-      usb_arch_ep6_cache: Cached by 64 bytes buffer
-      usb_arch_ep7_cache: Cached by 64 bytes buffer
-      usb_ep1_I_CACHE: No cache
-      usb_ep2_I_CACHE: No cache
-      usb_ep3_I_CACHE: No cache
-      usb_ep4_I_CACHE: No cache
-      usb_ep5_I_CACHE: No cache
-      usb_ep6_I_CACHE: No cache
-      usb_ep7_I_CACHE: No cache
-      usbd_arch_max_ep_n: 2 (EP 0x82 or 0x02)
-      usbd_arch_speed: Full speed
-      usbd_num_ep_sp: 4 (EP0 + 3 endpoints)
-    optional_signals: []
-    variant:
-      specification: default
-      required_signals:
-      - name: USB/DM
-        pad: PA24
-        label: Data-
-      - name: USB/DP
-        pad: PA25
-        label: Data+
-    clocks:
-      domain_group:
-        nodes:
-        - name: USB
-          input: Generic clock generator 0
-          external: false
-          external_frequency: 0
-        configuration:
-          usb_gclk_selection: Generic clock generator 0
   INTERNAL_WATCHDOG:
     user_label: INTERNAL_WATCHDOG
     definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::WDT::driver_config_definition::WDT::HAL:Driver:WDT
@@ -909,11 +866,11 @@ drivers:
       domain_group:
         nodes:
         - name: WDT
-          input: Generic clock generator 3
+          input: Generic clock generator 2
           external: false
           external_frequency: 0
         configuration:
-          wdt_gclk_selection: Generic clock generator 3
+          wdt_gclk_selection: Generic clock generator 2
 pads:
   AIN1:
     name: PA03
@@ -1118,18 +1075,6 @@ pads:
     definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA23
     mode: Digital input
     user_label: NALERT
-    configuration: null
-  USB_DMINUS:
-    name: PA24
-    definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA24
-    mode: Advanced
-    user_label: USB_DMINUS
-    configuration: null
-  USB_DPLUS:
-    name: PA25
-    definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA25
-    mode: Advanced
-    user_label: USB_DPLUS
     configuration: null
   FAULT_5V:
     name: PB22

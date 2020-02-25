@@ -27,13 +27,12 @@ endif
 # List the subdirectories for creating object files
 SUB_DIRS +=  \
  \
-hpl/usb \
+samd21a/armcc/Device/SAMD21A/Source \
 hpl/tc \
 samd21a/armcc/Device/SAMD21A/Source/ARM \
 hpl/systick \
 hpl/dmac \
 hal/src \
-samd21a/armcc/Device/SAMD21A/Source \
 hpl/pm \
 hpl/sysctrl \
 hal/utils/src \
@@ -54,7 +53,6 @@ hpl/wdt/hpl_wdt.o \
 hpl/nvmctrl/hpl_nvmctrl.o \
 hal/src/hal_spi_m_sync.o \
 hal/src/hal_timer.o \
-hpl/usb/hpl_usb.o \
 hal/src/hal_i2c_m_sync.o \
 hal/src/hal_delay.o \
 samd21a/armcc/Device/SAMD21A/Source/system_samd21.o \
@@ -68,7 +66,6 @@ hpl/pm/hpl_pm.o \
 hpl/gclk/hpl_gclk.o \
 hal/src/hal_flash.o \
 hal/src/hal_init.o \
-hal/src/hal_usb_device.o \
 main.o \
 hal/utils/src/utils_list.o \
 hpl/rtc/hpl_rtc.o \
@@ -93,7 +90,6 @@ OBJS_AS_ARGS +=  \
 "hpl/nvmctrl/hpl_nvmctrl.o" \
 "hal/src/hal_spi_m_sync.o" \
 "hal/src/hal_timer.o" \
-"hpl/usb/hpl_usb.o" \
 "hal/src/hal_i2c_m_sync.o" \
 "hal/src/hal_delay.o" \
 "samd21a/armcc/Device/SAMD21A/Source/system_samd21.o" \
@@ -107,7 +103,6 @@ OBJS_AS_ARGS +=  \
 "hpl/gclk/hpl_gclk.o" \
 "hal/src/hal_flash.o" \
 "hal/src/hal_init.o" \
-"hal/src/hal_usb_device.o" \
 "main.o" \
 "hal/utils/src/utils_list.o" \
 "hpl/rtc/hpl_rtc.o" \
@@ -134,7 +129,6 @@ DEPS_AS_ARGS +=  \
 "hal/src/hal_io.d" \
 "hpl/systick/hpl_systick.d" \
 "hal/src/hal_i2c_m_sync.d" \
-"hpl/usb/hpl_usb.d" \
 "hpl/nvmctrl/hpl_nvmctrl.d" \
 "hal/src/hal_timer.d" \
 "hal/src/hal_spi_m_sync.d" \
@@ -148,7 +142,6 @@ DEPS_AS_ARGS +=  \
 "hpl/sysctrl/hpl_sysctrl.d" \
 "hal/src/hal_flash.d" \
 "hpl/gclk/hpl_gclk.d" \
-"hal/src/hal_usb_device.d" \
 "hal/src/hal_init.d" \
 "driver_init.d" \
 "hal/src/hal_usart_async.d" \
@@ -200,7 +193,7 @@ $(OBJS_AS_ARGS)
 	@echo Building file: $<
 	@echo ARMCC Compiler
 	$(QUOTE)armcc$(QUOTE) --c99 -c -DDEBUG -O1 -g --apcs=interwork --split_sections --cpu Cortex-M0+ -D__SAMD21J18A__ \
--I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/usb" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
+-I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
 --depend "$@"  -o "$@" "$<"
 
 	@echo Finished building: $<
@@ -209,7 +202,7 @@ $(OBJS_AS_ARGS)
 	@echo Building file: $<
 	@echo ARMCC Assembler
 	$(QUOTE)armasm$(QUOTE) -g --apcs=interwork --cpu Cortex-M0+ --pd "D__SAMD21J18A__ SETA 1" \
--I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/usb" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
+-I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
 --depend "$(@:%.o=%.d)" -o "$@" "$<"
 
 	@echo Finished building: $<
@@ -218,7 +211,7 @@ $(OBJS_AS_ARGS)
 	@echo Building file: $<
 	@echo ARMCC Preprocessing Assembler
 	$(QUOTE)armcc$(QUOTE) --c99 -c -DDEBUG -O1 -g --apcs=interwork --split_sections --cpu Cortex-M0+ -D__SAMD21J18A__ \
--I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/usb" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
+-I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
 --depend "$@"  -o "$@" "$<"
 
 	@echo Finished building: $<

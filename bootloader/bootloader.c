@@ -2,13 +2,14 @@
 
 int main(void)
 {
-	bootloader_driver_init();
 
+  system_init();
 
   //read the bootloader config block 
 
 
 	/* Replace with your application code */
 	while (1) {
+
 	}
 }

@@ -15,30 +15,17 @@ extern "C" {
 #endif
 
 #include <hal_atomic.h>
-#include <hal_delay.h>
 #include <hal_gpio.h>
 #include <hal_init.h>
 #include <hal_io.h>
-#include <hal_sleep.h>
-
 #include <hal_flash.h>
-#include <hal_usart_sync.h>
+#include <hal_usart_async.h>
 #include <hal_spi_m_sync.h>
 
 
-extern struct flash_descriptor FLASH;
-
-extern struct usart_sync_descriptor SBC_UART;
-
-extern struct usart_sync_descriptor LTE_UART;
-extern struct spi_m_sync_descriptor SPI_FLASH;
-
-extern struct usart_sync_descriptor SBC_UART_CONSOLE;
-extern struct spi_m_sync_descriptor LORA_SPI;
-
-extern struct i2c_m_sync_desc I2C;
-
-extern struct calendar_descriptor CALENDAR;
+extern struct flash_descriptor       FLASH;
+extern struct usart_async_descriptor SBC_UART;
+extern struct spi_m_sync_descriptor  SPI_FLASH;
 
 extern struct wdt_descriptor INTERNAL_WATCHDOG;
 
@@ -52,6 +39,8 @@ void SBC_UART_init(void);
 void SPI_FLASH_PORT_init(void);
 void SPI_FLASH_CLOCK_init(void);
 void SPI_FLASH_init(void);
+
+
 
 /**
  * \brief Perform system initialization, initialize pins and clocks for

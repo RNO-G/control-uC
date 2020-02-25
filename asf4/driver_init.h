@@ -37,8 +37,6 @@ extern "C" {
 #include <hal_timer.h>
 #include <hpl_tc_base.h>
 
-#include "hal_usb_device.h"
-
 #include <hal_wdt.h>
 
 extern struct flash_descriptor       FLASH;
@@ -86,9 +84,6 @@ void delay_driver_init(void);
 
 void CALENDAR_CLOCK_init(void);
 void CALENDAR_init(void);
-
-void USB_DBG_CLOCK_init(void);
-void USB_DBG_init(void);
 
 void INTERNAL_WATCHDOG_CLOCK_init(void);
 void INTERNAL_WATCHDOG_init(void);

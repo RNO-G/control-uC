@@ -9,6 +9,7 @@ SECTIONS
   {
     . = ALIGN(4); 
     _stext = .; 
+    _sfixed = .; 
     KEEP(*(.vectors* .vectors.*)) 
     *(.text*) 
     *(.rodata*) 
@@ -18,7 +19,8 @@ SECTIONS
     *(.dtors*)
     . = ALIGN(4); 
     _etext = .; 
-  } > boot_rom
+    _efixed = .; 
+  } > bootrom
 
   .data : 
   {
@@ -29,7 +31,7 @@ SECTIONS
     . = ALIGN(4); 
     _erelocate  = .;
     _edata  = .;
-  } > ram AT > rom; 
+  } > ram AT > rom 
 
   .bss (NOLOAD) :
   {
@@ -43,15 +45,15 @@ SECTIONS
     _ebss = .; 
   } > ram
 
-  .stack (NOLOAD) 
+  .stack (NOLOAD) :
   {
-    . = ALIGN(8) 
+    . = ALIGN(8) ;
     _sstack = .; 
     . = . + STACK_SIZE; 
     . = ALIGN(8); 
-    _estack =.; 
+    _estack = .; 
   } > ram 
 
-  . = ALIGN(4)
+  . = ALIGN(4);
   _end = .; 
 }
