@@ -1,0 +1,16 @@
+RNO-G uC BOOTLOADER DESIGN 
+
+The bootloader design serves to meet a few requirements: 
+
+- Easy application loading for debugging / upgrades 
+- Fault tolerance by automatic loading of known-good firmware if reset too many times 
+
+
+
+
+
+
+
+
+
+

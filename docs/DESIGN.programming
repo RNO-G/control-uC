@@ -1,0 +1,74 @@
+
+The bootloader, (and the standard applications too!) accept a series of
+bootloader commands over UART or the debug USB. Starting with # and ending with a line return ('\n') 
+which will subsequently enter programming mode. 
+
+The possible commands are: 
+
+#DEL@N   
+#PRG@N
+#REA@N
+
+where N=0 for ROM or 1-4 for one of the SPI flash spots
+Note that you cannot delete or program the ROM from the application, only from the bootloader!
+
+
+DELETION: 
+You will be asked to confirm the slot with:
+?CONFIRM@N 
+to which you must respond with N again (followed by '\n'). 
+
+For deletion, you will then be asked how many blocks of 4 kB to delete:
+
+?N_4KB_BLOCKS 
+
+After the deletion is finished, you will get a prompt: 
+
+#DONE_DEL@N:N_4KB_BLOCKS
+
+after which you can now send additional commands to the bootloader
+
+
+WRITING: 
+
+Writing will of course only work if you have previously deleted enough bytes. 
+
+You will be asked to confirm the slot with:
+?CONFIRM@N 
+to which you must respond with N again (followed by '\n'). 
+
+
+You will then be asked how many blocks of 256 you will write. 
+
+?N_256B_BLOCKS
+
+Then, wait for a prompt to send a block
+?BLOCK_NNN
+
+and send 256 bytes. 
+
+Note that if the program is not a multiple of 256 blocks, you should pad (probably with 0xff). 
+
+After the last block, you will get: 
+
+#DONE_PROG@N:N_256B
+
+
+
+READING: 
+
+You will be prompted with a number of bytes to read.
+
+?NBYTES
+
+This can be up to 253952  (although of course there's no guarantee that the program is so long!) 
+
+After this the bytes will start to be sent, followed by a line return and 
+
+#DONE_READ@N:NBYTES
+
+
+
+
+
+

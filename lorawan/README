@@ -1,0 +1,12 @@
+
+mac/ and radio/ are straight from the reference implementation. 
+
+system/ contains headers used only by mac/radio, most of which are wrappers. This is a bit of a waste of code size but it beats trying to edit the implementation. 
+
+
+All of the code that's customized for our integration is under the board directory, but much of it is taken from the SAML21 implementation of the same. 
+
+Note that the initialization of the board is handled elsewhere so there are a lot of empty things here! 
+
+import.sh can be used to copy over new files from LoRaMac-node
+

@@ -1,0 +1,429 @@
+#include "shared/spi_flash.h" 
+#include "hal_spi_m_sync.h" 
+#include "driver_init.h" 
+
+
+
+/* 
+ *Code interfacing with the AT25DF081 flash chip
+  Cosmin Deaconu <cozzyd@kicp.uchicago.edu> 
+ */ 
+
+
+
+// registers
+const uint8_t  READ_ARRAY = 0x0b; 
+const uint8_t  ERASE_4KB = 0x20;
+const uint8_t  ERASE_32KB = 0x52;
+const uint8_t  ERASE_64KB = 0xd8;
+const uint8_t  WAKEUP = 0xab;
+const uint8_t  DEEPSLEEP = 0xb9;
+const uint8_t  PROGRAM = 0x02;
+const uint8_t  GET_STATUS = 0x05;
+const uint8_t  WRITE_ENABLE = 0x06;
+
+
+//convenience
+#define CS_ON  gpio_set_pin_level(SPI_FLASH_CS, true) 
+#define CS_OFF gpio_set_pin_level(SPI_FLASH_CS, false) 
+
+static struct io_descriptor * io = 0; 
+
+void spi_flash_init()
+{
+  spi_m_sync_get_io_descriptor(&SPI_FLASH,&io); 
+}
+
+typedef struct status_register
+{
+ int bsy : 1; 
+ int wel : 1; 
+ int swp : 2;
+ int wpp :1; 
+ int epe: 1;
+ int res: 1; 
+ int sprl: 1; 
+} status_register_t; 
+
+
+static status_register_t _spi_get_status()
+{
+  status_register_t status; 
+  CS_ON; 
+  io_write(io,&GET_STATUS,1); 
+  io_read(io, (uint8_t*) &status,1); 
+  CS_OFF; 
+  return status; 
+}
+
+
+static void _spi_flash_wait_until_ready() 
+{
+  status_register_t status; 
+  CS_ON; 
+  io_write(io,&GET_STATUS,1); 
+  do { io_read(io,(uint8_t*) &status,1); } while (status.bsy); 
+  CS_OFF; 
+
+}
+const uint32_t page_size = 256; 
+const uint32_t block_size = 4096; 
+
+static int _spi_flash_write(uint32_t addr, uint16_t len, const uint8_t * data) 
+{
+
+  //we need to divide our write into the page size
+  uint32_t first_page = addr & 0xffffff00; 
+  uint32_t last_page= (addr+len) & 0xffffff00; 
+  int npage = 1 + ((last_page - first_page) >> 2); 
+  int ipage = 0; 
+  int written = 0;
+  for (ipage = 0; ipage < npage; ipage++)
+  {
+    int offset = first_page ? addr & 0xff : 0; 
+    int size   = ipage == npage -1 ? addr+len - last_page : page_size - offset; 
+    uint32_t start_addr = first_page + ipage*page_size + offset; 
+    int data_offset = start_addr - addr; 
+    uint8_t write_buf[4] = { PROGRAM, (start_addr & 0x00ff0000) >> 2, start_addr & (0x0000ff00) >> 1, start_addr & 0xff}; 
+    _spi_flash_wait_until_ready(); 
+
+    CS_ON; 
+    io_write(io,write_buf,4); 
+    written+=io_write(io,data+data_offset, size); 
+    CS_OFF; 
+  }
+
+  return written; 
+}
+
+static int _spi_flash_erase(uint32_t addr, int len)
+{
+  //we want to erase with the smallest number of calls possible. 
+  // first figure out how many 4 kB blocks there are between addr + addr+len 
+
+  int first_block = addr >> 12; 
+  int last_block = (addr + len) >> 12; 
+
+  for (int iblock = first_block; iblock <= last_block; ) 
+  {
+    int block = first_block+iblock; 
+    uint8_t write_buf[4] = {ERASE_4KB, block >> 4, (block & (0xf)) << 4 ,0} ; 
+
+    //can we do a 64 kB flash? 
+    if ( (iblock % 16) == 0 && iblock+16 <= last_block) 
+    {
+      write_buf[0] = ERASE_64KB; 
+      iblock+=16; 
+    }
+    //if not, can we do a 32 kB flash? 
+    else if ( (iblock % 8) == 0 && iblock+8 <= last_block) 
+    {
+      write_buf[0] = ERASE_32KB; 
+      iblock+=8; 
+    }
+    else //just do a 4 kB flash
+    {
+      iblock++; 
+    }
+
+    _spi_flash_wait_until_ready(); 
+    CS_ON;
+    io_write(io,write_buf,4); 
+    CS_OFF;
+  }
+
+  // TODO: figure ut return value
+  return 0; 
+}
+
+struct erase_context
+{
+  enum { ERASE_INP, ERASE_WAITING, ERASE_DONE} state;
+  uint8_t first_block; 
+  uint8_t last_block; 
+  uint8_t iblock; 
+}; 
+
+
+
+
+void _init_erase_context(struct erase_context * ctx, int addr, int len ) 
+{
+  if (len == 0) 
+  {
+    //nothing to do 
+    ctx->state=ERASE_DONE; 
+    return; 
+  }
+  ctx->first_block = addr >> 12; 
+  ctx->last_block = (addr + len) >> 12; 
+  ctx->state = ERASE_WAITING; 
+}
+
+static int _spi_flash_erase_async( struct erase_context * ctx)
+{
+  //we want to erase with the smallest number of calls possible. 
+  // first figure out how many 4 kB blocks there are between addr + addr+len 
+
+  switch(ctx->state) 
+  {
+    case ERASE_WAITING:
+    {
+      status_register_t st= _spi_get_status(); 
+      if (st.bsy) 
+        break; 
+      ctx->state = ERASE_INP; 
+    }
+      
+    case ERASE_INP: 
+      while (ctx->iblock <= ctx->last_block) 
+      {
+        int block = ctx->first_block+ctx->iblock; 
+        uint8_t write_buf[4] = {ERASE_4KB, block >> 4, (block & (0xf)) << 4 ,0} ; 
+
+        //can we do a 64 kB flash? 
+        if ( (ctx->iblock % 16) == 0 && ctx->iblock+16 <= ctx->last_block) 
+        {
+          write_buf[0] = ERASE_64KB; 
+          ctx->iblock+=16; 
+        }
+        //if not, can we do a 32 kB flash? 
+        else if ( (ctx->iblock % 8) == 0 && ctx->iblock+8 <= ctx->last_block) 
+        {
+          write_buf[0] = ERASE_32KB; 
+          ctx->iblock+=8; 
+        }
+        else //just do a 4 kB flash
+        {
+          ctx->iblock++; 
+        }
+
+        CS_ON;
+        io_write(io,write_buf,4); 
+        CS_OFF;
+        ctx->state = ERASE_WAITING; 
+        return 0; 
+      }
+      ctx->state = ERASE_DONE; 
+    case ERASE_DONE:
+      break; 
+  }
+
+  return 0; 
+}
+
+const int max_read_len = 1024; 
+
+static int _spi_flash_read(uint32_t addr, uint16_t len, unsigned char * data) 
+{
+  uint8_t write_buf[4] = { READ_ARRAY, (addr & 0x00ff0000) << 2, addr & (0x0000ff00) << 1, addr & 0xff}; 
+
+  int rd = 0;
+  //this needs to be tested to see if it actually works or if I need to do something smarter here to avoid a time gap! 
+  CS_ON;
+  io_write(io,write_buf,4); 
+  rd = io_read(io,data,len); 
+  CS_OFF; 
+  return rd; 
+}
+
+void spi_flash_deep_sleep()
+{
+  CS_ON; 
+  io_write(io,&DEEPSLEEP,1); 
+  CS_OFF; 
+}
+
+void spi_flash_wakeup()
+{
+  CS_ON; 
+  io_write(io,&WAKEUP,1); 
+  CS_OFF; 
+  _spi_flash_wait_until_ready(); 
+}
+
+
+const uint32_t config_block_magic = 0xcabba935 ; 
+const int n_config_slots = 16; //32 kB 
+
+
+static int current_config_block = -1; 
+
+static void _find_config_block() 
+{
+  uint32_t test; 
+  int slot; 
+  for ( slot = 0; slot < n_config_slots; slot++) 
+  {
+      _spi_flash_read(block_size * slot, 4, (uint8_t*) &test); 
+      if (test == config_block_magic)  // we found it! 
+      {
+        current_config_block = slot; 
+      }
+  }
+
+}
+
+
+int spi_flash_read_config_block(config_block_t * config_block) 
+{
+  // we have to find it 
+  if (current_config_block < 0) 
+  {
+    _find_config_block(); 
+  }
+
+
+  // we couldn't find the config block anywhere! 
+  if (current_config_block  < 0 ) 
+  {
+    default_init_block(config_block); 
+    return -1; 
+  }
+
+  //don't read magic
+  _spi_flash_read(current_config_block * block_size+sizeof(config_block_magic), sizeof(config_block_t), (uint8_t*)  config_block); 
+  return 0; 
+}
+
+void spi_flash_write_config_block(const config_block_t * block) 
+{
+  //try to find config block if not set
+  if (current_config_block < 0) 
+    _find_config_block(); 
+
+  int next_config_block =( current_config_block + 1 ) % n_config_slots; 
+
+  //be reasonably sure that the block is empty by reading the first 8 bytes 
+  uint64_t check; 
+  _spi_flash_read(next_config_block * block_size, 8, (uint8_t*)  &check); 
+
+  if (check != 0xffffffff) 
+  {
+    //the last erase operation must have failed or something? 
+    //  this kinda sucks, since this operation can take a while. 
+    //  
+    _spi_flash_erase(next_config_block * block_size, block_size); 
+  }
+
+  _spi_flash_write(next_config_block*block_size + sizeof(config_block_magic), sizeof(config_block_t), (uint8_t*)  block); 
+
+  //write the magic AFTER the config block to make sure we wrote the config block! 
+  _spi_flash_write(next_config_block * block_size, sizeof(config_block_magic), (uint8_t *) &config_block_magic); 
+
+  //erase the old config block, if there was one 
+  //note that we could end up with two config blocks if we are turned off in the middle here, but that's ok  since 
+  //our state is still stable. 
+  if (current_config_block >=0) 
+  {
+    _spi_flash_erase(current_config_block * block_size, block_size); 
+    // don't wait unitl ready here since we probably won't immediately touch the flash 
+  }
+
+  current_config_block = next_config_block; 
+}
+
+#define N_applications 4 
+#define application_blocks  62 
+#define application_start  (32 * 1024)
+#define application_size  (application_blocks * 4096)
+
+static uint32_t application_offsets[4]; 
+
+static uint32_t application_get_address(int slot, uint32_t offset) 
+{
+  return application_start + slot * application_size + offset; 
+}
+
+int spi_flash_application_erase_sync(int slot, int nblk) 
+{
+
+  if (nblk < 0 || nblk > application_blocks) nblk = application_blocks; 
+  if (slot >= N_applications || slot < 0) return -1; 
+
+   _spi_flash_erase(application_get_address(slot,0), nblk << 12); 
+   application_offsets[slot] = 0; //seek 
+   return 0; 
+}
+
+static struct erase_context ectx[4] = {0};
+static uint8_t erasing = 0; 
+
+int spi_flash_application_erase_async(int slot, int nblk) 
+{
+  if (nblk < 0 || nblk > application_blocks) nblk = application_blocks; 
+  if (slot >= N_applications || slot < 0) return -1; 
+
+  if (erasing & (1 < slot))
+  {
+    _spi_flash_erase_async(&ectx[slot]); 
+    if ( ectx[slot].state == ERASE_DONE ) 
+    {
+      //clear the bit
+      erasing &= ~(1 <<slot);  
+      application_offsets[slot] = 0; 
+      return 0; 
+    }
+  }
+
+  else
+  {
+    //set the erase bit 
+    erasing |= ( 1 << slot); 
+    _init_erase_context(&ectx[slot],application_get_address(slot,0), nblk << 12); 
+    _spi_flash_erase_async(&ectx[slot]); 
+  }
+  
+  return 1+ectx[slot].last_block - ectx[slot].iblock; 
+}
+
+
+int spi_flash_application_seek(int slot, uint32_t offset) 
+{
+  if (slot >= N_applications || slot < 0) return -1; 
+  if (offset < application_size) 
+  {
+    application_offsets[slot] = offset; 
+    return 0; 
+  }
+  return -1; 
+}
+
+int spi_flash_application_write(int slot, uint16_t len, const uint8_t * data) 
+{
+
+  if (slot >= N_applications || slot < 0) return -1; 
+
+  if (application_offsets[slot] + len > application_size)
+  {
+    len = application_size - application_offsets[slot]; 
+  }
+
+  int written = _spi_flash_write(application_get_address(slot, application_offsets[slot]), len, data); 
+  if (written > 0) 
+  {
+    application_offsets[slot] += written; 
+  }
+  return written; 
+}
+
+
+int spi_flash_application_read(int slot, uint16_t len, uint8_t * data) 
+{
+
+  if (slot >= N_applications || slot < 0) return -1; 
+
+  if (application_offsets[slot] + len > application_size)
+  {
+    len = application_size - application_offsets[slot]; 
+  }
+
+  int rd = _spi_flash_read(application_get_address(slot, application_offsets[slot]), len, data); 
+  if (rd > 0) 
+  {
+    application_offsets[slot] += rd; 
+  }
+  return rd; 
+}
+
+
