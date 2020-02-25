@@ -1,5 +1,5 @@
 
-The bootloader, (and the standard applications too!) accept a series of
+The bootloader, (and, perhaps some day,  the standard applications too!) accept a series of
 bootloader commands over UART or the debug USB. Starting with # and ending with a line return ('\n') 
 which will subsequently enter programming mode. 
 
