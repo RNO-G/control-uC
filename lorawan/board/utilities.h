@@ -143,32 +143,14 @@ int8_t Nibble2HexChar( uint8_t a );
 /*!
  * Begins critical section
  */
-#define CRITICAL_SECTION_BEGIN( ) CRITICAL_SECTION_ENTER() 
+#define CRITICAL_SECTION_BEGIN()  volatile hal_atomic_t _atomic; atomic_enter_critical(&_atomic); 
 
 /*!
  * Ends critical section
  */
-#define CRITICAL_SECTION_END( ) CRITICAL_SECTION_LEAVE()
+#define CRITICAL_SECTION_END() atomic_leave_critical(&_atomic); 
 
-/*
- * ============================================================================
- * Following functions must be implemented inside the specific platform 
- * board.c file.
- * ============================================================================
- */
-/*!
- * Disable interrupts, begins critical section
- * 
- * \param [IN] mask Pointer to a variable where to store the CPU IRQ mask
- */
-void BoardCriticalSectionBegin( uint32_t *mask );
 
-/*!
- * Ends critical section
- * 
- * \param [IN] mask Pointer to a variable where the CPU IRQ mask was stored
- */
-void BoardCriticalSectionEnd( uint32_t *mask );
 
 #ifdef __cplusplus
 }
