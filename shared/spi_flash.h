@@ -12,6 +12,9 @@ void spi_flash_init();
 void spi_flash_wakeup(); 
 void spi_flash_deep_sleep(); 
 
+//1 if busy, 0 if not
+int spi_flash_busy(); 
+
 void spi_flash_write_config_block(const config_block_t * config_block) ; 
 int spi_flash_read_config_block(config_block_t * config_block) ; 
 

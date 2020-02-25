@@ -56,6 +56,10 @@ static status_register_t _spi_get_status()
   return status; 
 }
 
+int spi_flash_busy() 
+{
+  return _spi_get_status().bsy; 
+}
 
 static void _spi_flash_wait_until_ready() 
 {

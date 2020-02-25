@@ -19,7 +19,8 @@ int programmer_process();
 
 
 /* copy from application slot to flash 
- * can only be run by bootloader
+ * can only be run by bootloader. 
+ * Returns 0 when done, 1 to keep going, -1 if error. 
  * */
 int programmer_copy_application_to_flash(int slot); 
 

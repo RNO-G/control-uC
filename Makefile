@@ -23,7 +23,7 @@ CFLAGS= \
 -D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP 
 
 
-SHARED_OBJS= $(addprefix $(BUILD_DIR)/shared/, config_block.o spi_flash.o shared_memory.o )
+SHARED_OBJS= $(addprefix $(BUILD_DIR)/shared/, config_block.o spi_flash.o shared_memory.o programmer.o )
 
 APP_OBJS=$(BUILD_DIR)/application/main.o $(ASF4_OBJS) $(SHARED_OBJS) $(LORAWAN_OBJS) 
 
