@@ -3,19 +3,12 @@
 #include "hal_flash.h" 
 #include <stdlib.h>
 #include <string.h>
-#include <hal_io.h>
 #include "driver_init.h"
+#include "linker/map.h" 
 
 
-static int am_i_bootloader()
-{
-#ifdef _BOOTLOADER_ 
-  return 1; 
-#else
-  return 0; 
-#endif 
-}
-
+#include "shared/io.h" 
+#include "shared/printf.h" 
 
 
 
@@ -79,29 +72,7 @@ static int i;
 static int N; 
 
 
-//The io device
-static struct io_descriptor * io; 
-
-#define IO_WRITE_LITERAL(x) io_write(io, (uint8_t*)x, sizeof(x)-1) 
-#define IO_WRITE_STRING(x) io_write(io, (uint8_t*) x, strlen(x)) 
-static uint8_t __c; 
-#define IO_WRITE_CHAR(x) __c = (uint8_t) x;  io_write(io, &__c, 1) 
-
-void IO_WRITE_NUMBER(int x, int digits)
-{
-  char buf[10]; 
-  itoa(x,buf,10); 
-  int len = strlen(buf); 
-
-  while (len < digits) 
-  {
-    IO_WRITE_CHAR('0');
-    digits--; 
-  }
- 
-  IO_WRITE_STRING(buf); 
-}
-
+static int fd;
 
 static volatile enum 
 {
@@ -121,19 +92,27 @@ static void flash_error_callback(struct flash_descriptor * const d)
   flash_status = FLASH_ERROR; 
 }
 
-int programmer_enter(const char * cmd,  struct io_descriptor * dev) 
+int programmer_enter(const char * cmd, int dev) 
 {
   if (program_state) return 1; 
   int check_slot; 
   int which = which_command(cmd,&check_slot); 
-  if (!which || check_slot < 0 || check_slot > 4 || (!check_slot && !am_i_bootloader()))
+
+#ifndef _BOOTLOADER_
+  if (!check_slot)
   {
-    IO_WRITE_LITERAL("#ERR\n"); 
+    d_put(fd,"#ERR\r\n"); 
+  }
+#endif
+
+  if (!which || check_slot < 0 || check_slot > 4)
+  {
+    d_put(fd,"#ERR\n"); 
     return 1; 
   }
   
   i = 0; 
-  io = dev; 
+  fd = dev; 
   slot = check_slot; 
 
   if (slot == 0) 
@@ -170,9 +149,7 @@ int programmer_enter(const char * cmd,  struct io_descriptor * dev)
 
 static void write_confirm() 
 {
-  IO_WRITE_LITERAL("?CONFIRM@"); 
-  IO_WRITE_CHAR(slot+'0'); 
-  IO_WRITE_CHAR('\n'); 
+  dprintf(fd,"?CONFIRM@%d\n",slot); 
 }
 
 
@@ -186,7 +163,7 @@ static int accumulate_until_lf(void)
   static int total = 0; 
   
   char c; 
-  int got = io_read(io, (uint8_t*)&c, 1); 
+  int got = d_read(fd,1, (uint8_t*)&c); 
   if (!got) return 0; 
 
   if (c == '\n')
@@ -251,7 +228,7 @@ static int accumulate_flash_buffer()
   if (flash_buffer_i >= 256) return 1; 
 
   uint8_t c; 
-  int got = io_read(io, &c,1);
+  int got = d_read(fd,1, &c);
   if (!got) return 0; 
   flash_buffer[flash_buffer_i++] = c; 
 
@@ -288,11 +265,7 @@ static void process_write()
 
     if (i == N) 
     {
-      IO_WRITE_LITERAL("#DONE_PROG@");
-      IO_WRITE_CHAR('0'+slot); 
-      IO_WRITE_CHAR(':'); 
-      IO_WRITE_NUMBER(N,1); 
-      IO_WRITE_CHAR('\n'); 
+      dprintf(fd,"#DONE_PROG@%d:%d\n", slot,N); 
       program_state = PROGRAM_DONE; 
       return; 
     }
@@ -301,9 +274,7 @@ static void process_write()
 
   if (sent_query < i)
   {
-    IO_WRITE_LITERAL("BLOCK_"); 
-    IO_WRITE_NUMBER(i,3); 
-    IO_WRITE_CHAR('\n'); 
+    dprintf(fd,"BLOCK_%03d\n",i); 
     sent_query = i; 
   }
 
@@ -347,15 +318,11 @@ static void process_read()
     i+=spi_flash_application_read(slot,nb,flash_buffer); 
   }
 
-  io_write(io, flash_buffer, nb); 
+  d_write(fd, nb,flash_buffer); 
 
   if ( i >=N) 
   {
-    IO_WRITE_LITERAL("#DONE_READ@");
-    IO_WRITE_CHAR('0'+slot); 
-    IO_WRITE_CHAR(':'); 
-    IO_WRITE_NUMBER(N,1); 
-    IO_WRITE_CHAR('\n'); 
+    dprintf(fd,"#DONE_READ@%d:%d\n", slot,N);
     program_state = PROGRAM_DONE; 
   }
 }
@@ -363,11 +330,7 @@ static void process_read()
 static void erase_done() 
 {
 
-  IO_WRITE_LITERAL("#DONE_ERASE@");
-  IO_WRITE_CHAR('0'+slot); 
-  IO_WRITE_CHAR(':'); 
-  IO_WRITE_NUMBER(N,1); 
-  IO_WRITE_CHAR('\n'); 
+  dprintf(fd,"#DONE_ERASE@%d:%d",slot,N);
   program_state = PROGRAM_DONE; 
 }
 
@@ -410,6 +373,23 @@ static void process_erase()
   }
 }
 
+int check_nblocks(int success_state)
+{
+  if (accumulate_until_lf() ==1 && !read_nblocks())
+  {
+     i = 0; 
+     program_state = success_state; 
+     return 0; 
+  }
+  else 
+  {
+     program_state = PROGRAM_ERROR;
+     return 1;
+  }
+ 
+
+}
+
 
 int programmer_process() 
 {
@@ -421,7 +401,7 @@ int programmer_process()
       program_state = PROGRAM_IDLE; 
       return 0; 
     case PROGRAM_ERROR: 
-      IO_WRITE_LITERAL("#ERR\n"); 
+      d_put(fd,"#ERR\n"); 
       program_state = PROGRAM_IDLE; 
       return -1;
     case PROGRAM_WRITE_INIT: 
@@ -430,37 +410,19 @@ int programmer_process()
     case PROGRAM_WRITE_CONFIRM:  
       if (accumulate_until_lf() && check_confirm_slot(PROGRAM_WRITE_NBLOCKS))
       {
-        (IO_WRITE_LITERAL("?N_256B_BLOCKS\n")); 
+        (d_put(fd,"?N_256B_BLOCKS\n")); 
       }
       else break;
     case PROGRAM_WRITE_NBLOCKS: 
-      if (accumulate_until_lf() ==1 && !read_nblocks())
-        {
-          i = 0; 
-          program_state = PROGRAM_WRITE_WRITING; 
-        }
-        else 
-        {
-          program_state = PROGRAM_ERROR;
-          break;
-        }
-    case PROGRAM_WRITE_WRITING:
+      if (check_nblocks(PROGRAM_WRITE_WRITING)) break; 
+   case PROGRAM_WRITE_WRITING:
       process_write() ;
       break; 
     case PROGRAM_READ_INIT: 
-      IO_WRITE_LITERAL("?NBYTES"); 
+      d_put(fd,"?NBYTES"); 
       program_state = PROGRAM_READ_NBLOCKS; 
     case PROGRAM_READ_NBLOCKS: 
-      if (accumulate_until_lf() ==1 && !read_nblocks())
-      {
-        i = 0; 
-        program_state = PROGRAM_READ_READING; 
-      }
-      else 
-      {
-        program_state = PROGRAM_ERROR; 
-        break;
-      }
+      if (check_nblocks(PROGRAM_READ_READING)) break; 
     case PROGRAM_READ_READING: 
        process_read(); 
        break; 
@@ -470,20 +432,11 @@ int programmer_process()
     case PROGRAM_ERASE_CONFIRM: 
       if(accumulate_until_lf() && check_confirm_slot(PROGRAM_ERASE_NBLOCKS))
       {
-        IO_WRITE_LITERAL("?N_4KB_BLOCKS\n"); 
+        d_put(fd,"?N_4KB_BLOCKS\n"); 
       }
       else break; 
     case PROGRAM_ERASE_NBLOCKS: 
-      if (accumulate_until_lf() ==1 && !read_nblocks())
-        {
-          i = 0; 
-          program_state = PROGRAM_ERASE_ERASING; 
-        }
-        else 
-        {
-          program_state = PROGRAM_ERROR;
-          break;
-        }
+      if (check_nblocks(PROGRAM_ERASE_ERASING)) break; 
      case PROGRAM_ERASE_ERASING: 
         process_erase(); 
         break; 
@@ -497,9 +450,11 @@ int programmer_process()
 
 int programmer_copy_application_to_flash(int slot) 
 {
+#ifndef _BOOTLOADER_ 
+  return -1; 
+#else
   static int copy_started = 0; 
 
-  if (!am_i_bootloader()) return -1; 
   if (program_state != PROGRAM_IDLE) 
   {
     //we can't have another programmign task going on
@@ -511,7 +466,7 @@ int programmer_copy_application_to_flash(int slot)
     flash_register_callback(&FLASH, FLASH_CB_READY, flash_ready_callback); 
     flash_register_callback(&FLASH, FLASH_CB_ERROR, flash_error_callback); 
     i = 0;
-    N = 248*1024; 
+    N = __rom_size; 
     spi_flash_application_seek(slot,0); 
     spi_flash_wakeup();
     copy_started = 1; 
@@ -528,13 +483,14 @@ int programmer_copy_application_to_flash(int slot)
       copy_started = 0; //restart the process on the next try 
       return -1; 
     }
-    flash_write(&FLASH, 8*1024+i,flash_buffer,256); 
+    flash_write(&FLASH, __rom_start+i,flash_buffer,256); 
     flash_status = FLASH_BUSY; 
   }
   
   copy_started = 0; 
   spi_flash_deep_sleep(); 
   return 0; 
+#endif 
 }
 
 
