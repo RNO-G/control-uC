@@ -27,8 +27,6 @@ extern struct flash_descriptor       FLASH;
 extern struct usart_async_descriptor SBC_UART;
 extern struct spi_m_sync_descriptor  SPI_FLASH;
 
-extern struct wdt_descriptor INTERNAL_WATCHDOG;
-
 void FLASH_init(void);
 void FLASH_CLOCK_init(void);
 
@@ -40,6 +38,10 @@ void SPI_FLASH_PORT_init(void);
 void SPI_FLASH_CLOCK_init(void);
 void SPI_FLASH_init(void);
 
+void FLASH_deinit(void);
+void SBC_UART_deinit(void);
+void SPI_FLASH_deinit(void);
+
 
 
 /**
@@ -47,6 +49,7 @@ void SPI_FLASH_init(void);
  * peripherals
  */
 void system_init(void);
+void system_deinit(void);
 
 #ifdef __cplusplus
 }

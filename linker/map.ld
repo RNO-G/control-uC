@@ -4,10 +4,10 @@ MEMORY
 {
 
   /* 8 kB for the bootloader */ 
-  bootrom  (rx)  : ORIGIN = 0x00000000, LENGTH = 0x0002000
+  bootrom  (rx)  : ORIGIN = 0x00000000, LENGTH = 0x0004000
 
   /* The rest for the application */ 
-  rom (rx)        : ORIGIN = 0x00002000, LENGTH = 0x003e000 
+  rom (rx)        : ORIGIN = 0x00004000, LENGTH = 0x003c000 
 
   /* 256 bytes of shared memory between bootloader and application  (for reset counting and error reporting)*/ 
   shared    (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00000100 
