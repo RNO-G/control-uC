@@ -1,4 +1,5 @@
 #include "shared/shared_memory.h" 
+#include "hpl_reset.h" 
 
 
 #define MAGIC_START 0xbada110c 
@@ -7,9 +8,12 @@
 
 void init_shared_memory() 
 {
+//can only be initialized by bootloader
+#ifdef _BOOTLOADER_
   shared_memory_t * shm = get_shared_memory(); 
-  //check magic 
-  if (shm->magic_start!=MAGIC_START || 
+  //check magic or POR 
+  if ( _get_reset_reason() == RESET_REASON_POR || 
+      shm->magic_start!=MAGIC_START || 
       shm->magic_end  !=MAGIC_END ) 
   {
     // detected first_boot !
@@ -30,6 +34,7 @@ void init_shared_memory()
     shm->nboots++; 
     return;
   }
+#endif
 }
 
 
