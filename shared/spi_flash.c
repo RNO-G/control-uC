@@ -1,6 +1,7 @@
 #include "shared/spi_flash.h" 
 #include "hal_spi_m_sync.h" 
 #include "driver_init.h" 
+//#include "linker/map.h" 
 
 
 
@@ -21,17 +22,23 @@ const uint8_t  DEEPSLEEP = 0xb9;
 const uint8_t  PROGRAM = 0x02;
 const uint8_t  GET_STATUS = 0x05;
 const uint8_t  WRITE_ENABLE = 0x06;
+const uint8_t  WRITE_DISABLE = 0x04;
+const uint8_t  PROTECT = 0x36;
+const uint8_t  UNPROTECT = 0x39;
+const uint8_t  DEVICE_ID= 0x9f; 
 
 
 //convenience
-#define CS_ON  gpio_set_pin_level(SPI_FLASH_CS, true) 
-#define CS_OFF gpio_set_pin_level(SPI_FLASH_CS, false) 
+#define CS_ON  gpio_set_pin_level(SPI_FLASH_CS, false) 
+#define CS_OFF gpio_set_pin_level(SPI_FLASH_CS, true) 
 
 static struct io_descriptor * io = 0; 
 
 void spi_flash_init()
 {
   spi_m_sync_get_io_descriptor(&SPI_FLASH,&io); 
+  spi_m_sync_enable(&SPI_FLASH); 
+  CS_OFF; 
 }
 
 typedef struct status_register
@@ -61,15 +68,55 @@ int spi_flash_busy()
   return _spi_get_status().bsy; 
 }
 
+
+void _spi_flash_write_enable()
+{
+  CS_ON; 
+  io_write(io,&WRITE_ENABLE,1); 
+  CS_OFF; 
+}
+
+void _spi_flash_write_disable()
+{
+  CS_ON; 
+  io_write(io,&WRITE_DISABLE,1); 
+  CS_OFF; 
+}
+
 static void _spi_flash_wait_until_ready() 
 {
-  status_register_t status; 
+  status_register_t status = {0}; 
   CS_ON; 
   io_write(io,&GET_STATUS,1); 
-  do { io_read(io,(uint8_t*) &status,1); } while (status.bsy); 
+  do { 
+    int read = io_read(io,(uint8_t*) &status,1);
+    if (!read)
+    {
+      io_write(io,&GET_STATUS,1); 
+    }
+  } while (status.bsy); 
   CS_OFF; 
 
 }
+void _spi_flash_change_protection(int protect, uint32_t start_addr, uint32_t end_addr) 
+{
+  uint32_t addr = start_addr; 
+  if (end_addr == start_addr) end_addr+=1; 
+  while (addr < end_addr) 
+  {
+   _spi_flash_wait_until_ready();
+   _spi_flash_write_enable();
+    uint8_t write_buf[4] = { protect ? PROTECT : UNPROTECT, (addr & 0x00ff0000) >> 16, (start_addr & 0x0000ff00) >> 8, (start_addr & 0xff)}; 
+    CS_ON; 
+    io_write(io, write_buf,4); 
+    CS_OFF; 
+    addr+=4096; 
+  }
+}
+
+
+
+
 const uint32_t page_size = 256; 
 const uint32_t block_size = 4096; 
 
@@ -79,18 +126,20 @@ static int _spi_flash_write(uint32_t addr, uint16_t len, const uint8_t * data)
   //we need to divide our write into the page size
   uint32_t first_page = addr & 0xffffff00; 
   uint32_t last_page= (addr+len) & 0xffffff00; 
-  int npage = 1 + ((last_page - first_page) >> 2); 
+  int npage = 1 + ((last_page - first_page) >> 8); 
   int ipage = 0; 
   int written = 0;
   for (ipage = 0; ipage < npage; ipage++)
   {
-    int offset = first_page ? addr & 0xff : 0; 
-    int size   = ipage == npage -1 ? addr+len - last_page : page_size - offset; 
+    int offset = ipage==0 ? addr & 0xff : 0; 
+    int size   = npage ==1 ? len : 
+                 ipage == npage -1 ? addr+len - last_page 
+                 : page_size - offset; 
     uint32_t start_addr = first_page + ipage*page_size + offset; 
     int data_offset = start_addr - addr; 
-    uint8_t write_buf[4] = { PROGRAM, (start_addr & 0x00ff0000) >> 2, start_addr & (0x0000ff00) >> 1, start_addr & 0xff}; 
+    uint8_t write_buf[4] = { PROGRAM, (start_addr & 0x00ff0000) >> 16, (start_addr & 0x0000ff00) >> 8, start_addr & 0xff}; 
     _spi_flash_wait_until_ready(); 
-
+    _spi_flash_write_enable(); 
     CS_ON; 
     io_write(io,write_buf,4); 
     written+=io_write(io,data+data_offset, size); 
@@ -106,37 +155,40 @@ static int _spi_flash_erase(uint32_t addr, int len)
   // first figure out how many 4 kB blocks there are between addr + addr+len 
 
   int first_block = addr >> 12; 
-  int last_block = (addr + len) >> 12; 
 
-  for (int iblock = first_block; iblock <= last_block; ) 
+  int last_block = (addr + len) >> 12; 
+  //check if this is on a boundary or not. If it is, then last block can be a bit smaller
+  if (((addr+len) & 0xfff) == 0) last_block--; 
+
+  for (int block = first_block; block <= last_block; ) 
   {
-    int block = first_block+iblock; 
     uint8_t write_buf[4] = {ERASE_4KB, block >> 4, (block & (0xf)) << 4 ,0} ; 
 
     //can we do a 64 kB flash? 
-    if ( (iblock % 16) == 0 && iblock+16 <= last_block) 
+    if ( (block % 16) == 0 && block+16 <= last_block) 
     {
       write_buf[0] = ERASE_64KB; 
-      iblock+=16; 
+      block+=16; 
     }
     //if not, can we do a 32 kB flash? 
-    else if ( (iblock % 8) == 0 && iblock+8 <= last_block) 
+    else if ( (block % 8) == 0 && block+8 <= last_block) 
     {
       write_buf[0] = ERASE_32KB; 
-      iblock+=8; 
+      block+=8; 
     }
     else //just do a 4 kB flash
     {
-      iblock++; 
+      block++; 
     }
 
     _spi_flash_wait_until_ready(); 
+    _spi_flash_write_enable();
     CS_ON;
     io_write(io,write_buf,4); 
     CS_OFF;
   }
 
-  // TODO: figure ut return value
+  // TODO: figure out return value
   return 0; 
 }
 
@@ -216,20 +268,26 @@ static int _spi_flash_erase_async( struct erase_context * ctx)
   return 0; 
 }
 
-const int max_read_len = 1024; 
 
 static int _spi_flash_read(uint32_t addr, uint16_t len, unsigned char * data) 
 {
-  uint8_t write_buf[4] = { READ_ARRAY, (addr & 0x00ff0000) << 2, addr & (0x0000ff00) << 1, addr & 0xff}; 
+  uint8_t write_buf[5] = { READ_ARRAY, (addr & 0x00ff0000) >> 16 , (addr & 0x0000ff00) >> 8, addr & 0xff,0}; 
 
   int rd = 0;
+  _spi_flash_wait_until_ready(); 
   //this needs to be tested to see if it actually works or if I need to do something smarter here to avoid a time gap! 
   CS_ON;
-  io_write(io,write_buf,4); 
+  io_write(io,write_buf,5); 
   rd = io_read(io,data,len); 
   CS_OFF; 
   return rd; 
 }
+
+int spi_flash_raw_read(uint32_t addr, int len, uint8_t * buf) 
+{
+  return _spi_flash_read(addr,len,buf); 
+}
+
 
 void spi_flash_deep_sleep()
 {
@@ -248,7 +306,7 @@ void spi_flash_wakeup()
 
 
 const uint32_t config_block_magic = 0xcabba935 ; 
-const int n_config_slots = 16; //32 kB 
+const int n_config_slots = 16; //64 kB 
 
 
 static int current_config_block = -1; 
@@ -256,13 +314,14 @@ static int current_config_block = -1;
 static void _find_config_block() 
 {
   uint32_t test; 
-  int slot; 
-  for ( slot = 0; slot < n_config_slots; slot++) 
+  int block; 
+  for ( block = 0; block < n_config_slots; block++) 
   {
-      _spi_flash_read(block_size * slot, 4, (uint8_t*) &test); 
+      _spi_flash_read(block_size * block, sizeof(test), (uint8_t*) &test); 
       if (test == config_block_magic)  // we found it! 
       {
-        current_config_block = slot; 
+        current_config_block = block; 
+        break; 
       }
   }
 
@@ -299,10 +358,11 @@ void spi_flash_write_config_block(const config_block_t * block)
   int next_config_block =( current_config_block + 1 ) % n_config_slots; 
 
   //be reasonably sure that the block is empty by reading the first 8 bytes 
-  uint64_t check; 
+  uint64_t check = 0; 
   _spi_flash_read(next_config_block * block_size, 8, (uint8_t*)  &check); 
 
-  if (check != 0xffffffff) 
+  _spi_flash_change_protection(0, 0, block_size*n_config_slots); 
+  if (check != 0xffffffffffffffff) 
   {
     //the last erase operation must have failed or something? 
     //  this kinda sucks, since this operation can take a while. 
@@ -324,29 +384,33 @@ void spi_flash_write_config_block(const config_block_t * block)
     // don't wait unitl ready here since we probably won't immediately touch the flash 
   }
 
+  _spi_flash_change_protection(1, 0, block_size*n_config_slots); 
   current_config_block = next_config_block; 
 }
 
 #define N_applications 4 
-#define application_blocks  62 
-#define application_start  (32 * 1024)
-#define application_size  (application_blocks * 4096)
+#define application_start  (64 * 1024)
+#define application_size  (256-16)*1024
+#define application_blocks  application_size/4096
 
 static uint32_t application_offsets[4]; 
 
 static uint32_t application_get_address(int slot, uint32_t offset) 
 {
-  return application_start + slot * application_size + offset; 
+  return application_start + (slot-1) * application_size + offset; 
 }
 
 int spi_flash_application_erase_sync(int slot, int nblk) 
 {
 
   if (nblk < 0 || nblk > application_blocks) nblk = application_blocks; 
-  if (slot >= N_applications || slot < 0) return -1; 
+  if (slot > N_applications || slot < 1) return -1; 
+  uint32_t start_addr = application_get_address(slot,0); 
+  uint32_t size = nblk << 12; 
 
-   _spi_flash_erase(application_get_address(slot,0), nblk << 12); 
-   application_offsets[slot] = 0; //seek 
+   _spi_flash_change_protection(0, start_addr, start_addr+size);
+   _spi_flash_erase(start_addr,size); 
+   application_offsets[slot-1] = 0; //seek 
    return 0; 
 }
 
@@ -356,16 +420,19 @@ static uint8_t erasing = 0;
 int spi_flash_application_erase_async(int slot, int nblk) 
 {
   if (nblk < 0 || nblk > application_blocks) nblk = application_blocks; 
-  if (slot >= N_applications || slot < 0) return -1; 
+  if (slot > N_applications || slot < 1) return -1; 
 
-  if (erasing & (1 < slot))
+  uint32_t start_addr = application_get_address(slot,0); 
+  uint32_t size = nblk << 12; 
+   _spi_flash_change_protection(0, start_addr, start_addr+size); 
+  if (erasing & (1 < (slot-1)))
   {
-    _spi_flash_erase_async(&ectx[slot]); 
-    if ( ectx[slot].state == ERASE_DONE ) 
+    _spi_flash_erase_async(&ectx[slot-1]); 
+    if ( ectx[slot-1].state == ERASE_DONE ) 
     {
       //clear the bit
-      erasing &= ~(1 <<slot);  
-      application_offsets[slot] = 0; 
+      erasing &= ~(1 <<(slot-1));  
+      application_offsets[slot-1] = 0; 
       return 0; 
     }
   }
@@ -373,21 +440,22 @@ int spi_flash_application_erase_async(int slot, int nblk)
   else
   {
     //set the erase bit 
-    erasing |= ( 1 << slot); 
-    _init_erase_context(&ectx[slot],application_get_address(slot,0), nblk << 12); 
-    _spi_flash_erase_async(&ectx[slot]); 
+    erasing |= ( 1 << (slot-1)); 
+    _init_erase_context(&ectx[(slot-1)],start_addr, size); 
+    _spi_flash_erase_async(&ectx[(slot-1)]); 
   }
   
-  return 1+ectx[slot].last_block - ectx[slot].iblock; 
+  return 1+ectx[(slot-1)].last_block - ectx[slot].iblock; 
 }
+
 
 
 int spi_flash_application_seek(int slot, uint32_t offset) 
 {
-  if (slot >= N_applications || slot < 0) return -1; 
+  if (slot > N_applications || slot < 1) return -1; 
   if (offset < application_size) 
   {
-    application_offsets[slot] = offset; 
+    application_offsets[slot-1] = offset; 
     return 0; 
   }
   return -1; 
@@ -396,17 +464,20 @@ int spi_flash_application_seek(int slot, uint32_t offset)
 int spi_flash_application_write(int slot, uint16_t len, const uint8_t * data) 
 {
 
-  if (slot >= N_applications || slot < 0) return -1; 
+  if (slot > N_applications || slot < 1) return -1; 
 
-  if (application_offsets[slot] + len > application_size)
+  if (application_offsets[slot-1] + len > application_size)
   {
-    len = application_size - application_offsets[slot]; 
+    len = application_size - application_offsets[slot-1]; 
   }
 
-  int written = _spi_flash_write(application_get_address(slot, application_offsets[slot]), len, data); 
+  uint32_t start_addr =application_get_address(slot, application_offsets[slot-1]);
+  _spi_flash_change_protection(0, start_addr, start_addr+len);
+  int written = _spi_flash_write(start_addr, len, data); 
+  _spi_flash_change_protection(1, start_addr, start_addr+len);
   if (written > 0) 
   {
-    application_offsets[slot] += written; 
+    application_offsets[slot-1] += written; 
   }
   return written; 
 }
@@ -415,19 +486,30 @@ int spi_flash_application_write(int slot, uint16_t len, const uint8_t * data)
 int spi_flash_application_read(int slot, uint16_t len, uint8_t * data) 
 {
 
-  if (slot >= N_applications || slot < 0) return -1; 
+  if (slot > N_applications || slot < 1) return -1; 
 
-  if (application_offsets[slot] + len > application_size)
+  if (application_offsets[slot-1] + len > application_size)
   {
-    len = application_size - application_offsets[slot]; 
+    len = application_size - application_offsets[slot-1]; 
   }
 
-  int rd = _spi_flash_read(application_get_address(slot, application_offsets[slot]), len, data); 
+  int rd = _spi_flash_read(application_get_address(slot, application_offsets[slot-1]), len, data); 
   if (rd > 0) 
   {
-    application_offsets[slot] += rd; 
+    application_offsets[slot-1] += rd; 
   }
   return rd; 
 }
 
+
+uint32_t spi_flash_device_id()
+{
+  CS_ON; 
+  uint32_t val; 
+  io_write(io,&DEVICE_ID,1); 
+  io_read(io,(uint8_t*) &val,4); 
+  CS_OFF;
+  return val; 
+
+}
 
