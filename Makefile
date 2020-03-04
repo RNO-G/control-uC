@@ -1,22 +1,14 @@
 BUILD_DIR=build
 
-# use devboard/ instead of asf4 
-compile_for_devboard=0
-
 
 CFLAGS= \
 -x c -mthumb -DDEBUG -Os -ffunction-sections -Wall -c -std=gnu99  \
 -D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3
 
 
-ifeq ($(compile_for_devboard),1)
-CFLAGS+= -D_DEVBOARD_
-BUILD_DIR=builddev
-include devboard.mk 
-else
-#This includes all the auto-generated stuff from ASF4 
+ASF4_PREFIX=asf4
+
 include asf4.mk 
-endif 
 
 #This includes the LoRaWAN implementation 
 include lorawan.mk 
@@ -49,10 +41,9 @@ APP_DEPS := $(APP_OBJS:%.o=%.d)
 BL_DEPS := $(BL_OBJS:%.o=%.d)
 
 
-MKDIRS:= $(BUILD_DIR)  $(DEVBOARD_MKDIRS) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application $(BUILD_DIR)/bootloader  $(BUILD_DIR)/shared $(BUILD_DIR)/bootloader/shared
+MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application $(BUILD_DIR)/bootloader  $(BUILD_DIR)/shared $(BUILD_DIR)/bootloader/shared
 OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-main
 BL_OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-bootloader
-DEVBOARD_OUTPUT_NAME := $(BUILD_DIR)/rno-G-devboard
 
 # All Target
 all: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin
