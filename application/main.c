@@ -3,15 +3,16 @@
 #include "shared/io.h" 
 #include "shared/printf.h" 
 #include "hal_ext_irq.h" 
-#include "hal_i2c_m_sync.h" 
 #include "hal_gpio.h" 
-#include "application/i2cbus.h" 
 #include "application/debug.h" 
-#include "application/lte.h" 
 #include "shared/spi_flash.h" 
 #include "shared/shared_memory.h" 
 
-#include "hal_i2c_m_sync.h"
+#ifndef _DEVBOARD_
+#include "hal_i2c_m_sync.h" 
+#include "application/lte.h" 
+#include "application/i2cbus.h" 
+#endif 
 
 
 ASYNC_READ_BUFFER(256, sbc); 

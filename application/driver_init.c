@@ -13,16 +13,19 @@
 #include <hal_init.h>
 #include <hpl_gclk_base.h>
 #include <hpl_pm_base.h>
+#ifndef _DEVBOARD_
 #include <hpl_adc_base.h>
-
-/*! The buffer size for USART */
-#define SBC_UART_BUFFER_SIZE 16
 
 /*! The buffer size for USART */
 #define LTE_UART_BUFFER_SIZE 16
 
 /*! The buffer size for USART */
 #define SBC_UART_CONSOLE_BUFFER_SIZE 16
+
+#endif 
+
+/*! The buffer size for USART */
+#define SBC_UART_BUFFER_SIZE 16
 
 struct usart_async_descriptor SBC_UART;
 struct spi_m_sync_descriptor  SPI_FLASH;
@@ -385,11 +388,69 @@ void INTERNAL_WATCHDOG_init(void)
 static void EXT_IRQ_INIT()
 {
     _gclk_enable_channel(EIC_GCLK_ID, CONF_GCLK_EIC_SRC);
-    ext_irq_init( );
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO2,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+#ifdef _DEVBOARD_
+	gpio_set_pin_function(LORA_DIO2, PINMUX_PA09A_EIC_EXTINT9);
+#else
+	gpio_set_pin_function(LORA_DIO2, PINMUX_PA08A_EIC_NMI);
+#endif
+
+	// GPIO on PA09
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+#ifdef _DEVBOARD_
+	gpio_set_pin_function(LORA_DIO1, PINMUX_PB07A_EIC_EXTINT7 );
+#else
+	gpio_set_pin_function(LORA_DIO1, PINMUX_PA09A_EIC_EXTINT9);
+#endif
+
+
+	// GPIO on PA10
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+#ifdef _DEVBOARD_
+	gpio_set_pin_function(LORA_DIO, PINMUX_PB06A_EIC_EXTINT6);
+#else
+	gpio_set_pin_function(LORA_DIO, PINMUX_PA10A_EIC_EXTINT10);
+#endif
+
+
 #ifndef _DEVBOARD_
     gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN); 
     gpio_set_pin_function( GPIO1, PINMUX_PA04A_EIC_EXTINT4 );
 #endif
+
+    ext_irq_init( );
 }
 
 #ifndef _DEVBOARD_
@@ -455,48 +516,6 @@ void system_init(void)
 
 // GPIO on PA08
 
-	// Set pin direction to input
-	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO2,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(LORA_DIO2, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PA09
-
-	// Set pin direction to input
-	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO1,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(LORA_DIO1, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PA10
-
-	// Set pin direction to input
-	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(LORA_DIO, GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PA11
 

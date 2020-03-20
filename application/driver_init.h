@@ -28,11 +28,14 @@
 #include <hal_usart_async.h>
 #include <hal_spi_m_sync.h>
 
+
+#ifndef _DEVBOARD_
 #include <hal_i2c_m_async.h>
 #include <hal_i2c_m_sync.h>
+#include <hal_adc_sync.h>
+#endif
 
 #include <hal_delay.h>
-#include <hal_adc_sync.h>
 
 #include <hal_calendar.h>
 #include <hal_timer.h>

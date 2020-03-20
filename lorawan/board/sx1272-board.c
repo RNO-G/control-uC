@@ -53,13 +53,7 @@ const struct Radio_s Radio =
 
 void SX1272IoInit( void )
 {
-    GpioInit( &SX1272.Spi.Nss, RADIO_NSS, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1 );
-    GpioInit( &SX1272.DIO0, RADIO_DIO_0, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0 );
-    gpio_set_pin_function( RADIO_DIO_0, PINMUX_PA10A_EIC_EXTINT10 );
-    GpioInit( &SX1272.DIO1, RADIO_DIO_1, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0 );
-    gpio_set_pin_function( RADIO_DIO_1, PINMUX_PA09A_EIC_EXTINT9 );
-    GpioInit( &SX1272.DIO2, RADIO_DIO_2, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0 );
-    gpio_set_pin_function( RADIO_DIO_2, PINMUX_PA08A_EIC_NMI );// this is an NMI pin? 
+  // most things are set up in driver_init, so we'll jsut do a few things here! 
 
     SX1272.DIO3.pin = NC; 
     SX1272.DIO4.pin = NC; 
