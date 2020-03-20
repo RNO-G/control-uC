@@ -1,6 +1,7 @@
 #ifndef _CONFIG_BLOCK_H
 #define _CONFIG_BLOCK_H
 
+#include <stdint.h> 
 
 /** Shared configuration block in SPI flash between application and bootloader. 
  *
@@ -48,8 +49,8 @@ typedef struct bootloader_cfg
 
 typedef struct application_cfg
 {
-
-
+  uint8_t station_number; 
+  uint64_t wanted_state; 
 } application_cfg_t; 
 
 typedef struct config_block

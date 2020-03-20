@@ -19,8 +19,11 @@ extern "C" {
 #include <hal_init.h>
 #include <hal_io.h>
 #include <hal_flash.h>
+
+ /*
 #include <hal_usart_async.h>
 #include <hal_spi_m_sync.h>
+*/
 
 
 extern struct flash_descriptor       FLASH;
@@ -41,6 +44,12 @@ void SPI_FLASH_init(void);
 void FLASH_deinit(void);
 void SBC_UART_deinit(void);
 void SPI_FLASH_deinit(void);
+
+
+/*
+void USB_DEVICE_INSTANCE_CLOCK_init(void);
+void USB_DEVICE_INSTANCE_init(void);
+*/
 
 
 

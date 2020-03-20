@@ -70,7 +70,8 @@ void _putchar(int fd, char character);
 #define dprintf dprintf_
 int dprintf_( int fd, const char * format, ...); 
 
-#define printf(format,...) dprintf(1,format, __VA_ARGS__)
+#define printf printf_
+int printf_( const char * format, ...); 
 
 /**
  * Tiny sprintf implementation

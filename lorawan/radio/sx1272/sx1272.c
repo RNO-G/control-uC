@@ -20,6 +20,7 @@
  *
  * \author    Gregory Cristian ( Semtech )
  */
+//#include "shared/printf.h" 
 #include <math.h>
 #include <string.h>
 #include "utilities.h"
@@ -28,6 +29,7 @@
 #include "delay.h"
 #include "sx1272.h"
 #include "sx1272-board.h"
+#include "shared/printf.h" 
 
 /*
  * Local types definition
@@ -94,32 +96,32 @@ void SX1272SetOpMode( uint8_t opMode );
 /*!
  * \brief DIO 0 IRQ callback
  */
-void SX1272OnDio0Irq( void* context );
+static void SX1272OnDio0Irq( void* context );
 
 /*!
  * \brief DIO 1 IRQ callback
  */
-void SX1272OnDio1Irq( void* context );
+static void SX1272OnDio1Irq( void* context );
 
 /*!
  * \brief DIO 2 IRQ callback
  */
-void SX1272OnDio2Irq( void* context );
+static void SX1272OnDio2Irq( void* context );
 
 /*!
  * \brief DIO 3 IRQ callback
  */
-void SX1272OnDio3Irq( void* context );
+static void SX1272OnDio3Irq( void* context );
 
 /*!
  * \brief DIO 4 IRQ callback
  */
-void SX1272OnDio4Irq( void* context );
+static void SX1272OnDio4Irq( void* context );
 
 /*!
  * \brief DIO 5 IRQ callback
  */
-void SX1272OnDio5Irq( void* context );
+static void SX1272OnDio5Irq( void* context );
 
 /*!
  * \brief Tx & Rx timeout timer callback
@@ -197,16 +199,16 @@ SX1272_t SX1272;
 /*!
  * Hardware DIO IRQ callback initialization
  */
-DioIrqHandler *DioIrq[] = { SX1272OnDio0Irq, SX1272OnDio1Irq,
+static DioIrqHandler *DioIrq[] = { SX1272OnDio0Irq, SX1272OnDio1Irq,
                             SX1272OnDio2Irq, SX1272OnDio3Irq,
-                            SX1272OnDio4Irq, NULL };
+                            SX1272OnDio4Irq, SX1272OnDio5Irq };
 
 /*!
  * Tx and Rx timers
  */
-TimerEvent_t TxTimeoutTimer;
-TimerEvent_t RxTimeoutTimer;
-TimerEvent_t RxTimeoutSyncWord;
+static TimerEvent_t TxTimeoutTimer;
+static TimerEvent_t RxTimeoutTimer;
+static TimerEvent_t RxTimeoutSyncWord;
 
 /*
  * Radio driver functions implementation
@@ -247,6 +249,7 @@ RadioState_t SX1272GetStatus( void )
 
 void SX1272SetChannel( uint32_t freq )
 {
+//    printf("SX1272SetChannel: %u\n", freq); 
     SX1272.Settings.Channel = freq;
     freq = ( uint32_t )( ( double )freq / ( double )FREQ_STEP );
     SX1272Write( REG_FRFMSB, ( uint8_t )( ( freq >> 16 ) & 0xFF ) );
@@ -1104,6 +1107,8 @@ uint8_t SX1272Read( uint16_t addr )
     return data;
 }
 
+
+
 void SX1272WriteBuffer( uint16_t addr, uint8_t *buffer, uint8_t size )
 {
     uint8_t i;
@@ -1231,6 +1236,8 @@ void SX1272OnTimeoutIrq( void* context )
         // violation of SPI specifications.
         // To mitigate redesign, Semtech offers a workaround which resets
         // the radio transceiver and putting it into a known state.
+
+        
 
         // BEGIN WORKAROUND
 

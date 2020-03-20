@@ -21,7 +21,7 @@ SZ=arm-none-eabi-size
 
 #shared flags between application and bootloader
 LD_FLAGS_PRE= -Wl,--start-group -lm -Wl,--end-group -mthumb 
-LD_FLAGS_POST=-Llinker/ --specs=nano.specs -Wl,--gc-sections -mcpu=cortex-m0plus 
+LD_FLAGS_POST=-Llinker/ --specs=nano.specs -mcpu=cortex-m0plus -Wl,--gc-sections 
 
 
 INCLUDES=$(ASF4_INCLUDES) -I./ 
@@ -32,7 +32,7 @@ SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.
 APP_SHARED_OBJS=$(addprefix $(BUILD_DIR)/shared/, $(SHARED_OBJS))
 BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 
-APP_OBJS=$(BUILD_DIR)/application/main.o $(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
+APP_OBJS=$(BUILD_DIR)/application/main.o $(BUILD_DIR)/application/debug.o $(BUILD_DIR)/application/lte.o $(BUILD_DIR)/application/i2cbus.o $(BUILD_DIR)/application/driver_init.o $(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o $(BUILD_DIR)/bootloader/bootloader_driver_init.o $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
 
@@ -96,13 +96,13 @@ $(BL_OUTPUT_NAME).elf: $(BL_OBJS)
 # special case lorawan includes  (so we don't have to modify the reference implementation files) 
 $(BUILD_DIR)/lorawan/%.o: lorawan/%.c
 	@echo Building lorawan file: $<
-	$(CC) $(CFLAGS) $(INCLUDES) $(LORAWAN_INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o) -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDES) $(LORAWAN_INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o) -DREGION_US915 -o $@ $<
 	@echo Finished building: $<
 
 # special case shared for bootloader to define _BOOTLOADER_
 $(BUILD_DIR)/bootloader/shared/%.o: shared/%.c
-	@echo Building lorawan file: $<
-	$(CC) $(CFLAGS) -D_BOOTLOADER_ $(INCLUDES) $(LORAWAN_INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d)  -MT$(@:%.o=%.o) -o $@ $<
+	@echo Building bootloader file: $<
+	$(CC) $(CFLAGS) -D_BOOTLOADER_ $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d)  -MT$(@:%.o=%.o) -o $@ $<
 	@echo Finished building: $<
 
 

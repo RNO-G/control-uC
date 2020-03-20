@@ -1,13 +1,114 @@
-#include <atmel_start.h>
+#include "application/driver_init.h" 
+#include "lorawan/lorawan.h" 
+#include "shared/io.h" 
+#include "shared/printf.h" 
+#include "hal_ext_irq.h" 
+#include "hal_i2c_m_sync.h" 
+#include "hal_gpio.h" 
+#include "application/i2cbus.h" 
+#include "application/debug.h" 
+#include "application/lte.h" 
+#include "shared/spi_flash.h" 
+#include "shared/shared_memory.h" 
+
+#include "hal_i2c_m_sync.h"
+
+
+ASYNC_READ_BUFFER(256, sbc); 
+ASYNC_READ_BUFFER(512, sbc_console); 
+ASYNC_READ_BUFFER(256, lte); 
+
+static  config_block_t cfg; 
+static char lte_buf[] = "\r\nAT+GMR\r\n"; 
+
+
+static volatile int n_interrupts; 
+
+
+void interrupt()
+{
+  n_interrupts++; 
+}
 
 int main(void)
 {
-	/* Initializes MCU, drivers and middleware */
-	atmel_start_init();
+	/* Initialize system drivesr*/ 
+	system_init();
+  /* Initialize io system */ 
+  io_init(); 
+  sbc_uart_read_async(&sbc); 
+  sbc_uart_console_read_async(&sbc_console); 
+  lte_uart_read_async(&lte); 
+  /* Initialize i2c bus */ 
+  i2c_bus_init(); 
+  spi_flash_init(); 
 
-	/* Replace with your application code */
+
+  ext_irq_register(GPIO1, interrupt); 
+
+  spi_flash_read_config_block(&cfg); 
+
+  if (cfg.app_cfg.station_number != 123) 
+  {
+    cfg.app_cfg.station_number = 123; 
+    spi_flash_write_config_block(&cfg); 
+  }
+
+  //turn on the computer
+  i2c_task_t task1 = {.addr = 0x3a, .write = 1, .reg = I2C_EXPANDER_SET_REGISTER, .data = 0x10, .done = 0}; 
+  i2c_task_t task2 = {.addr = 0x3a, .write = 1, .reg = I2C_EXPANDER_CONFIGURE_REGISTER, .data = ~(0x10), .done = 0};
+  i2c_enqueue(&task1); 
+  i2c_enqueue(&task2); 
+
+  i2c_task_t task3 = {.addr = 0x3f, .write = 0, .reg = I2C_EXPANDER_GET_REGISTER, .data = 0xab, .done = 0}; 
+  i2c_enqueue(&task3); 
+  delay_ms(1);
+  i2c_task_t task4 = {.addr = 0x3a, .write = 0, .reg = I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 0}; 
+  i2c_enqueue(&task4); 
+
+  get_shared_memory()->nresets = 0; 
+
+
+//  lte_turn_on(); 
+
+  
+  lorawan_init(); 
+
+
+  printf("Here is a very long message let's see if it goes through or not!\n"); 
+
+  int last_nint = 0; 
+
+
 	while (1) {
+    if (n_interrupts > last_nint) 
+    {
+      printf("number of interrupts now %d\n", ++last_nint); 
+      lte_uart_put("\r\nAT+GSN\r\n"); 
 
+    }
+
+    lorawan_process(); 
+
+    char * where = strstr((char*)sbc.buf, "#LTE-ON\r\n");
+    if (where)
+    {
+      *where=0; 
+      async_read_buffer_shift(&sbc, 512); 
+      lte_turn_on(); 
+      printf("Turning on LTE\n"); 
+    }
+
+
+
+    where = strstr((char*)sbc.buf, "#LTE-OFF\r\n");
+    if (where)
+    {
+      *where=0; 
+      async_read_buffer_shift(&sbc, 512); 
+      lte_turn_off(); 
+      printf("Turning off LTE\n"); 
+    }
 
 	}
 }

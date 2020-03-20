@@ -4,6 +4,7 @@
 /** LoRaWAN API  for RNO-G*/ 
 
 
+#include <stdint.h> 
 
 
 
@@ -21,10 +22,10 @@ int lorawan_send_message(uint8_t len, const uint8_t * msg) ;
 
 
 /** run the lorawan state machine for a bit */ 
-int lorawan_process_events(); 
+void lorawan_process(); 
 
 /** Get the next message in the queue, returning its size. */ 
-uint8_t lorawan_next_received_message(uint8_t * msg);
+uint8_t lorawan_next_received_message(uint8_t * msg, uint8_t maxlen);
 
 
 

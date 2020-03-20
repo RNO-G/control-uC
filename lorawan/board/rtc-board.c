@@ -96,23 +96,27 @@ static void RtcAlarmIrq( void );
  */
 //static void RtcOverflowIrq( void );
 
+static volatile bool task_added = false; 
 static void timer_callback(const struct timer_task * const task) 
 {
+  task_added = false; 
   RtcAlarmIrq(); 
 }
 
-static struct timer_task task = {.cb = timer_callback, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task task; 
 
 void RtcInit( void )
 {
     if( RtcInitialized == false )
     {
-        //this uses 32.768 clock, so this results in 1 ms
-        timer_set_clock_cycles_per_tick(&LORA_TIMER,32); 
+//        //this uses 32.768 clock with a prescaler of 8, so this results in 1 ms
+        timer_set_clock_cycles_per_tick(&LORA_TIMER,4); 
         timer_start(&LORA_TIMER); 
         RtcTimerContext.AlarmState = ALARM_STOPPED;
         RtcSetTimerContext( );
         RtcInitialized = true;
+        task.cb = timer_callback; 
+        task.mode = TIMER_TASK_ONE_SHOT ; 
     }
 }
 
@@ -177,31 +181,22 @@ void RtcStartAlarm( uint32_t timeout )
 
     RtcTimerContext.Delay = timeout;
 
-#if( RTC_DEBUG_PRINTF_STATE == RTC_DEBUG_ENABLE )
-    printf( "TIMEOUT \t%010ld\t%010ld\r\n", RtcTimerContext.Time, RtcTimerContext.Delay );
-#endif
-#if( RTC_DEBUG_GPIO_STATE == RTC_DEBUG_ENABLE )
-    GpioWrite( &DbgRtcPin0, 0 );
-    GpioWrite( &DbgRtcPin1, 0 );
-#endif
-
     RtcTimeoutPendingInterrupt = true;
     RtcTimeoutPendingPolling = false;
 
     RtcTimerContext.AlarmState = ALARM_RUNNING;
-    timer_remove_task(&LORA_TIMER,&task);
+    if (task_added) timer_remove_task(&LORA_TIMER,&task);
     task.interval = timeout; 
-    if( timer_add_task(&LORA_TIMER,&task) != ERR_NONE )
+    task.cb = timer_callback; 
+    if( timer_add_task(&LORA_TIMER,&task) == ERR_NONE )
     {
+        task_added = true; 
         // If timer already passed
         if( RtcTimeoutPendingInterrupt == true )
         {
             // And interrupt not handled, mark as polling
             RtcTimeoutPendingPolling = true;
             RtcTimeoutPendingInterrupt = false;
-#if( RTC_DEBUG_GPIO_STATE == RTC_DEBUG_ENABLE )
-            GpioWrite( &DbgRtcPin0, 1 );
-#endif
         }
     }
     CRITICAL_SECTION_END( );
@@ -284,14 +279,8 @@ static void RtcAlarmIrq( void )
     RtcTimerContext.AlarmState = ALARM_STOPPED;
     // Because of one shot the task will be removed after the callback
     RtcTimeoutPendingInterrupt = false;
-#if( RTC_DEBUG_GPIO_STATE == RTC_DEBUG_ENABLE )
-    GpioWrite( &DbgRtcPin1, 1 );
-#endif
     // NOTE: The handler should take less then 1 ms otherwise the clock shifts
     TimerIrqHandler( );
-#if( RTC_DEBUG_GPIO_STATE == RTC_DEBUG_ENABLE )
-    GpioWrite( &DbgRtcPin1, 0 );
-#endif
 }
 
 /*

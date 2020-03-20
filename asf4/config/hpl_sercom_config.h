@@ -1059,7 +1059,7 @@
 // <e> Advanced
 // <id> i2c_master_advanced
 #ifndef CONF_SERCOM_5_I2CM_ADVANCED_CONFIG
-#define CONF_SERCOM_5_I2CM_ADVANCED_CONFIG 0
+#define CONF_SERCOM_5_I2CM_ADVANCED_CONFIG 1
 #endif
 
 // <o> TRise (ns) <0-300>
@@ -1084,7 +1084,7 @@
 // <i> Enables the slave SCL low extend time-out. If SCL is cumulatively held low for greater than 25ms from the initial START to a STOP, the slave will release its clock hold if enabled and reset the internal state machine
 // <id> i2c_master_arch_sexttoen
 #ifndef CONF_SERCOM_5_I2CM_SEXTTOEN
-#define CONF_SERCOM_5_I2CM_SEXTTOEN 0
+#define CONF_SERCOM_5_I2CM_SEXTTOEN 1
 #endif
 
 // <q> SCL Low Time-Out (LOWTOUT)

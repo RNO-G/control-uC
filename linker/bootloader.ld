@@ -13,16 +13,28 @@ SECTIONS
     KEEP(*(.vectors* .vectors.*)) 
     *(.text*) 
     *(.rodata*) 
-    *(.init*)
+    . = ALIGN(4);
+    KEEP(*(.init))
     *(.fini*)
     *(.ctors*)
     *(.dtors*)
     . = ALIGN(4); 
-    _etext = .; 
     _efixed = .; 
   } > bootrom
 
-  .data : 
+  /* .ARM.exidx is sorted, so has to go in its own output section.  */
+  PROVIDE_HIDDEN (__exidx_start = .);
+  .ARM.exidx :
+  {
+      *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+  } > rom
+  PROVIDE_HIDDEN (__exidx_end = .);
+
+  . = ALIGN(4); 
+  _etext = .; 
+
+
+  .relocate : AT (_etext) 
   {
     . = ALIGN(4); 
     _srelocate  = .;
@@ -31,7 +43,7 @@ SECTIONS
     . = ALIGN(4); 
     _erelocate  = .;
     _edata  = .;
-  } > ram AT > rom 
+  } > ram 
 
   .bss (NOLOAD) :
   {

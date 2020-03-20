@@ -7,7 +7,7 @@ void default_init_block(config_block_t * block)
   config_block_t dflt = { 
       .boot_cfg = 
       {
-           .n_resets_before_reflash = 3, 
+           .n_resets_before_reflash = 0, 
            .recovery_priority_list = {1,2,3,4}
       }
   }; 

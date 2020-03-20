@@ -29,8 +29,8 @@ void relenquish()
 
   system_deinit(); 
 
-  uint32_t sp = *((uint32_t*)__rom_start); 
-  uint32_t start = *(((uint32_t*)__rom_start)+1);
+  uint32_t sp = *((uint32_t*)&__rom_start__); 
+  uint32_t start = *(((uint32_t*)&__rom_start__)+1);
   start_app(sp,start); 
 }
 
@@ -43,7 +43,7 @@ int check_application(int slot)
 
   if (slot == 0) 
   {
-    flash_read(&FLASH, __rom_start, (uint8_t*) check_buf,8); 
+    flash_read(&FLASH, (int) &__rom_start__, (uint8_t*) check_buf,8); 
   }
   else
   {
@@ -60,13 +60,15 @@ int check_application(int slot)
 }
 
 
+ASYNC_READ_BUFFER(512, sbc); 
+
 
 int main(void)
 {
 
   system_init();
-  io_init(); 
 
+  spi_flash_init(); 
 
   //read the bootloader config block 
   spi_flash_read_config_block(&config_block); 
@@ -75,15 +77,15 @@ int main(void)
   init_shared_memory(); 
   
   bootloader_cfg_t * cfg = &config_block.boot_cfg;
-  shared_memory_t * shm = get_shared_memory();
+  volatile shared_memory_t * shm = get_shared_memory();
 
 
   shm->booted_from = BOOT_ROM; 
 
-  int must_run_bootloader = 0; 
+  volatile int must_run_bootloader = 0; 
   int copy_application = 0; 
 
-  int have_application = check_application(0); 
+  volatile int have_application = check_application(0); 
 
   //are we supposed to boot from not ROM? 
   if (get_shared_memory()->boot_option == BOOT_BOOTLOADER)
@@ -91,10 +93,10 @@ int main(void)
     must_run_bootloader = 1; 
   }
   //is the bootloader enable gpio on? 
-  else if ( gpio_get_pin_level(GPIO0))//TODO pick correct pin
-  {
-    must_run_bootloader = 1; 
-  }
+//  else if ( gpio_get_pin_level(GPIO0))//TODO pick correct pin
+//  {
+//    must_run_bootloader = 1; 
+//  }
 
   //did we tell ourselves to copy the application ? 
   else if (shm->boot_option > 0 && shm->boot_option <= 4) 
@@ -108,7 +110,7 @@ int main(void)
   //otherwise check if we are in a bad state and need to try to recover
   // This is either because we've reflashed too many times our application is gone. 
   // In this case, we loop through the priority list trying to find a valid application and copy it. 
-  else if ((cfg->n_resets_before_reflash && shm->nresets > cfg->n_resets_before_reflash) || !have_application)
+  else if ((cfg->n_resets_before_reflash >0  && shm->nresets > cfg->n_resets_before_reflash) || !have_application)
   {
     int ntries = 0; 
     do 
@@ -142,11 +144,10 @@ int main(void)
   //otherwise, check if we should run the bootloader
   if (must_run_bootloader) 
   {
+    io_init(); 
     sbc_uart_put("BOOTLOADER!\r\n"); 
+    sbc_uart_read_async(&sbc); 
 
-#define bufsize 64
-    char buf[bufsize+1] = {0}; 
-    int offset = 0;
     int programmer_entered = 0; 
     while(1) 
     {
@@ -159,41 +160,30 @@ int main(void)
         continue; 
       }
 
-      offset+=sbc_uart_read(bufsize-offset, (uint8_t*) buf+offset); 
       //check for line returns
-      char * lr = strchr(buf,'\n'); 
+      char * lr = strchr((char*)sbc.buf,'\n'); 
       while (lr) 
       {
         *lr = 0; 
-        if (programmer_check_command(buf))
+        if (programmer_check_command(sbc.buf))
         {
-          programmer_enter(buf,SBC_UART_DESC);
+          programmer_enter(sbc.buf,SBC_UART_DESC);
           programmer_entered = 1;
           break;
         }
-        else if (strcmp(buf,"#RESET"))
+        else if (strcmp(sbc.buf,"#RESET"))
         {
           _reset_mcu();
         }
-        else if (strcmp(buf,"#EXIT"))
+        else if (strcmp(sbc.buf,"#EXIT"))
         {
           break;
         }
         else
         {
-          //otherwise, move to front of buffer
-         int  len = lr-buf;
-          memmove(lr+1, buf, len);
-          offset-=len; 
+          async_read_buffer_shift(&sbc, (int) (lr-(char*)sbc.buf)); 
         }
-        lr = strchr(buf,'\n'); 
-      }
-      if (offset > bufsize/2)
-      {
-        //move back to front if over half
-        memmove(buf+bufsize/2, buf, bufsize/2); 
-        memset(buf+bufsize/2,0,bufsize/2); 
-        offset-=bufsize/2; 
+        lr = strchr((char*)sbc.buf,'\n'); 
       }
     }
   }

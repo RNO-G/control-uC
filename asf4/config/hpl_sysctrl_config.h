@@ -244,7 +244,7 @@
 // <i> Enable XTAL
 // <id> xosc32k_arch_xtalen
 #ifndef CONF_XOSC32K_XTALEN
-#define CONF_XOSC32K_XTALEN 0
+#define CONF_XOSC32K_XTALEN 1
 #endif
 
 // <q> Write Lock

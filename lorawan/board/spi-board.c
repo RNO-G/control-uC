@@ -10,7 +10,7 @@
 
 uint16_t SpiInOut(Spi_t *blah, uint16_t out) 
 {
-  uint8_t rx; 
+  uint8_t rx = 0xff; 
   uint8_t tx = out; 
   struct spi_xfer xfer; 
   xfer.size = 1; 

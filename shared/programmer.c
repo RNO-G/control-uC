@@ -72,7 +72,8 @@ static int i;
 static int N; 
 
 
-static int fd;
+static int fd; 
+static async_read_buffer_t * b; 
 
 static volatile enum 
 {
@@ -91,6 +92,7 @@ static void flash_error_callback(struct flash_descriptor * const d)
 {
   flash_status = FLASH_ERROR; 
 }
+
 
 int programmer_enter(const char * cmd, int dev) 
 {
@@ -113,6 +115,8 @@ int programmer_enter(const char * cmd, int dev)
   
   i = 0; 
   fd = dev; 
+  b = get_read_buffer(fd); 
+  async_read_buffer_shift(b,b->length); //flush the buffer
   slot = check_slot; 
 
   if (slot == 0) 
@@ -153,34 +157,14 @@ static void write_confirm()
 }
 
 
-#define accum_buf_size  16 
-static int buf_len = 0;
-static char accum_buf[accum_buf_size];  
-
 //Wait until buffer has a \n. Will return true when that happens (or -1 if maximum size exceeded) 
 static int accumulate_until_lf(void) 
 {
-  static int total = 0; 
-  
-  char c; 
-  int got = d_read(fd,1, (uint8_t*)&c); 
-  if (!got) return 0; 
-
-  if (c == '\n')
+  char * c = strchr((char*)b->buf,'\n'); 
+  if (c)
   {
-    accum_buf[total] = '0'; 
-    buf_len = total; 
-    total = 0; // get ready for next time 
+    *c = 0; 
     return 1; 
-  }
-
-  accum_buf[total++] = c; 
-  if (total == accum_buf_size-1) 
-  {
-    total = 0; //error state, reset 
-    buf_len = 0; 
-    return -1; 
-
   }
 
   return 0; 
@@ -191,7 +175,7 @@ static int accumulate_until_lf(void)
 static int check_confirm_slot(int success_state) 
 {
 
-  if (strlen(accum_buf) == 1 && accum_buf[0] == slot + '0' )
+  if (strlen((char*) b->buf) == 1 && b->buf[0] == slot + '0' )
   {
       program_state = success_state; 
       return 1; 
@@ -206,34 +190,26 @@ static int read_nblocks()
 
   int total = 0; 
   int mult = 1; 
+  int buf_len = strlen((char*) b->buf);
   for (int idig = 0; idig < buf_len; idig++) 
   {
-    char c = accum_buf[buf_len-1-idig]; 
+    char c = b->buf[buf_len-1-idig]; 
     if (c < '0' || c > '9') return 0; 
     total += mult*(c-'0'); 
     mult*=10; 
   }
+
+  async_read_buffer_shift(b, buf_len+1); 
 
   N = total; 
   return total; 
 }
 
 
-/* TODO: this is enormously wasteful in terms of memory */ 
-static uint8_t flash_buffer[256]; 
-static int flash_buffer_i= 0; 
-static void reset_flash_buffer() { flash_buffer_i = 0; } 
+
 static int accumulate_flash_buffer() 
 {
-  if (flash_buffer_i >= 256) return 1; 
-
-  uint8_t c; 
-  int got = d_read(fd,1, &c);
-  if (!got) return 0; 
-  flash_buffer[flash_buffer_i++] = c; 
-
-  if (flash_buffer_i >= 256) return 1; 
-
+  if (b->offset >= 256) return 1; 
   return 0; 
 }
 
@@ -269,7 +245,7 @@ static void process_write()
       program_state = PROGRAM_DONE; 
       return; 
     }
-    reset_flash_buffer(); 
+    async_read_buffer_shift(b, 256); 
   }
 
   if (sent_query < i)
@@ -285,13 +261,13 @@ static void process_write()
     //otherwise, let's write 256 bytes
     if (slot==0) 
     {
-      flash_append(&FLASH, 8*1024 + 256*i, flash_buffer,256); 
+      flash_append(&FLASH, 8*1024 + 256*i, b->buf,256); 
       flash_status = FLASH_BUSY; 
     }
     else
     {
       if (i == 0) spi_flash_application_seek(slot,0); 
-      spi_flash_application_write(slot,256, flash_buffer); 
+      spi_flash_application_write(slot,256, b->buf); 
     }
 
     transfer_was_started = 1;
@@ -303,10 +279,11 @@ static void process_write()
 //read, 256 bytes at a time I guess? 
 static void process_read() 
 {
+  uint8_t flash_buffer[256]; 
   int nb = N-i >= 256 ? 256 : N-i; 
   if (slot == 0 ) 
   {
-    flash_read(&FLASH,8*1024+i, flash_buffer, nb); 
+    flash_read(&FLASH,8*1024+i,  flash_buffer, nb); 
     i+=nb;
   }
   else 
@@ -315,10 +292,10 @@ static void process_read()
     {
       spi_flash_application_seek(slot,0); 
     }
-    i+=spi_flash_application_read(slot,nb,flash_buffer); 
+    i+=spi_flash_application_read(slot,nb,  flash_buffer); 
   }
 
-  d_write(fd, nb,flash_buffer); 
+  d_write(fd, nb, flash_buffer); 
 
   if ( i >=N) 
   {
@@ -466,13 +443,14 @@ int programmer_copy_application_to_flash(int slot)
     flash_register_callback(&FLASH, FLASH_CB_READY, flash_ready_callback); 
     flash_register_callback(&FLASH, FLASH_CB_ERROR, flash_error_callback); 
     i = 0;
-    N = __rom_size; 
+    N = __rom_size__; 
     spi_flash_application_seek(slot,0); 
     spi_flash_wakeup();
     copy_started = 1; 
   }
 
   //we don't know how long the application is, so we just copy everything in the block
+  uint8_t flash_buffer[256]; 
 
   while (i < N) 
   {
@@ -483,7 +461,7 @@ int programmer_copy_application_to_flash(int slot)
       copy_started = 0; //restart the process on the next try 
       return -1; 
     }
-    flash_write(&FLASH, __rom_start+i,flash_buffer,256); 
+    flash_write(&FLASH, &__rom_start__+i,flash_buffer,256); 
     flash_status = FLASH_BUSY; 
   }
   

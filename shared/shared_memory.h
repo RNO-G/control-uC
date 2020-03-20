@@ -2,11 +2,10 @@
 #define _SHARED_MEMORY_H
 
 #include "shared/config_block.h" 
+#include "linker/map.h" 
 
 /** Shared memory between the application and the bootloader,
  * mostly for crash recovery/ diagonstics */ 
-
-extern int __shared_start; 
 
 typedef struct shared_memory 
 {
@@ -43,7 +42,7 @@ typedef struct shared_memory
 // Check if shared memory has been initialized and if not initialize it. 
 void init_shared_memory(); 
 
-static inline shared_memory_t * get_shared_memory()  { return (shared_memory_t*)  __shared_start; } 
+static inline shared_memory_t * get_shared_memory()  { return (shared_memory_t*)  &__shared_start__; } 
 
 
 #endif 
