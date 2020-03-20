@@ -30,14 +30,16 @@ endif
 # List the subdirectories for creating object files
 SUB_DIRS +=  \
  \
+hpl/adc \
 hpl/tc \
 hpl/systick \
 hpl/dmac \
 hal/src \
+hal/utils/src \
 samd21a/gcc \
 hpl/pm \
 hpl/sysctrl \
-hal/utils/src \
+hpl/eic \
 hpl/sercom \
 examples \
 hpl/gclk \
@@ -54,6 +56,7 @@ hpl/systick/hpl_systick.o \
 hal/src/hal_calendar.o \
 hpl/wdt/hpl_wdt.o \
 samd21a/gcc/gcc/startup_samd21.o \
+hpl/eic/hpl_eic.o \
 hal/utils/src/utils_syscalls.o \
 samd21a/gcc/system_samd21.o \
 hpl/nvmctrl/hpl_nvmctrl.o \
@@ -68,6 +71,7 @@ hpl/core/hpl_core_m0plus_base.o \
 hal/utils/src/utils_assert.o \
 hpl/dmac/hpl_dmac.o \
 hpl/pm/hpl_pm.o \
+hpl/sercom/hpl_sercom.o \
 hpl/gclk/hpl_gclk.o \
 hal/src/hal_flash.o \
 hal/src/hal_init.o \
@@ -77,14 +81,16 @@ hpl/rtc/hpl_rtc.o \
 examples/driver_examples.o \
 driver_init.o \
 hal/src/hal_usart_async.o \
-hpl/sercom/hpl_sercom.o \
+hal/src/hal_adc_sync.o \
+hal/src/hal_ext_irq.o \
 hal/utils/src/utils_ringbuffer.o \
 hal/src/hal_gpio.o \
 hal/utils/src/utils_event.o \
 hal/src/hal_sleep.o \
 atmel_start.o \
 hpl/tc/hpl_tc.o \
-hal/src/hal_atomic.o
+hal/src/hal_atomic.o \
+hpl/adc/hpl_adc.o
 
 OBJS_AS_ARGS +=  \
 "hal/src/hal_io.o" \
@@ -92,6 +98,7 @@ OBJS_AS_ARGS +=  \
 "hal/src/hal_calendar.o" \
 "hpl/wdt/hpl_wdt.o" \
 "samd21a/gcc/gcc/startup_samd21.o" \
+"hpl/eic/hpl_eic.o" \
 "hal/utils/src/utils_syscalls.o" \
 "samd21a/gcc/system_samd21.o" \
 "hpl/nvmctrl/hpl_nvmctrl.o" \
@@ -106,6 +113,7 @@ OBJS_AS_ARGS +=  \
 "hal/utils/src/utils_assert.o" \
 "hpl/dmac/hpl_dmac.o" \
 "hpl/pm/hpl_pm.o" \
+"hpl/sercom/hpl_sercom.o" \
 "hpl/gclk/hpl_gclk.o" \
 "hal/src/hal_flash.o" \
 "hal/src/hal_init.o" \
@@ -115,14 +123,16 @@ OBJS_AS_ARGS +=  \
 "examples/driver_examples.o" \
 "driver_init.o" \
 "hal/src/hal_usart_async.o" \
-"hpl/sercom/hpl_sercom.o" \
+"hal/src/hal_adc_sync.o" \
+"hal/src/hal_ext_irq.o" \
 "hal/utils/src/utils_ringbuffer.o" \
 "hal/src/hal_gpio.o" \
 "hal/utils/src/utils_event.o" \
 "hal/src/hal_sleep.o" \
 "atmel_start.o" \
 "hpl/tc/hpl_tc.o" \
-"hal/src/hal_atomic.o"
+"hal/src/hal_atomic.o" \
+"hpl/adc/hpl_adc.o"
 
 # List the directories containing header files
 DIR_INCLUDES +=  \
@@ -131,8 +141,10 @@ DIR_INCLUDES +=  \
 -I"../examples" \
 -I"../hal/include" \
 -I"../hal/utils/include" \
+-I"../hpl/adc" \
 -I"../hpl/core" \
 -I"../hpl/dmac" \
+-I"../hpl/eic" \
 -I"../hpl/gclk" \
 -I"../hpl/nvmctrl" \
 -I"../hpl/pm" \
@@ -158,6 +170,7 @@ DEPS_AS_ARGS +=  \
 "hal/utils/src/utils_event.d" \
 "hal/src/hal_io.d" \
 "hpl/systick/hpl_systick.d" \
+"hpl/eic/hpl_eic.d" \
 "hal/utils/src/utils_syscalls.d" \
 "hal/src/hal_i2c_m_sync.d" \
 "hpl/nvmctrl/hpl_nvmctrl.d" \
@@ -174,6 +187,7 @@ DEPS_AS_ARGS +=  \
 "hpl/gclk/hpl_gclk.d" \
 "hal/src/hal_init.d" \
 "driver_init.d" \
+"hal/src/hal_adc_sync.d" \
 "hal/src/hal_usart_async.d" \
 "samd21a/gcc/system_samd21.d" \
 "main.d" \
@@ -184,10 +198,12 @@ DEPS_AS_ARGS +=  \
 "hal/utils/src/utils_ringbuffer.d" \
 "hpl/sercom/hpl_sercom.d" \
 "hal/src/hal_gpio.d" \
+"atmel_start.d" \
 "hal/src/hal_atomic.d" \
 "hpl/tc/hpl_tc.d" \
 "hpl/pm/hpl_pm.d" \
-"atmel_start.d"
+"hpl/adc/hpl_adc.d" \
+"hal/src/hal_ext_irq.d"
 
 OUTPUT_FILE_NAME :=AtmelStart
 QUOTE := "

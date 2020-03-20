@@ -52,6 +52,7 @@ static void callback_rx_sbc_uart(const struct usart_async_descriptor * const dev
 }
 
 #ifndef _BOOTLOADER_
+#ifndef _DEVBOARD_
 static void callback_rx_sbc_uart_console(const struct usart_async_descriptor * const dev) 
 {
   callback_rx(dev,SBC_UART_CONSOLE_DESC);
@@ -63,6 +64,7 @@ static void callback_rx_lte_uart(const struct usart_async_descriptor * const dev
 }
 
 #endif
+#endif
 
 
 void io_init()
@@ -71,6 +73,7 @@ void io_init()
   desc[SBC_UART_DESC] = &SBC_UART; 
   usart_async_register_callback(&SBC_UART, USART_ASYNC_RXC_CB, &callback_rx_sbc_uart);
 #ifndef _BOOTLOADER_
+#ifndef _DEVBOARD_
   usart_async_enable(&SBC_UART_CONSOLE); 
   desc[SBC_UART_CONSOLE_DESC] = &SBC_UART_CONSOLE; 
   usart_async_register_callback(&SBC_UART_CONSOLE, USART_ASYNC_RXC_CB, &callback_rx_sbc_uart_console);
@@ -78,6 +81,7 @@ void io_init()
   usart_async_enable(&LTE_UART); 
   desc[LTE_UART_DESC] = &LTE_UART; 
   usart_async_register_callback(&LTE_UART, USART_ASYNC_RXC_CB, &callback_rx_lte_uart);
+#endif
 #endif
 
 }

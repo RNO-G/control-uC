@@ -193,14 +193,14 @@
 // <e> Interrupt 4 Settings
 // <id> eic_arch_enable_irq_setting4
 #ifndef CONF_EIC_ENABLE_IRQ_SETTING4
-#define CONF_EIC_ENABLE_IRQ_SETTING4 1
+#define CONF_EIC_ENABLE_IRQ_SETTING4 0
 #endif
 
 // <q> External Interrupt 4 Event Output Enable
 // <i> Indicates whether the external interrupt 4 event output is enabled or not
 // <id> eic_arch_extinteo4
 #ifndef CONF_EIC_EXTINTEO4
-#define CONF_EIC_EXTINTEO4 1
+#define CONF_EIC_EXTINTEO4 0
 #endif
 
 // <q> External Interrupt 4 Wake-up Enable
@@ -227,7 +227,7 @@
 // <i> This defines input sense trigger
 // <id> eic_arch_sense4
 #ifndef CONF_EIC_SENSE4
-#define CONF_EIC_SENSE4 EIC_NMICTRL_NMISENSE_RISE_Val
+#define CONF_EIC_SENSE4 EIC_NMICTRL_NMISENSE_NONE_Val
 #endif
 // </e>
 

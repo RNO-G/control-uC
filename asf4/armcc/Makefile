@@ -27,15 +27,17 @@ endif
 # List the subdirectories for creating object files
 SUB_DIRS +=  \
  \
-samd21a/armcc/Device/SAMD21A/Source \
+hpl/adc \
 hpl/tc \
 samd21a/armcc/Device/SAMD21A/Source/ARM \
 hpl/systick \
 hpl/dmac \
 hal/src \
-hpl/pm \
-hpl/sysctrl \
 hal/utils/src \
+hpl/pm \
+samd21a/armcc/Device/SAMD21A/Source \
+hpl/sysctrl \
+hpl/eic \
 hpl/sercom \
 examples \
 hpl/gclk \
@@ -50,6 +52,7 @@ hal/src/hal_io.o \
 hpl/systick/hpl_systick.o \
 hal/src/hal_calendar.o \
 hpl/wdt/hpl_wdt.o \
+hpl/eic/hpl_eic.o \
 hpl/nvmctrl/hpl_nvmctrl.o \
 hal/src/hal_spi_m_sync.o \
 hal/src/hal_timer.o \
@@ -63,6 +66,7 @@ hpl/core/hpl_core_m0plus_base.o \
 hal/utils/src/utils_assert.o \
 hpl/dmac/hpl_dmac.o \
 hpl/pm/hpl_pm.o \
+hpl/sercom/hpl_sercom.o \
 hpl/gclk/hpl_gclk.o \
 hal/src/hal_flash.o \
 hal/src/hal_init.o \
@@ -72,21 +76,24 @@ hpl/rtc/hpl_rtc.o \
 examples/driver_examples.o \
 driver_init.o \
 hal/src/hal_usart_async.o \
+hal/src/hal_adc_sync.o \
 samd21a/armcc/Device/SAMD21A/Source/ARM/startup_SAMD21.o \
-hpl/sercom/hpl_sercom.o \
+hal/src/hal_ext_irq.o \
 hal/utils/src/utils_ringbuffer.o \
 hal/src/hal_gpio.o \
 hal/utils/src/utils_event.o \
 hal/src/hal_sleep.o \
 atmel_start.o \
 hpl/tc/hpl_tc.o \
-hal/src/hal_atomic.o
+hal/src/hal_atomic.o \
+hpl/adc/hpl_adc.o
 
 OBJS_AS_ARGS +=  \
 "hal/src/hal_io.o" \
 "hpl/systick/hpl_systick.o" \
 "hal/src/hal_calendar.o" \
 "hpl/wdt/hpl_wdt.o" \
+"hpl/eic/hpl_eic.o" \
 "hpl/nvmctrl/hpl_nvmctrl.o" \
 "hal/src/hal_spi_m_sync.o" \
 "hal/src/hal_timer.o" \
@@ -100,6 +107,7 @@ OBJS_AS_ARGS +=  \
 "hal/utils/src/utils_assert.o" \
 "hpl/dmac/hpl_dmac.o" \
 "hpl/pm/hpl_pm.o" \
+"hpl/sercom/hpl_sercom.o" \
 "hpl/gclk/hpl_gclk.o" \
 "hal/src/hal_flash.o" \
 "hal/src/hal_init.o" \
@@ -109,15 +117,17 @@ OBJS_AS_ARGS +=  \
 "examples/driver_examples.o" \
 "driver_init.o" \
 "hal/src/hal_usart_async.o" \
+"hal/src/hal_adc_sync.o" \
 "samd21a/armcc/Device/SAMD21A/Source/ARM/startup_SAMD21.o" \
-"hpl/sercom/hpl_sercom.o" \
+"hal/src/hal_ext_irq.o" \
 "hal/utils/src/utils_ringbuffer.o" \
 "hal/src/hal_gpio.o" \
 "hal/utils/src/utils_event.o" \
 "hal/src/hal_sleep.o" \
 "atmel_start.o" \
 "hpl/tc/hpl_tc.o" \
-"hal/src/hal_atomic.o"
+"hal/src/hal_atomic.o" \
+"hpl/adc/hpl_adc.o"
 
 # List the dependency files
 DEPS := $(OBJS:%.o=%.d)
@@ -128,6 +138,7 @@ DEPS_AS_ARGS +=  \
 "hal/utils/src/utils_event.d" \
 "hal/src/hal_io.d" \
 "hpl/systick/hpl_systick.d" \
+"hpl/eic/hpl_eic.d" \
 "hal/src/hal_i2c_m_sync.d" \
 "hpl/nvmctrl/hpl_nvmctrl.d" \
 "hal/src/hal_timer.d" \
@@ -144,6 +155,7 @@ DEPS_AS_ARGS +=  \
 "hpl/gclk/hpl_gclk.d" \
 "hal/src/hal_init.d" \
 "driver_init.d" \
+"hal/src/hal_adc_sync.d" \
 "hal/src/hal_usart_async.d" \
 "main.d" \
 "examples/driver_examples.d" \
@@ -154,10 +166,12 @@ DEPS_AS_ARGS +=  \
 "hpl/sercom/hpl_sercom.d" \
 "samd21a/armcc/Device/SAMD21A/Source/ARM/startup_SAMD21.d" \
 "hal/src/hal_gpio.d" \
+"atmel_start.d" \
 "hal/src/hal_atomic.d" \
 "hpl/tc/hpl_tc.d" \
 "hpl/pm/hpl_pm.d" \
-"atmel_start.d"
+"hpl/adc/hpl_adc.d" \
+"hal/src/hal_ext_irq.d"
 
 OUTPUT_FILE_NAME :=AtmelStart
 QUOTE := "
@@ -193,7 +207,7 @@ $(OBJS_AS_ARGS)
 	@echo Building file: $<
 	@echo ARMCC Compiler
 	$(QUOTE)armcc$(QUOTE) --c99 -c -DDEBUG -O1 -g --apcs=interwork --split_sections --cpu Cortex-M0+ -D__SAMD21J18A__ \
--I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
+-I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/adc" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/eic" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
 --depend "$@"  -o "$@" "$<"
 
 	@echo Finished building: $<
@@ -202,7 +216,7 @@ $(OBJS_AS_ARGS)
 	@echo Building file: $<
 	@echo ARMCC Assembler
 	$(QUOTE)armasm$(QUOTE) -g --apcs=interwork --cpu Cortex-M0+ --pd "D__SAMD21J18A__ SETA 1" \
--I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
+-I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/adc" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/eic" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
 --depend "$(@:%.o=%.d)" -o "$@" "$<"
 
 	@echo Finished building: $<
@@ -211,7 +225,7 @@ $(OBJS_AS_ARGS)
 	@echo Building file: $<
 	@echo ARMCC Preprocessing Assembler
 	$(QUOTE)armcc$(QUOTE) --c99 -c -DDEBUG -O1 -g --apcs=interwork --split_sections --cpu Cortex-M0+ -D__SAMD21J18A__ \
--I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
+-I"../" -I"../config" -I"../examples" -I"../hal/include" -I"../hal/utils/include" -I"../hpl/adc" -I"../hpl/core" -I"../hpl/dmac" -I"../hpl/eic" -I"../hpl/gclk" -I"../hpl/nvmctrl" -I"../hpl/pm" -I"../hpl/port" -I"../hpl/rtc" -I"../hpl/sercom" -I"../hpl/sysctrl" -I"../hpl/systick" -I"../hpl/tc" -I"../hpl/wdt" -I"../hri" -I"../" -I"../CMSIS/Core/Include" -I"../samd21a/include"  \
 --depend "$@"  -o "$@" "$<"
 
 	@echo Finished building: $<

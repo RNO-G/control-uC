@@ -56,6 +56,8 @@ static inline int sbc_uart_put(const char *str) { return d_put(SBC_UART_DESC, st
 static inline int sbc_uart_write(int n, uint8_t *data) { return d_write(SBC_UART_DESC,n,data) ; } 
 static inline int sbc_uart_read_async(async_read_buffer_t * b)  { return d_read_async(SBC_UART_DESC,b) ; } 
 
+#ifndef _DEVBOARD_
+#ifndef _BOOTLOADER_
 static inline int sbc_uart_console_write_ready() { return d_write_ready(SBC_UART_CONSOLE_DESC) ; }
 static inline int sbc_uart_console_put(const char * str) { return d_put(SBC_UART_CONSOLE_DESC, str) ; } 
 static inline int sbc_uart_console_write(int n, uint8_t* data) { return d_write(SBC_UART_CONSOLE_DESC, n, data) ; }
@@ -65,7 +67,8 @@ static inline int lte_uart_write_ready() { return d_write_ready(LTE_UART_DESC) ;
 static inline int lte_uart_put(const char * str) { return d_put(LTE_UART_DESC, str) ; } 
 static inline int lte_uart_write(int n, uint8_t* data) { return d_write(LTE_UART_DESC, n, data) ; }
 static inline int lte_uart_read_async(async_read_buffer_t * b) { return d_read_async(LTE_UART_DESC, b) ; }
-
+#endif
+#endif
 
 /*
 static inline int usb_cdc_console_write_ready() { return d_write_ready(USB_CDC_DESC) ; }

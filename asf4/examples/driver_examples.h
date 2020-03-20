@@ -12,6 +12,10 @@
 extern "C" {
 #endif
 
+void ANALOGIN_example(void);
+
+void EXTERNAL_IRQ_0_example(void);
+
 void FLASH_example(void);
 
 void SBC_UART_example(void);
@@ -27,6 +31,8 @@ void delay_example(void);
 void CALENDAR_example(void);
 
 void LORA_TIMER_example(void);
+
+void SHARED_TIMER_example(void);
 
 void INTERNAL_WATCHDOG_example(void);
 

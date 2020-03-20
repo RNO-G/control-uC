@@ -1,12 +1,18 @@
-BUILD_DIR=build
-
-
 CFLAGS= \
 -x c -mthumb -DDEBUG -Os -ffunction-sections -Wall -c -std=gnu99  \
 -D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3
 
 
+ifeq ($(DEVBOARD),1) 
+BUILD_DIR=builddev
+ASF4_PREFIX=devboard
+CFLAGS+=-D_DEVBOARD_
+else
+BUILD_DIR=build
 ASF4_PREFIX=asf4
+endif
+
+
 
 include asf4.mk 
 

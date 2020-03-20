@@ -13,6 +13,8 @@
 #include <hpl_gclk_base.h>
 #include <hpl_pm_base.h>
 
+#include <hpl_adc_base.h>
+
 /*! The buffer size for USART */
 #define SBC_UART_BUFFER_SIZE 16
 
@@ -28,10 +30,13 @@ struct spi_m_sync_descriptor  SPI_FLASH;
 struct usart_async_descriptor SBC_UART_CONSOLE;
 struct spi_m_sync_descriptor  LORA_SPI;
 struct timer_descriptor       LORA_TIMER;
+struct timer_descriptor       SHARED_TIMER;
 
 static uint8_t SBC_UART_buffer[SBC_UART_BUFFER_SIZE];
 static uint8_t LTE_UART_buffer[LTE_UART_BUFFER_SIZE];
 static uint8_t SBC_UART_CONSOLE_buffer[SBC_UART_CONSOLE_BUFFER_SIZE];
+
+struct adc_sync_descriptor ANALOGIN;
 
 struct flash_descriptor FLASH;
 
@@ -40,6 +45,94 @@ struct i2c_m_sync_desc I2C;
 struct calendar_descriptor CALENDAR;
 
 struct wdt_descriptor INTERNAL_WATCHDOG;
+
+void ANALOGIN_PORT_init(void)
+{
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN1, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN1, PINMUX_PA03B_ADC_AIN1);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN12, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN12, PINMUX_PB04B_ADC_AIN12);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN13, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN13, PINMUX_PB05B_ADC_AIN13);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN14, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN14, PINMUX_PB06B_ADC_AIN14);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN15, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN15, PINMUX_PB07B_ADC_AIN15);
+}
+
+void ANALOGIN_CLOCK_init(void)
+{
+	_pm_enable_bus_clock(PM_BUS_APBC, ADC);
+	_gclk_enable_channel(ADC_GCLK_ID, CONF_GCLK_ADC_SRC);
+}
+
+void ANALOGIN_init(void)
+{
+	ANALOGIN_CLOCK_init();
+	ANALOGIN_PORT_init();
+	adc_sync_init(&ANALOGIN, ADC, (void *)NULL);
+}
+
+void EXTERNAL_IRQ_0_init(void)
+{
+	_gclk_enable_channel(EIC_GCLK_ID, CONF_GCLK_EIC_SRC);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(GPIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(GPIO1, PINMUX_PA04A_EIC_EXTINT4);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO1, PINMUX_PA09A_EIC_EXTINT9);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO, PINMUX_PA10A_EIC_EXTINT10);
+
+	ext_irq_init();
+}
 
 void FLASH_CLOCK_init(void)
 {
@@ -344,6 +437,19 @@ static void LORA_TIMER_init(void)
 	timer_init(&LORA_TIMER, TC3, _tc_get_timer());
 }
 
+/**
+ * \brief Timer initialization function
+ *
+ * Enables Timer peripheral, clocks and initializes Timer driver
+ */
+static void SHARED_TIMER_init(void)
+{
+	_pm_enable_bus_clock(PM_BUS_APBC, TC4);
+	_gclk_enable_channel(TC4_GCLK_ID, CONF_GCLK_TC4_SRC);
+
+	timer_init(&SHARED_TIMER, TC4, _tc_get_timer());
+}
+
 void INTERNAL_WATCHDOG_CLOCK_init(void)
 {
 	_pm_enable_bus_clock(PM_BUS_APBA, WDT);
@@ -359,28 +465,6 @@ void INTERNAL_WATCHDOG_init(void)
 void system_init(void)
 {
 	init_mcu();
-
-	// GPIO on PA03
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN1, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN1, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PA04
-
-	// Set pin direction to input
-	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(GPIO1,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(GPIO1, GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PA05
 
@@ -399,6 +483,14 @@ void system_init(void)
 
 	// GPIO on PA08
 
+	gpio_set_pin_direction(LORA_DIO2,
+	                       // <y> Pin direction
+	                       // <id> pad_direction
+	                       // <GPIO_DIRECTION_OFF"> Off
+	                       // <GPIO_DIRECTION_IN"> In
+	                       // <GPIO_DIRECTION_OUT"> Out
+	                       GPIO_DIRECTION_OUT);
+
 	gpio_set_pin_level(LORA_DIO2,
 	                   // <y> Initial level
 	                   // <id> pad_initial_level
@@ -406,38 +498,29 @@ void system_init(void)
 	                   // <true"> High
 	                   false);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(LORA_DIO2,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
-	gpio_set_pin_function(LORA_DIO2, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PA09
-
-	gpio_set_pin_level(LORA_DIO1,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
-
-	// Set pin direction to output
-	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_OUT);
-
-	gpio_set_pin_function(LORA_DIO1, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PA10
-
-	gpio_set_pin_level(LORA_DIO,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
-
-	// Set pin direction to output
-	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_OUT);
-
-	gpio_set_pin_function(LORA_DIO, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(LORA_DIO2,
+	                      // <y> Pin function
+	                      // <id> pad_function
+	                      // <i> Auto : use driver pinmux if signal is imported by driver, else turn off function
+	                      // <GPIO_PIN_FUNCTION_OFF"> Auto
+	                      // <GPIO_PIN_FUNCTION_OFF"> Off
+	                      // <GPIO_PIN_FUNCTION_A"> A
+	                      // <GPIO_PIN_FUNCTION_B"> B
+	                      // <GPIO_PIN_FUNCTION_C"> C
+	                      // <GPIO_PIN_FUNCTION_D"> D
+	                      // <GPIO_PIN_FUNCTION_E"> E
+	                      // <GPIO_PIN_FUNCTION_F"> F
+	                      // <GPIO_PIN_FUNCTION_G"> G
+	                      // <GPIO_PIN_FUNCTION_H"> H
+	                      GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PA11
 
@@ -460,7 +543,7 @@ void system_init(void)
 	                   // <id> pad_initial_level
 	                   // <false"> Low
 	                   // <true"> High
-	                   false);
+	                   true);
 
 	// Set pin direction to output
 	gpio_set_pin_direction(SPI_FLASH_CS, GPIO_DIRECTION_OUT);
@@ -474,7 +557,7 @@ void system_init(void)
 	                   // <id> pad_initial_level
 	                   // <false"> Low
 	                   // <true"> High
-	                   false);
+	                   true);
 
 	// Set pin direction to output
 	gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_OUT);
@@ -498,15 +581,16 @@ void system_init(void)
 
 	// GPIO on PA27
 
-	gpio_set_pin_level(LTE_REG_EN,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
+	// Set pin direction to input
+	gpio_set_pin_direction(LTE_REG_EN, GPIO_DIRECTION_IN);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(LTE_REG_EN, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(LTE_REG_EN,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
 	gpio_set_pin_function(LTE_REG_EN, GPIO_PIN_FUNCTION_OFF);
 
@@ -554,45 +638,18 @@ void system_init(void)
 
 	// GPIO on PB03
 
-	gpio_set_pin_level(SBC_SOFT_RESET,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
+	// Set pin direction to input
+	gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_IN);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(SBC_SOFT_RESET,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
 	gpio_set_pin_function(SBC_SOFT_RESET, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PB04
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN12, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN12, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PB05
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN13, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN13, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PB06
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN14, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN14, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PB07
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN15, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN15, GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PB08
 
@@ -626,29 +683,31 @@ void system_init(void)
 
 	// GPIO on PB10
 
-	gpio_set_pin_level(SBC_BOOT_CONTROL,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
+	// Set pin direction to input
+	gpio_set_pin_direction(SBC_BOOT_CONTROL, GPIO_DIRECTION_IN);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(SBC_BOOT_CONTROL, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(SBC_BOOT_CONTROL,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
 	gpio_set_pin_function(SBC_BOOT_CONTROL, GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PB11
 
-	gpio_set_pin_level(LTE_UART_ENABLE,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
+	// Set pin direction to input
+	gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_IN);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(LTE_UART_ENABLE,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
 	gpio_set_pin_function(LTE_UART_ENABLE, GPIO_PIN_FUNCTION_OFF);
 
@@ -659,7 +718,7 @@ void system_init(void)
 	                   // <id> pad_initial_level
 	                   // <false"> Low
 	                   // <true"> High
-	                   false);
+	                   true);
 
 	// Set pin direction to output
 	gpio_set_pin_direction(LORA_SPI_CS, GPIO_DIRECTION_OUT);
@@ -697,17 +756,21 @@ void system_init(void)
 
 	// GPIO on PB23
 
-	gpio_set_pin_level(LTE_ON_OFF,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
+	// Set pin direction to input
+	gpio_set_pin_direction(LTE_ON_OFF, GPIO_DIRECTION_IN);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(LTE_ON_OFF, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(LTE_ON_OFF,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
 	gpio_set_pin_function(LTE_ON_OFF, GPIO_PIN_FUNCTION_OFF);
+
+	ANALOGIN_init();
+	EXTERNAL_IRQ_0_init();
 
 	FLASH_init();
 
@@ -726,6 +789,7 @@ void system_init(void)
 	CALENDAR_init();
 
 	LORA_TIMER_init();
+	SHARED_TIMER_init();
 
 	INTERNAL_WATCHDOG_init();
 }

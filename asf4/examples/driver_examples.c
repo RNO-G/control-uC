@@ -10,6 +10,43 @@
 #include "driver_init.h"
 #include "utils.h"
 
+/**
+ * Example of using ANALOGIN to generate waveform.
+ */
+void ANALOGIN_example(void)
+{
+	uint8_t buffer[2];
+
+	adc_sync_enable_channel(&ANALOGIN, 0);
+
+	while (1) {
+		adc_sync_read_channel(&ANALOGIN, 0, buffer, 2);
+	}
+}
+
+static void button_on_PA04_pressed(void)
+{
+}
+
+static void button_on_PA09_pressed(void)
+{
+}
+
+static void button_on_PA10_pressed(void)
+{
+}
+
+/**
+ * Example of using EXTERNAL_IRQ_0
+ */
+void EXTERNAL_IRQ_0_example(void)
+{
+
+	ext_irq_register(PIN_PA04, button_on_PA04_pressed);
+	ext_irq_register(PIN_PA09, button_on_PA09_pressed);
+	ext_irq_register(PIN_PA10, button_on_PA10_pressed);
+}
+
 static uint8_t src_data[128];
 static uint8_t chk_data[128];
 /**
@@ -224,6 +261,33 @@ void LORA_TIMER_example(void)
 	timer_add_task(&LORA_TIMER, &LORA_TIMER_task1);
 	timer_add_task(&LORA_TIMER, &LORA_TIMER_task2);
 	timer_start(&LORA_TIMER);
+}
+
+static struct timer_task SHARED_TIMER_task1, SHARED_TIMER_task2;
+
+/**
+ * Example of using SHARED_TIMER.
+ */
+static void SHARED_TIMER_task1_cb(const struct timer_task *const timer_task)
+{
+}
+
+static void SHARED_TIMER_task2_cb(const struct timer_task *const timer_task)
+{
+}
+
+void SHARED_TIMER_example(void)
+{
+	SHARED_TIMER_task1.interval = 100;
+	SHARED_TIMER_task1.cb       = SHARED_TIMER_task1_cb;
+	SHARED_TIMER_task1.mode     = TIMER_TASK_REPEAT;
+	SHARED_TIMER_task2.interval = 200;
+	SHARED_TIMER_task2.cb       = SHARED_TIMER_task2_cb;
+	SHARED_TIMER_task2.mode     = TIMER_TASK_REPEAT;
+
+	timer_add_task(&SHARED_TIMER, &SHARED_TIMER_task1);
+	timer_add_task(&SHARED_TIMER, &SHARED_TIMER_task2);
+	timer_start(&SHARED_TIMER);
 }
 
 /**
