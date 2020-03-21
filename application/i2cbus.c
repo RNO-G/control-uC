@@ -1,5 +1,5 @@
 #include "application/i2cbus.h" 
-#include "application/driver_init.h" 
+#include "shared/driver_init.h" 
 #include "hal_i2c_m_async.h" 
 
 #include "hal_atomic.h" 

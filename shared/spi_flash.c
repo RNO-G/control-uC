@@ -1,9 +1,6 @@
 #include "shared/spi_flash.h" 
 #include "hal_spi_m_sync.h" 
-#ifdef _BOOTLOADER_
-#include "application/driver_init.h" 
-#else
-#include "bootloader/bootloader_driver_init.h" 
+#include "shared/driver_init.h" 
 
 #endif
 //#include "linker/map.h" 

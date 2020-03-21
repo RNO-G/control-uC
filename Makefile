@@ -32,14 +32,17 @@ LD_FLAGS_POST=-Llinker/ --specs=nano.specs -mcpu=cortex-m0plus -Wl,--gc-sections
 
 INCLUDES=$(ASF4_INCLUDES) -I./ 
 
-SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.o
+SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.o driver_init.o 
  
 #these need to be compiled separately so that we can use the _BOOTLOADER_ flag 
 APP_SHARED_OBJS=$(addprefix $(BUILD_DIR)/shared/, $(SHARED_OBJS))
 BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 
-APP_OBJS=$(BUILD_DIR)/application/main.o $(BUILD_DIR)/application/debug.o $(BUILD_DIR)/application/lte.o $(BUILD_DIR)/application/i2cbus.o $(BUILD_DIR)/application/driver_init.o $(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
-BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o $(BUILD_DIR)/bootloader/bootloader_driver_init.o $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
+APP_OBJS=$(BUILD_DIR)/application/main.o $(BUILD_DIR)/application/debug.o $(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
+ifneq ($(DEVBOARD),1)
+APP_OBJS+=$(BUILD_DIR)/application/lte.o $(BUILD_DIR)/application/i2cbus.o
+endif
+BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
 
 # List the dependency files

@@ -1,4 +1,4 @@
-#include "application/driver_init.h" 
+#include "shared/driver_init.h" 
 #include "lorawan/lorawan.h" 
 #include "shared/io.h" 
 #include "shared/printf.h" 
@@ -27,7 +27,14 @@ static char lte_buf[] = "\r\nAT+GMR\r\n";
 
 
 static volatile int n_interrupts; 
+static volatile int n_nmi; 
 
+void NMI_Handler(void) 
+{
+  n_nmi++; 
+  EIC->NMIFLAG.reg = EIC_NMIFLAG_NMI; 
+
+}
 
 static void interrupt()
 {
@@ -81,11 +88,12 @@ int main(void)
 
 
   
+
+
+  printf("IN APPLICATION\r\n"); 
+
   lorawan_init(); 
-
-
-  printf("IN APPLICATION"); 
-
+//
   int last_nint = 0; 
 
 
@@ -119,6 +127,8 @@ int main(void)
       printf("Turning off LTE\n"); 
     }
 #endif
+
+    delay_ms(10); 
 
 	}
 }

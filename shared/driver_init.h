@@ -19,15 +19,9 @@
 #include <hal_init.h>
 #include <hal_io.h>
 #include <hal_sleep.h>
-
 #include <hal_flash.h>
-
-#include <hal_usart_async.h>
 #include <hal_usart_async.h>
 #include <hal_spi_m_sync.h>
-#include <hal_usart_async.h>
-#include <hal_spi_m_sync.h>
-
 
 #ifndef _DEVBOARD_
 #include <hal_i2c_m_async.h>
@@ -35,11 +29,12 @@
 #include <hal_adc_sync.h>
 #endif
 
+#ifndef _BOOTLOADER_
 #include <hal_delay.h>
-
 #include <hal_calendar.h>
 #include <hal_timer.h>
 #include <hpl_tc_base.h>
+#endif 
 
 //#include "hal_usb_device.h"
 
@@ -48,6 +43,8 @@
 extern struct flash_descriptor       FLASH;
 extern struct usart_async_descriptor SBC_UART;
 extern struct spi_m_sync_descriptor  SPI_FLASH;
+
+#ifndef _BOOTLOADER_
 extern struct spi_m_sync_descriptor  LORA_SPI;
 extern struct calendar_descriptor CALENDAR;
 extern struct timer_descriptor    LORA_TIMER;
@@ -65,57 +62,15 @@ extern struct i2c_m_sync_desc I2C;
 extern struct i2c_m_async_desc I2C;
 #endif
 #endif 
-
-
-
-void FLASH_init(void);
-void FLASH_CLOCK_init(void);
-
-void SBC_UART_PORT_init(void);
-void SBC_UART_CLOCK_init(void);
-void SBC_UART_init(void);
-
-void SPI_FLASH_PORT_init(void);
-void SPI_FLASH_CLOCK_init(void);
-void SPI_FLASH_init(void);
-
-
-#ifndef _DEVBOARD_
-void LTE_UART_PORT_init(void);
-void LTE_UART_CLOCK_init(void);
-void LTE_UART_init(void);
-
-void SBC_UART_CONSOLE_PORT_init(void);
-void SBC_UART_CONSOLE_CLOCK_init(void);
-void SBC_UART_CONSOLE_init(void);
-
-void I2C_PORT_init(void);
-void I2C_CLOCK_init(void);
-void I2C_init(void);
-
-void ADC_PORT_init(void);
-void ADC_CLOCK_init(void);
-void ADC_init(void);
-
-
 #endif
 
-void LORA_SPI_PORT_init(void);
-void LORA_SPI_CLOCK_init(void);
-void LORA_SPI_init(void);
-
-void delay_driver_init(void);
-
-void CALENDAR_CLOCK_init(void);
-void CALENDAR_init(void);
-
-void INTERNAL_WATCHDOG_CLOCK_init(void);
-void INTERNAL_WATCHDOG_init(void);
 
 /**
- * \brief Perform system initialization, initialize pins and clocks for
- * peripherals
+ * Initialize stuff
  */
 void system_init(void);
+#ifdef _BOOTLOADER_
+void system_deinit(void);
+#endif
 
 #endif // DRIVER_INIT_INCLUDED

@@ -6,13 +6,17 @@
  * to avoid losing it when reconfiguring.
  */
 
-#include "application/driver_init.h"
+#include "shared/driver_init.h"
 #include <peripheral_clk_config.h>
 #include <utils.h>
+#ifndef _BOOTLOADER_ 
 #include <hal_ext_irq.h>
+#endif
 #include <hal_init.h>
 #include <hpl_gclk_base.h>
 #include <hpl_pm_base.h>
+
+#ifndef _BOOTLOADER_
 #ifndef _DEVBOARD_
 #include <hpl_adc_base.h>
 
@@ -23,12 +27,15 @@
 #define SBC_UART_CONSOLE_BUFFER_SIZE 16
 
 #endif 
+#endif
 
 /*! The buffer size for USART */
 #define SBC_UART_BUFFER_SIZE 16
 
 struct usart_async_descriptor SBC_UART;
 struct spi_m_sync_descriptor  SPI_FLASH;
+
+#ifndef _BOOTLOADER_
 struct spi_m_sync_descriptor  LORA_SPI;
 struct timer_descriptor       LORA_TIMER;
 
@@ -41,6 +48,7 @@ struct timer_descriptor       SHARED_TIMER;
 static uint8_t LTE_UART_buffer[LTE_UART_BUFFER_SIZE];
 static uint8_t SBC_UART_CONSOLE_buffer[SBC_UART_CONSOLE_BUFFER_SIZE];
 #endif
+#endif 
 static uint8_t SBC_UART_buffer[SBC_UART_BUFFER_SIZE];
 
 
@@ -54,38 +62,81 @@ struct i2c_m_async_desc I2C;
 #endif
 #endif
 
+#ifndef _BOOTLOADER_
 struct calendar_descriptor CALENDAR;
-
 struct wdt_descriptor INTERNAL_WATCHDOG;
+#endif 
 
-void FLASH_CLOCK_init(void)
+
+#ifdef _DEVBOARD_
+//from devboard/driver_init
+
+#ifndef _BOOTLOADER_
+static void LORA_SPI_PORT_init(void)
 {
 
-	_pm_enable_bus_clock(PM_BUS_APBB, NVMCTRL);
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_SPI_MISO, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_SPI_MISO,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_SPI_MISO, PINMUX_PA04D_SERCOM0_PAD0);
+
+	gpio_set_pin_level(LORA_SPI_MOSI,
+	                   // <y> Initial level
+	                   // <id> pad_initial_level
+	                   // <false"> Low
+	                   // <true"> High
+	                   false);
+
+	// Set pin direction to output
+	gpio_set_pin_direction(LORA_SPI_MOSI, GPIO_DIRECTION_OUT);
+
+	gpio_set_pin_function(LORA_SPI_MOSI, PINMUX_PA06D_SERCOM0_PAD2);
+
+	gpio_set_pin_level(LORA_SPI_SCLK,
+	                   // <y> Initial level
+	                   // <id> pad_initial_level
+	                   // <false"> Low
+	                   // <true"> High
+	                   false);
+
+	// Set pin direction to output
+	gpio_set_pin_direction(LORA_SPI_SCLK, GPIO_DIRECTION_OUT);
+
+	gpio_set_pin_function(LORA_SPI_SCLK, PINMUX_PA07D_SERCOM0_PAD3);
 }
 
-void FLASH_init(void)
+static void LORA_SPI_CLOCK_init(void)
 {
-	FLASH_CLOCK_init();
-	flash_init(&FLASH, NVMCTRL);
+	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM0);
+	_gclk_enable_channel(SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC);
 }
+
+void LORA_SPI_init(void)
+{
+	LORA_SPI_CLOCK_init();
+	spi_m_sync_init(&LORA_SPI, SERCOM0);
+	LORA_SPI_PORT_init();
+}
+#endif
 
 /**
  * \brief USART Clock initialization function
  *
  * Enables register interface and peripheral clock
  */
-void SBC_UART_CLOCK_init()
+static void SBC_UART_CLOCK_init()
 {
 
-#ifndef _DEVBOARD_
-	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM0);
-	_gclk_enable_channel(SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC);
-#else
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM3);
 	_gclk_enable_channel(SERCOM3_GCLK_ID_CORE, CONF_GCLK_SERCOM3_CORE_SRC);
-
-#endif
 }
 
 /**
@@ -93,19 +144,12 @@ void SBC_UART_CLOCK_init()
  *
  * Set each required pin to USART functionality
  */
-void SBC_UART_PORT_init()
+static void SBC_UART_PORT_init()
 {
-
-#ifndef _DEVBOARD_
-	gpio_set_pin_function(SBC_UART_TX, PINMUX_PA06D_SERCOM0_PAD2);
-
-	gpio_set_pin_function(SBC_UART_RX, PINMUX_PA07D_SERCOM0_PAD3);
-#else
 
 	gpio_set_pin_function(SBC_UART_TX, PINMUX_PA22C_SERCOM3_PAD0);
 
 	gpio_set_pin_function(SBC_UART_RX, PINMUX_PA23C_SERCOM3_PAD1);
-#endif
 }
 
 /**
@@ -113,25 +157,255 @@ void SBC_UART_PORT_init()
  *
  * Enables USART peripheral, clocks and initializes USART driver
  */
-void SBC_UART_init(void)
+static void SBC_UART_init(void)
 {
 	SBC_UART_CLOCK_init();
-#ifndef _DEVBOARD_
-	usart_async_init(&SBC_UART, SERCOM0, SBC_UART_buffer, SBC_UART_BUFFER_SIZE, (void *)NULL);
-#else
 	usart_async_init(&SBC_UART, SERCOM3, SBC_UART_buffer, SBC_UART_BUFFER_SIZE, (void *)NULL);
-
-#endif
 	SBC_UART_PORT_init();
 }
 
-#ifndef _DEVBOARD_
+static void SPI_FLASH_PORT_init(void)
+{
+
+	// Set pin direction to input
+	gpio_set_pin_direction(SPI_FLASH_MISO, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(SPI_FLASH_MISO,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(SPI_FLASH_MISO, PINMUX_PB16C_SERCOM5_PAD0);
+
+	gpio_set_pin_level(SPI_FLASH_MOSI,
+	                   // <y> Initial level
+	                   // <id> pad_initial_level
+	                   // <false"> Low
+	                   // <true"> High
+	                   false);
+
+	// Set pin direction to output
+	gpio_set_pin_direction(SPI_FLASH_MOSI, GPIO_DIRECTION_OUT);
+
+	gpio_set_pin_function(SPI_FLASH_MOSI, PINMUX_PB22D_SERCOM5_PAD2);
+
+	gpio_set_pin_level(SPI_FLASH_SCLK,
+	                   // <y> Initial level
+	                   // <id> pad_initial_level
+	                   // <false"> Low
+	                   // <true"> High
+	                   false);
+
+	// Set pin direction to output
+	gpio_set_pin_direction(SPI_FLASH_SCLK, GPIO_DIRECTION_OUT);
+
+	gpio_set_pin_function(SPI_FLASH_SCLK, PINMUX_PB23D_SERCOM5_PAD3);
+}
+
+static void SPI_FLASH_CLOCK_init(void)
+{
+	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM5);
+	_gclk_enable_channel(SERCOM5_GCLK_ID_CORE, CONF_GCLK_SERCOM5_CORE_SRC);
+}
+
+static void SPI_FLASH_init(void)
+{
+	SPI_FLASH_CLOCK_init();
+	spi_m_sync_init(&SPI_FLASH, SERCOM5);
+	SPI_FLASH_PORT_init();
+}
+
+#ifndef _BOOTLOADER_
+static void EXT_IRQ_INIT(void)
+{
+	_gclk_enable_channel(EIC_GCLK_ID, CONF_GCLK_EIC_SRC);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO, PINMUX_PB06A_EIC_EXTINT6);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO1, PINMUX_PB07A_EIC_EXTINT7);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO2,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO2, PINMUX_PA09A_EIC_EXTINT9);
+
+	ext_irq_init();
+}
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+#else
+// from asf4/driver_init
+//
+//
+#ifndef _BOOTLOADER_
+static void ANALOGIN_PORT_init(void)
+{
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN1, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN1, PINMUX_PA03B_ADC_AIN1);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN12, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN12, PINMUX_PB04B_ADC_AIN12);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN13, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN13, PINMUX_PB05B_ADC_AIN13);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN14, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN14, PINMUX_PB06B_ADC_AIN14);
+
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(AIN15, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(AIN15, PINMUX_PB07B_ADC_AIN15);
+}
+
+static void ANALOGIN_CLOCK_init(void)
+{
+	_pm_enable_bus_clock(PM_BUS_APBC, ADC);
+	_gclk_enable_channel(ADC_GCLK_ID, CONF_GCLK_ADC_SRC);
+}
+
+static void ANALOGIN_init(void)
+{
+	ANALOGIN_CLOCK_init();
+	ANALOGIN_PORT_init();
+	adc_sync_init(&ANALOGIN, ADC, (void *)NULL);
+}
+
+static void EXT_IRQ_INIT(void)
+{
+	_gclk_enable_channel(EIC_GCLK_ID, CONF_GCLK_EIC_SRC);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(GPIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(GPIO1, PINMUX_PA04A_EIC_EXTINT4);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO1, PINMUX_PA09A_EIC_EXTINT9);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO, PINMUX_PA10A_EIC_EXTINT10);
+
+	ext_irq_init();
+}
+#endif
+
+
 /**
  * \brief USART Clock initialization function
  *
  * Enables register interface and peripheral clock
  */
-void LTE_UART_CLOCK_init()
+static void SBC_UART_CLOCK_init()
+{
+
+	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM0);
+	_gclk_enable_channel(SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC);
+}
+
+/**
+ * \brief USART pinmux initialization function
+ *
+ * Set each required pin to USART functionality
+ */
+static void SBC_UART_PORT_init()
+{
+
+	gpio_set_pin_function(SBC_UART_TX, PINMUX_PA06D_SERCOM0_PAD2);
+
+	gpio_set_pin_function(SBC_UART_RX, PINMUX_PA07D_SERCOM0_PAD3);
+}
+
+/**
+ * \brief USART initialization function
+ *
+ * Enables USART peripheral, clocks and initializes USART driver
+ */
+static void SBC_UART_init(void)
+{
+	SBC_UART_CLOCK_init();
+	usart_async_init(&SBC_UART, SERCOM0, SBC_UART_buffer, SBC_UART_BUFFER_SIZE, (void *)NULL);
+	SBC_UART_PORT_init();
+}
+
+#ifndef _BOOTLOADER_
+/**
+ * \brief USART Clock initialization function
+ *
+ * Enables register interface and peripheral clock
+ */
+static void LTE_UART_CLOCK_init()
 {
 
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM1);
@@ -143,7 +417,7 @@ void LTE_UART_CLOCK_init()
  *
  * Set each required pin to USART functionality
  */
-void LTE_UART_PORT_init()
+static void LTE_UART_PORT_init()
 {
 
 	gpio_set_pin_function(LTE_UART_TX, PINMUX_PA16C_SERCOM1_PAD0);
@@ -160,7 +434,7 @@ void LTE_UART_PORT_init()
  *
  * Enables USART peripheral, clocks and initializes USART driver
  */
-void LTE_UART_init(void)
+static void LTE_UART_init(void)
 {
 	LTE_UART_CLOCK_init();
 	usart_async_init(&LTE_UART, SERCOM1, LTE_UART_buffer, LTE_UART_BUFFER_SIZE, (void *)NULL);
@@ -168,7 +442,7 @@ void LTE_UART_init(void)
 }
 #endif
 
-void SPI_FLASH_PORT_init(void)
+static void SPI_FLASH_PORT_init(void)
 {
 
 	// Set pin direction to input
@@ -182,11 +456,7 @@ void SPI_FLASH_PORT_init(void)
 	                       // <GPIO_PULL_DOWN"> Pull-down
 	                       GPIO_PULL_OFF);
 
-#ifndef _DEVBOARD_
 	gpio_set_pin_function(SPI_FLASH_MISO, PINMUX_PA12C_SERCOM2_PAD0);
-#else
-	gpio_set_pin_function(SPI_FLASH_MISO, PINMUX_PB16C_SERCOM5_PAD0);
-#endif
 
 	gpio_set_pin_level(SPI_FLASH_MOSI,
 	                   // <y> Initial level
@@ -198,11 +468,7 @@ void SPI_FLASH_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(SPI_FLASH_MOSI, GPIO_DIRECTION_OUT);
 
-#ifndef _DEVBOARD_
 	gpio_set_pin_function(SPI_FLASH_MOSI, PINMUX_PA14C_SERCOM2_PAD2);
-#else
-	gpio_set_pin_function(SPI_FLASH_MOSI, PINMUX_PB22D_SERCOM5_PAD2);
-#endif
 
 	gpio_set_pin_level(SPI_FLASH_SCLK,
 	                   // <y> Initial level
@@ -214,44 +480,29 @@ void SPI_FLASH_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(SPI_FLASH_SCLK, GPIO_DIRECTION_OUT);
 
-#ifndef _DEVBOARD_
 	gpio_set_pin_function(SPI_FLASH_SCLK, PINMUX_PA15C_SERCOM2_PAD3);
-#else
-	gpio_set_pin_function(SPI_FLASH_SCLK, PINMUX_PB23D_SERCOM5_PAD3);
-#endif
 }
 
-void SPI_FLASH_CLOCK_init(void)
+static void SPI_FLASH_CLOCK_init(void)
 {
-#ifndef _DEVBOARD_
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM2);
 	_gclk_enable_channel(SERCOM2_GCLK_ID_CORE, CONF_GCLK_SERCOM2_CORE_SRC);
-#else
-
-	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM5);
-	_gclk_enable_channel(SERCOM5_GCLK_ID_CORE, CONF_GCLK_SERCOM5_CORE_SRC);
-#endif
 }
 
-void SPI_FLASH_init(void)
+static void SPI_FLASH_init(void)
 {
 	SPI_FLASH_CLOCK_init();
-#ifndef _DEVBOARD_
 	spi_m_sync_init(&SPI_FLASH, SERCOM2);
-#else
-	spi_m_sync_init(&SPI_FLASH, SERCOM5);
-#endif
 	SPI_FLASH_PORT_init();
 }
 
-
-#ifndef _DEVBOARD_
+#ifndef _BOOTLOADER_
 /**
  * \brief USART Clock initialization function
  *
  * Enables register interface and peripheral clock
  */
-void SBC_UART_CONSOLE_CLOCK_init()
+static void SBC_UART_CONSOLE_CLOCK_init()
 {
 
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM3);
@@ -263,7 +514,7 @@ void SBC_UART_CONSOLE_CLOCK_init()
  *
  * Set each required pin to USART functionality
  */
-void SBC_UART_CONSOLE_PORT_init()
+static void SBC_UART_CONSOLE_PORT_init()
 {
 
 	gpio_set_pin_function(SBC_UART_CONSOLE_TX, PINMUX_PA20D_SERCOM3_PAD2);
@@ -276,15 +527,14 @@ void SBC_UART_CONSOLE_PORT_init()
  *
  * Enables USART peripheral, clocks and initializes USART driver
  */
-void SBC_UART_CONSOLE_init(void)
+static void SBC_UART_CONSOLE_init(void)
 {
 	SBC_UART_CONSOLE_CLOCK_init();
 	usart_async_init(&SBC_UART_CONSOLE, SERCOM3, SBC_UART_CONSOLE_buffer, SBC_UART_CONSOLE_BUFFER_SIZE, (void *)NULL);
 	SBC_UART_CONSOLE_PORT_init();
 }
-#endif
 
-void LORA_SPI_PORT_init(void)
+static void LORA_SPI_PORT_init(void)
 {
 
 	// Set pin direction to input
@@ -298,11 +548,7 @@ void LORA_SPI_PORT_init(void)
 	                       // <GPIO_PULL_DOWN"> Pull-down
 	                       GPIO_PULL_OFF);
 
-#ifndef _DEVBOARD_
 	gpio_set_pin_function(LORA_SPI_MISO, PINMUX_PB12C_SERCOM4_PAD0);
-#else
-	gpio_set_pin_function(LORA_SPI_MISO, PINMUX_PA04D_SERCOM0_PAD0);
-#endif
 
 	gpio_set_pin_level(LORA_SPI_MOSI,
 	                   // <y> Initial level
@@ -314,11 +560,7 @@ void LORA_SPI_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(LORA_SPI_MOSI, GPIO_DIRECTION_OUT);
 
-#ifndef _DEVBOARD_
 	gpio_set_pin_function(LORA_SPI_MOSI, PINMUX_PB14C_SERCOM4_PAD2);
-#else
-	gpio_set_pin_function(LORA_SPI_MOSI, PINMUX_PA06D_SERCOM0_PAD2);
-#endif
 
 	gpio_set_pin_level(LORA_SPI_SCLK,
 	                   // <y> Initial level
@@ -330,37 +572,23 @@ void LORA_SPI_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(LORA_SPI_SCLK, GPIO_DIRECTION_OUT);
 
-#ifndef _DEVBOARD_
 	gpio_set_pin_function(LORA_SPI_SCLK, PINMUX_PB15C_SERCOM4_PAD3);
-#else
-	gpio_set_pin_function(LORA_SPI_SCLK, PINMUX_PA07D_SERCOM0_PAD3);
-#endif
 }
 
-void LORA_SPI_CLOCK_init(void)
+static void LORA_SPI_CLOCK_init(void)
 {
-#ifndef _DEVBOARD_
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM4);
 	_gclk_enable_channel(SERCOM4_GCLK_ID_CORE, CONF_GCLK_SERCOM4_CORE_SRC);
-#else
-	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM0);
-	_gclk_enable_channel(SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC);
-#endif
 }
 
-void LORA_SPI_init(void)
+static void LORA_SPI_init(void)
 {
 	LORA_SPI_CLOCK_init();
-#ifndef _DEVBOARD_
 	spi_m_sync_init(&LORA_SPI, SERCOM4);
-#else
-	spi_m_sync_init(&LORA_SPI, SERCOM0);
-#endif
 	LORA_SPI_PORT_init();
 }
 
-#ifndef _DEVBOARD_
-void I2C_PORT_init(void)
+static void I2C_PORT_init(void)
 {
 
 	gpio_set_pin_pull_mode(I2C_SDA,
@@ -384,38 +612,62 @@ void I2C_PORT_init(void)
 	gpio_set_pin_function(I2C_SCL, PINMUX_PB31D_SERCOM5_PAD1);
 }
 
-void I2C_CLOCK_init(void)
+static void I2C_CLOCK_init(void)
 {
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM5);
 	_gclk_enable_channel(SERCOM5_GCLK_ID_CORE, CONF_GCLK_SERCOM5_CORE_SRC);
 	_gclk_enable_channel(SERCOM5_GCLK_ID_SLOW, CONF_GCLK_SERCOM5_SLOW_SRC);
 }
 
-void I2C_init(void)
+static void I2C_init(void)
 {
 	I2C_CLOCK_init();
-#if USE_SYNCHRONOUS_I2C
 	i2c_m_sync_init(&I2C, SERCOM5);
-#else
-	i2c_m_async_init(&I2C, SERCOM5);
-#endif
 	I2C_PORT_init();
 }
-#endif
 
-void delay_driver_init(void)
+static void SHARED_TIMER_init(void)
+{
+	_pm_enable_bus_clock(PM_BUS_APBC, TC4);
+	_gclk_enable_channel(TC4_GCLK_ID, CONF_GCLK_TC4_SRC);
+
+	timer_init(&SHARED_TIMER, TC4, _tc_get_timer());
+}
+
+
+#endif  //not bootloader
+#endif //not devboard
+
+
+///// common to all 
+static void FLASH_CLOCK_init(void)
+{
+
+	_pm_enable_bus_clock(PM_BUS_APBB, NVMCTRL);
+}
+
+static void FLASH_init(void)
+{
+	FLASH_CLOCK_init();
+	flash_init(&FLASH, NVMCTRL);
+}
+
+
+
+#ifndef _BOOTLOADER_
+static void delay_driver_init(void)
 {
 	delay_init(SysTick);
 }
 
 
-void CALENDAR_CLOCK_init(void)
+static void CALENDAR_CLOCK_init(void)
 {
 	_pm_enable_bus_clock(PM_BUS_APBA, RTC);
 	_gclk_enable_channel(RTC_GCLK_ID, CONF_GCLK_RTC_SRC);
 }
 
-void CALENDAR_init(void)
+static void CALENDAR_init(void)
 {
 	CALENDAR_CLOCK_init();
 	calendar_init(&CALENDAR, RTC);
@@ -446,137 +698,17 @@ void INTERNAL_WATCHDOG_init(void)
 	INTERNAL_WATCHDOG_CLOCK_init();
 	wdt_init(&INTERNAL_WATCHDOG, WDT);
 }
-
-static void EXT_IRQ_INIT()
-{
-    _gclk_enable_channel(EIC_GCLK_ID, CONF_GCLK_EIC_SRC);
-	// Set pin direction to input
-	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO2,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-#ifdef _DEVBOARD_
-	gpio_set_pin_function(LORA_DIO2, PINMUX_PA09A_EIC_EXTINT9);
-#else
-	gpio_set_pin_function(LORA_DIO2, PINMUX_PA08A_EIC_NMI);
-#endif
-
-	// GPIO on PA09
-
-	// Set pin direction to input
-	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO1,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-#ifdef _DEVBOARD_
-	gpio_set_pin_function(LORA_DIO1, PINMUX_PB07A_EIC_EXTINT7 );
-#else
-	gpio_set_pin_function(LORA_DIO1, PINMUX_PA09A_EIC_EXTINT9);
 #endif
 
 
-	// GPIO on PA10
 
-	// Set pin direction to input
-	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-#ifdef _DEVBOARD_
-	gpio_set_pin_function(LORA_DIO, PINMUX_PB06A_EIC_EXTINT6);
-#else
-	gpio_set_pin_function(LORA_DIO, PINMUX_PA10A_EIC_EXTINT10);
-#endif
-
-
-#ifndef _DEVBOARD_
-    gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN); 
-    gpio_set_pin_function( GPIO1, PINMUX_PA04A_EIC_EXTINT4 );
-#endif
-
-    ext_irq_init( );
-}
-
-#ifndef _DEVBOARD_
-/**
- * \brief Timer initialization function
- *
- * Enables Timer peripheral, clocks and initializes Timer driver
- */
-static void TIMER_init(void)
-{
-	_pm_enable_bus_clock(PM_BUS_APBC, TC4);
-	_gclk_enable_channel(TC4_GCLK_ID, CONF_GCLK_TC4_SRC);
-
-	timer_init(&SHARED_TIMER, TC4, _tc_get_timer());
-}
-
-void ADC_PORT_init(void)
-{
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN1, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN1, PINMUX_PA03B_ADC_AIN1);
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN12, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN12, PINMUX_PB04B_ADC_AIN12);
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN13, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN13, PINMUX_PB05B_ADC_AIN13);
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN14, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN14, PINMUX_PB06B_ADC_AIN14);
-
-	// Disable digital pin circuitry
-	gpio_set_pin_direction(AIN15, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(AIN15, PINMUX_PB07B_ADC_AIN15);
-}
-
-void ADC_CLOCK_init(void)
-{
-	_pm_enable_bus_clock(PM_BUS_APBC, ADC);
-	_gclk_enable_channel(ADC_GCLK_ID, CONF_GCLK_ADC_SRC);
-}
-
-void ADC_init(void)
-{
-	ADC_CLOCK_init();
-	ADC_PORT_init();
-	adc_sync_init(&ANALOGIN, ADC, (void *)NULL);
-}
-#endif
 
 void system_init(void)
 {
 	init_mcu();
 
 
+#ifndef _BOOTLOADER_
 	gpio_set_pin_level(LORA_RESET,
 	                   // <y> Initial level
 	                   // <id> pad_initial_level
@@ -721,66 +853,7 @@ void system_init(void)
 	gpio_set_pin_function(SBC_SOFT_RESET, GPIO_PIN_FUNCTION_OFF);
 
 
-	// Set pin direction to input
-	gpio_set_pin_direction(GPIO3, GPIO_DIRECTION_IN);
 
-	gpio_set_pin_pull_mode(GPIO3,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(GPIO3, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PB09
-
-	// Set pin direction to input
-	gpio_set_pin_direction(GPIO2, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(GPIO2,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(GPIO2, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PA03
-
-
-	// Set pin direction to input
-	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(GPIO1,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(GPIO1, GPIO_PIN_FUNCTION_OFF);
-
-	// GPIO on PA05
-
-	// Set pin direction to input
-	gpio_set_pin_direction(GPIO0, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(GPIO0,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-	gpio_set_pin_function(GPIO0, GPIO_PIN_FUNCTION_OFF);
-
-	
 	// GPIO on PB10
 
 	// Set pin direction to input
@@ -854,21 +927,85 @@ void system_init(void)
 
 	gpio_set_pin_function(LTE_ON_OFF, GPIO_PIN_FUNCTION_OFF);
 
-	ADC_init();
+	ANALOGIN_init();
 	SBC_UART_CONSOLE_init();
 	LTE_UART_init();
 	I2C_init();
-  TIMER_init(); 
+  SHARED_TIMER_init(); 
+#endif
 #endif
 
+//these need to be in normal bootlaoder, but not dev board
+#ifndef _DEVBOARD_ 
+	// Set pin direction to input
+	gpio_set_pin_direction(GPIO3, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(GPIO3,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(GPIO3, GPIO_PIN_FUNCTION_OFF);
+
+	// GPIO on PB09
+
+	// Set pin direction to input
+	gpio_set_pin_direction(GPIO2, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(GPIO2,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(GPIO2, GPIO_PIN_FUNCTION_OFF);
+
+	// GPIO on PA03
+
+
+	// Set pin direction to input
+	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(GPIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(GPIO1, GPIO_PIN_FUNCTION_OFF);
+
+	// GPIO on PA05
+
+	// Set pin direction to input
+	gpio_set_pin_direction(GPIO0, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(GPIO0,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(GPIO0, GPIO_PIN_FUNCTION_OFF);
+#endif
+
+	
+
 	FLASH_init();
-
 	SBC_UART_init();
-
 	SPI_FLASH_init();
 
-	LORA_SPI_init();
 
+#ifndef _BOOTLOADER_
+	LORA_SPI_init();
 
 	delay_driver_init();
 
@@ -879,4 +1016,50 @@ void system_init(void)
   EXT_IRQ_INIT(); 
 
 	INTERNAL_WATCHDOG_init();
+#endif
 }
+
+
+#ifdef _BOOTLOADER_
+
+static void SPI_FLASH_deinit(void)
+{
+#ifndef _DEVBOARD_
+  _pm_disable_bus_clock(PM_BUS_APBC, SERCOM2); 
+#else
+  _pm_disable_bus_clock(PM_BUS_APBC, SERCOM5); 
+#endif
+	spi_m_sync_deinit(&SPI_FLASH); 
+  gpio_set_pin_function(SPI_FLASH_SCLK, GPIO_PIN_FUNCTION_OFF);
+  gpio_set_pin_function(SPI_FLASH_MOSI, GPIO_PIN_FUNCTION_OFF);
+  gpio_set_pin_function(SPI_FLASH_MISO, GPIO_PIN_FUNCTION_OFF);
+}
+
+static void SBC_UART_deinit(void) 
+{
+#ifndef _DEVBOARD_
+	_pm_disable_bus_clock(PM_BUS_APBC, SERCOM0);
+#else
+	_pm_disable_bus_clock(PM_BUS_APBC, SERCOM3);
+
+#endif
+	usart_async_deinit(&SBC_UART); 
+	gpio_set_pin_function(SBC_UART_TX, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(SBC_UART_RX, GPIO_PIN_FUNCTION_OFF);
+
+}
+
+static void FLASH_deinit(void)
+{
+	_pm_disable_bus_clock(PM_BUS_APBB, NVMCTRL);
+	flash_deinit(&FLASH);
+}
+
+
+void system_deinit() 
+{
+  SPI_FLASH_deinit(); 
+  FLASH_deinit(); 
+  SBC_UART_deinit(); 
+}
+#endif
