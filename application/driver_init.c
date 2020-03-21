@@ -31,11 +31,11 @@ struct usart_async_descriptor SBC_UART;
 struct spi_m_sync_descriptor  SPI_FLASH;
 struct spi_m_sync_descriptor  LORA_SPI;
 struct timer_descriptor       LORA_TIMER;
-struct adc_sync_descriptor ANALOGIN;
 
 #ifndef _DEVBOARD_
 struct usart_async_descriptor SBC_UART_CONSOLE;
 struct usart_async_descriptor LTE_UART;
+struct adc_sync_descriptor ANALOGIN;
 struct timer_descriptor       SHARED_TIMER;
 
 static uint8_t LTE_UART_buffer[LTE_UART_BUFFER_SIZE];
@@ -78,8 +78,14 @@ void FLASH_init(void)
 void SBC_UART_CLOCK_init()
 {
 
+#ifndef _DEVBOARD_
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM0);
 	_gclk_enable_channel(SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC);
+#else
+	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM3);
+	_gclk_enable_channel(SERCOM3_GCLK_ID_CORE, CONF_GCLK_SERCOM3_CORE_SRC);
+
+#endif
 }
 
 /**
@@ -90,9 +96,16 @@ void SBC_UART_CLOCK_init()
 void SBC_UART_PORT_init()
 {
 
+#ifndef _DEVBOARD_
 	gpio_set_pin_function(SBC_UART_TX, PINMUX_PA06D_SERCOM0_PAD2);
 
 	gpio_set_pin_function(SBC_UART_RX, PINMUX_PA07D_SERCOM0_PAD3);
+#else
+
+	gpio_set_pin_function(SBC_UART_TX, PINMUX_PA22C_SERCOM3_PAD0);
+
+	gpio_set_pin_function(SBC_UART_RX, PINMUX_PA23C_SERCOM3_PAD1);
+#endif
 }
 
 /**
@@ -103,7 +116,12 @@ void SBC_UART_PORT_init()
 void SBC_UART_init(void)
 {
 	SBC_UART_CLOCK_init();
+#ifndef _DEVBOARD_
 	usart_async_init(&SBC_UART, SERCOM0, SBC_UART_buffer, SBC_UART_BUFFER_SIZE, (void *)NULL);
+#else
+	usart_async_init(&SBC_UART, SERCOM3, SBC_UART_buffer, SBC_UART_BUFFER_SIZE, (void *)NULL);
+
+#endif
 	SBC_UART_PORT_init();
 }
 
@@ -164,7 +182,11 @@ void SPI_FLASH_PORT_init(void)
 	                       // <GPIO_PULL_DOWN"> Pull-down
 	                       GPIO_PULL_OFF);
 
+#ifndef _DEVBOARD_
 	gpio_set_pin_function(SPI_FLASH_MISO, PINMUX_PA12C_SERCOM2_PAD0);
+#else
+	gpio_set_pin_function(SPI_FLASH_MISO, PINMUX_PB16C_SERCOM5_PAD0);
+#endif
 
 	gpio_set_pin_level(SPI_FLASH_MOSI,
 	                   // <y> Initial level
@@ -176,7 +198,11 @@ void SPI_FLASH_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(SPI_FLASH_MOSI, GPIO_DIRECTION_OUT);
 
+#ifndef _DEVBOARD_
 	gpio_set_pin_function(SPI_FLASH_MOSI, PINMUX_PA14C_SERCOM2_PAD2);
+#else
+	gpio_set_pin_function(SPI_FLASH_MOSI, PINMUX_PB22D_SERCOM5_PAD2);
+#endif
 
 	gpio_set_pin_level(SPI_FLASH_SCLK,
 	                   // <y> Initial level
@@ -188,19 +214,33 @@ void SPI_FLASH_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(SPI_FLASH_SCLK, GPIO_DIRECTION_OUT);
 
+#ifndef _DEVBOARD_
 	gpio_set_pin_function(SPI_FLASH_SCLK, PINMUX_PA15C_SERCOM2_PAD3);
+#else
+	gpio_set_pin_function(SPI_FLASH_SCLK, PINMUX_PB23D_SERCOM5_PAD3);
+#endif
 }
 
 void SPI_FLASH_CLOCK_init(void)
 {
+#ifndef _DEVBOARD_
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM2);
 	_gclk_enable_channel(SERCOM2_GCLK_ID_CORE, CONF_GCLK_SERCOM2_CORE_SRC);
+#else
+
+	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM5);
+	_gclk_enable_channel(SERCOM5_GCLK_ID_CORE, CONF_GCLK_SERCOM5_CORE_SRC);
+#endif
 }
 
 void SPI_FLASH_init(void)
 {
 	SPI_FLASH_CLOCK_init();
+#ifndef _DEVBOARD_
 	spi_m_sync_init(&SPI_FLASH, SERCOM2);
+#else
+	spi_m_sync_init(&SPI_FLASH, SERCOM5);
+#endif
 	SPI_FLASH_PORT_init();
 }
 
@@ -258,7 +298,11 @@ void LORA_SPI_PORT_init(void)
 	                       // <GPIO_PULL_DOWN"> Pull-down
 	                       GPIO_PULL_OFF);
 
+#ifndef _DEVBOARD_
 	gpio_set_pin_function(LORA_SPI_MISO, PINMUX_PB12C_SERCOM4_PAD0);
+#else
+	gpio_set_pin_function(LORA_SPI_MISO, PINMUX_PA04D_SERCOM0_PAD0);
+#endif
 
 	gpio_set_pin_level(LORA_SPI_MOSI,
 	                   // <y> Initial level
@@ -270,7 +314,11 @@ void LORA_SPI_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(LORA_SPI_MOSI, GPIO_DIRECTION_OUT);
 
+#ifndef _DEVBOARD_
 	gpio_set_pin_function(LORA_SPI_MOSI, PINMUX_PB14C_SERCOM4_PAD2);
+#else
+	gpio_set_pin_function(LORA_SPI_MOSI, PINMUX_PA06D_SERCOM0_PAD2);
+#endif
 
 	gpio_set_pin_level(LORA_SPI_SCLK,
 	                   // <y> Initial level
@@ -282,19 +330,32 @@ void LORA_SPI_PORT_init(void)
 	// Set pin direction to output
 	gpio_set_pin_direction(LORA_SPI_SCLK, GPIO_DIRECTION_OUT);
 
+#ifndef _DEVBOARD_
 	gpio_set_pin_function(LORA_SPI_SCLK, PINMUX_PB15C_SERCOM4_PAD3);
+#else
+	gpio_set_pin_function(LORA_SPI_SCLK, PINMUX_PA07D_SERCOM0_PAD3);
+#endif
 }
 
 void LORA_SPI_CLOCK_init(void)
 {
+#ifndef _DEVBOARD_
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM4);
 	_gclk_enable_channel(SERCOM4_GCLK_ID_CORE, CONF_GCLK_SERCOM4_CORE_SRC);
+#else
+	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM0);
+	_gclk_enable_channel(SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC);
+#endif
 }
 
 void LORA_SPI_init(void)
 {
 	LORA_SPI_CLOCK_init();
+#ifndef _DEVBOARD_
 	spi_m_sync_init(&LORA_SPI, SERCOM4);
+#else
+	spi_m_sync_init(&LORA_SPI, SERCOM0);
+#endif
 	LORA_SPI_PORT_init();
 }
 
@@ -346,6 +407,7 @@ void delay_driver_init(void)
 {
 	delay_init(SysTick);
 }
+
 
 void CALENDAR_CLOCK_init(void)
 {
@@ -514,10 +576,6 @@ void system_init(void)
 {
 	init_mcu();
 
-// GPIO on PA08
-
-
-	// GPIO on PA11
 
 	gpio_set_pin_level(LORA_RESET,
 	                   // <y> Initial level
