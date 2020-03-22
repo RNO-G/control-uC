@@ -707,6 +707,19 @@ void system_init(void)
 {
 	init_mcu();
 
+	gpio_set_pin_level(SPI_FLASH_CS,
+	                   // <y> Initial level
+	                   // <id> pad_initial_level
+	                   // <false"> Low
+	                   // <true"> High
+	                   true);
+
+	// Set pin direction to output
+	gpio_set_pin_direction(SPI_FLASH_CS, GPIO_DIRECTION_OUT);
+
+	gpio_set_pin_function(SPI_FLASH_CS, GPIO_PIN_FUNCTION_OFF);
+
+
 
 #ifndef _BOOTLOADER_
 	gpio_set_pin_level(LORA_RESET,
@@ -717,7 +730,7 @@ void system_init(void)
 	                   false);
 
 	// Set pin direction to output
-	gpio_set_pin_direction(LORA_RESET, GPIO_DIRECTION_OUT);
+	gpio_set_pin_direction(LORA_RESET, GPIO_DIRECTION_IN);
 
 	gpio_set_pin_function(LORA_RESET, GPIO_PIN_FUNCTION_OFF);
 
@@ -736,19 +749,6 @@ void system_init(void)
 	gpio_set_pin_function(LORA_SPI_CS, GPIO_PIN_FUNCTION_OFF);
 
 
-	// GPIO on PA13
-
-	gpio_set_pin_level(SPI_FLASH_CS,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   true);
-
-	// Set pin direction to output
-	gpio_set_pin_direction(SPI_FLASH_CS, GPIO_DIRECTION_OUT);
-
-	gpio_set_pin_function(SPI_FLASH_CS, GPIO_PIN_FUNCTION_OFF);
 
 
 #ifndef _DEVBOARD_
@@ -996,8 +996,6 @@ void system_init(void)
 
 	gpio_set_pin_function(GPIO0, GPIO_PIN_FUNCTION_OFF);
 #endif
-
-	
 
 	FLASH_init();
 	SBC_UART_init();

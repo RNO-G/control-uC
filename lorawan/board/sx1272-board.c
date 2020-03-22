@@ -6,7 +6,7 @@
 #include <hal_gpio.h>
 #include "delay.h"
 #include "shared/printf.h" 
-#include "application/driver_init.h" 
+#include "shared/driver_init.h" 
 
 
 static uint8_t SX1272GetPaSelect( uint32_t channel );
@@ -55,13 +55,16 @@ void SX1272IoInit( void )
 {
   // most things are set up in driver_init, so we'll jsut do a few things here! 
 
+    SX1272.Spi.Nss.pin = LORA_SPI_CS; 
+    SX1272.DIO0.pin = LORA_DIO; 
+    SX1272.DIO1.pin = LORA_DIO1; 
+    SX1272.DIO2.pin = LORA_DIO2; 
     SX1272.DIO3.pin = NC; 
     SX1272.DIO4.pin = NC; 
     SX1272.DIO5.pin = NC; 
 
-    spi_m_sync_set_baudrate(&LORA_SPI,1000000); 
+    spi_m_sync_set_baudrate(&LORA_SPI,50000); 
     spi_m_sync_enable(&LORA_SPI); 
-
 }
 
 static void Dio0IrqHandler( void );
@@ -159,13 +162,13 @@ void SX1272Reset( void )
     GpioInit( &SX1272.Reset, RADIO_RESET, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0 );
 
     // Wait 1 ms
-    DelayMs( 1 );
+    delay_ms( 1 );
 
     // Configure RESET as input
     GpioInit( &SX1272.Reset, RADIO_RESET, PIN_INPUT, PIN_PUSH_PULL, PIN_NO_PULL, 1 );
 
     // Wait 6 ms
-    DelayMs( 6 );
+    delay_ms( 6 );
 }
 
 void SX1272SetRfTxPower( int8_t power )

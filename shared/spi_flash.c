@@ -2,7 +2,6 @@
 #include "hal_spi_m_sync.h" 
 #include "shared/driver_init.h" 
 
-#endif
 //#include "linker/map.h" 
 
 

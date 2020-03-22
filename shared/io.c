@@ -1,9 +1,5 @@
 
-#ifdef _BOOTLOADER_
-#include "bootloader/bootloader_driver_init.h" 
-#else
-#include "application/driver_init.h" 
-#endif 
+#include "shared/driver_init.h" 
 #include "hpl_usart_async.h" 
 #include "hal_usart_async.h" 
 
