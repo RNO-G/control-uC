@@ -19,7 +19,6 @@ ASYNC_READ_BUFFER(256, sbc);
 
 #ifndef _DEVBOARD_
 ASYNC_READ_BUFFER(512, sbc_console); 
-ASYNC_READ_BUFFER(256, lte); 
 #endif
 
 static  config_block_t cfg; 
@@ -43,22 +42,27 @@ static void interrupt()
 
 int main(void)
 {
-	/* Initialize system drivesr*/ 
+	/* Initialize system drivers*/ 
 	system_init();
+
   /* Initialize io system */ 
   io_init(); 
+
+  /* Initialize SPI flash */ 
   spi_flash_init(); 
 
-
+  /* Initialize main SBC UART */ 
   sbc_uart_read_async(&sbc); 
 
 
 #ifndef _DEVBOARD_
+  /* Initailize SBC Console UART */ 
   sbc_uart_console_read_async(&sbc_console); 
-  lte_uart_read_async(&lte); 
-  /* Initialize i2c bus */ 
+
+  /* Initialize LTE UART */ 
   i2c_bus_init(); 
   ext_irq_register(GPIO1, interrupt); 
+  lte_init(); 
 #endif 
 
   spi_flash_read_config_block(&cfg); 
@@ -87,7 +91,6 @@ int main(void)
   get_shared_memory()->nresets = 0; 
 
 
-  
 
 
   printf("IN APPLICATION\r\n"); 
