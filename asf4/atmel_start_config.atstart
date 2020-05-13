@@ -2,16 +2,16 @@ format_version: '2'
 name: rno-g uC
 versions:
   api: '1.0'
-  backend: 1.7.301
+  backend: 1.7.303
   commit: 1e07622763d149970fd8808a8f12ff3b1e84e0d7
   content: unknown
   content_pack_name: unknown
   format: '2'
-  frontend: 1.7.301
-  packs_version_avr8: 1.0.1408
+  frontend: 1.7.303
+  packs_version_avr8: 1.0.1410
   packs_version_qtouch: unknown
-  packs_version_sam: 1.0.1373
-  version_backend: 1.7.301
+  packs_version_sam: 1.0.1554
+  version_backend: 1.7.303
   version_frontend: ''
 board:
   identifier: CustomBoard
@@ -117,8 +117,8 @@ drivers:
       eic_arch_enable_irq_setting15: false
       eic_arch_enable_irq_setting2: false
       eic_arch_enable_irq_setting3: false
-      eic_arch_enable_irq_setting4: false
-      eic_arch_enable_irq_setting5: false
+      eic_arch_enable_irq_setting4: true
+      eic_arch_enable_irq_setting5: true
       eic_arch_enable_irq_setting6: false
       eic_arch_enable_irq_setting7: false
       eic_arch_enable_irq_setting8: false
@@ -167,8 +167,8 @@ drivers:
       eic_arch_sense15: No detection
       eic_arch_sense2: No detection
       eic_arch_sense3: No detection
-      eic_arch_sense4: No detection
-      eic_arch_sense5: No detection
+      eic_arch_sense4: Rising-edge detection
+      eic_arch_sense5: Rising-edge detection
       eic_arch_sense6: No detection
       eic_arch_sense7: No detection
       eic_arch_sense8: No detection
@@ -183,8 +183,8 @@ drivers:
       eic_arch_wakeupen15: false
       eic_arch_wakeupen2: false
       eic_arch_wakeupen3: false
-      eic_arch_wakeupen4: false
-      eic_arch_wakeupen5: false
+      eic_arch_wakeupen4: true
+      eic_arch_wakeupen5: true
       eic_arch_wakeupen6: false
       eic_arch_wakeupen7: false
       eic_arch_wakeupen8: false
@@ -197,6 +197,13 @@ drivers:
       definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::optional_signal_definition::EIC.EXTINT.4
       name: EIC/EXTINT/4
       label: EXTINT/4
+    - identifier: EXTERNAL_IRQ_0:EXTINT/5
+      pad: PA05
+      mode: Enabled
+      configuration: null
+      definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::optional_signal_definition::EIC.EXTINT.5
+      name: EIC/EXTINT/5
+      label: EXTINT/5
     - identifier: EXTERNAL_IRQ_0:EXTINT/9
       pad: PA09
       mode: Enabled
@@ -552,7 +559,7 @@ drivers:
       spi_master_arch_dord: MSB first
       spi_master_arch_ibon: In data stream
       spi_master_arch_runstdby: false
-      spi_master_baud_rate: 50000
+      spi_master_baud_rate: 1000000
       spi_master_character_size: 8 bits
       spi_master_dummybyte: 511
       spi_master_rx_enable: true
@@ -1151,11 +1158,11 @@ pads:
     mode: Digital input
     user_label: GPIO1
     configuration: null
-  GPIO0:
+  LORA_DIO2:
     name: PA05
     definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA05
     mode: Digital input
-    user_label: GPIO0
+    user_label: LORA_DIO2
     configuration: null
   SBC_UART_TX:
     name: PA06
@@ -1168,12 +1175,6 @@ pads:
     definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA07
     mode: Peripheral IO
     user_label: SBC_UART_RX
-    configuration: null
-  LORA_DIO2:
-    name: PA08
-    definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA08
-    mode: Advanced
-    user_label: LORA_DIO2
     configuration: null
   LORA_DIO1:
     name: PA09

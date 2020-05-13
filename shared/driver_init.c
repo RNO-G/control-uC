@@ -126,6 +126,32 @@ static void EXT_IRQ_INIT(void)
 
 	gpio_set_pin_function(GPIO1, PINMUX_PA04A_EIC_EXTINT4);
 
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO2,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(LORA_DIO2, PINMUX_PA05A_EIC_EXTINT5);
+
+	// Set pin direction to input
+	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(LORA_DIO1,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+
 	// Set pin direction to input
 	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
 
@@ -621,10 +647,6 @@ void system_init(void)
 	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
 	gpio_set_pin_pull_mode(GPIO1, GPIO_PULL_OFF);
 	gpio_set_pin_function(GPIO1, GPIO_PIN_FUNCTION_OFF);
-
-	gpio_set_pin_direction(GPIO0, GPIO_DIRECTION_IN);
-	gpio_set_pin_pull_mode(GPIO0, GPIO_PULL_OFF);
-	gpio_set_pin_function(GPIO0, GPIO_PIN_FUNCTION_OFF);
 #endif
 
 	FLASH_init();

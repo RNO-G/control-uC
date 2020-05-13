@@ -193,7 +193,7 @@
 // <e> Interrupt 4 Settings
 // <id> eic_arch_enable_irq_setting4
 #ifndef CONF_EIC_ENABLE_IRQ_SETTING4
-#define CONF_EIC_ENABLE_IRQ_SETTING4 0
+#define CONF_EIC_ENABLE_IRQ_SETTING4 1
 #endif
 
 // <q> External Interrupt 4 Event Output Enable
@@ -207,7 +207,7 @@
 // <i> Indicates whether the external interrupt 4 wake-up is enabled or not
 // <id> eic_arch_wakeupen4
 #ifndef CONF_EIC_WAKEUPEN4
-#define CONF_EIC_WAKEUPEN4 0
+#define CONF_EIC_WAKEUPEN4 1
 #endif
 
 // <q> External Interrupt 4 Filter Enable
@@ -227,14 +227,14 @@
 // <i> This defines input sense trigger
 // <id> eic_arch_sense4
 #ifndef CONF_EIC_SENSE4
-#define CONF_EIC_SENSE4 EIC_NMICTRL_NMISENSE_NONE_Val
+#define CONF_EIC_SENSE4 EIC_NMICTRL_NMISENSE_RISE_Val
 #endif
 // </e>
 
 // <e> Interrupt 5 Settings
 // <id> eic_arch_enable_irq_setting5
 #ifndef CONF_EIC_ENABLE_IRQ_SETTING5
-#define CONF_EIC_ENABLE_IRQ_SETTING5 0
+#define CONF_EIC_ENABLE_IRQ_SETTING5 1
 #endif
 
 // <q> External Interrupt 5 Event Output Enable
@@ -248,7 +248,7 @@
 // <i> Indicates whether the external interrupt 5 wake-up is enabled or not
 // <id> eic_arch_wakeupen5
 #ifndef CONF_EIC_WAKEUPEN5
-#define CONF_EIC_WAKEUPEN5 0
+#define CONF_EIC_WAKEUPEN5 1
 #endif
 
 // <q> External Interrupt 5 Filter Enable
@@ -268,7 +268,7 @@
 // <i> This defines input sense trigger
 // <id> eic_arch_sense5
 #ifndef CONF_EIC_SENSE5
-#define CONF_EIC_SENSE5 EIC_NMICTRL_NMISENSE_NONE_Val
+#define CONF_EIC_SENSE5 EIC_NMICTRL_NMISENSE_RISE_Val
 #endif
 // </e>
 
@@ -683,7 +683,7 @@
 // </e>
 
 #ifndef CONFIG_EIC_EXTINT_MAP
-#define CONFIG_EIC_EXTINT_MAP {4, PIN_PA04}, {9, PIN_PA09}, {10, PIN_PA10},
+#define CONFIG_EIC_EXTINT_MAP {4, PIN_PA04}, {5, PIN_PA05}, {9, PIN_PA09}, {10, PIN_PA10},
 #endif
 
 // <<< end of configuration section >>>
