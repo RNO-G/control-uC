@@ -109,7 +109,7 @@ void RtcInit( void )
 {
     if( RtcInitialized == false )
     {
-//        //this uses 32.768 clock with a prescaler of 8, so this results in 1 ms
+//        //this uses 32.768 clock with a prescaler of 8, so this results in ~1 ms
         timer_set_clock_cycles_per_tick(&LORA_TIMER,4); 
         timer_start(&LORA_TIMER); 
         RtcTimerContext.AlarmState = ALARM_STOPPED;
@@ -138,7 +138,7 @@ uint32_t RtcGetMinimumTimeout( void )
 
 uint32_t RtcMs2Tick( TimerTime_t milliseconds )
 {
-    return ( uint32_t )( milliseconds );
+    return ( uint32_t )( milliseconds*1024/1000 );
 }
 
 TimerTime_t RtcTick2Ms( uint32_t tick )
