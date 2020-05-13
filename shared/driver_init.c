@@ -113,69 +113,21 @@ static void EXT_IRQ_INIT(void)
 {
 	_gclk_enable_channel(EIC_GCLK_ID, CONF_GCLK_EIC_SRC);
 
-	// Set pin direction to input
 	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(GPIO1,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
+	gpio_set_pin_pull_mode(GPIO1, GPIO_PULL_OFF);
 	gpio_set_pin_function(GPIO1, PINMUX_PA04A_EIC_EXTINT4);
 
 
-	// Set pin direction to input
 	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO2,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
+	gpio_set_pin_pull_mode(LORA_DIO2, GPIO_PULL_OFF);
 	gpio_set_pin_function(LORA_DIO2, PINMUX_PA05A_EIC_EXTINT5);
 
-	// Set pin direction to input
 	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO1,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
-
-	// Set pin direction to input
-	gpio_set_pin_direction(LORA_DIO1, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO1,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
+	gpio_set_pin_pull_mode(LORA_DIO1, GPIO_PULL_OFF);
 	gpio_set_pin_function(LORA_DIO1, PINMUX_PA09A_EIC_EXTINT9);
 
-	// Set pin direction to input
 	gpio_set_pin_direction(LORA_DIO, GPIO_DIRECTION_IN);
-
-	gpio_set_pin_pull_mode(LORA_DIO,
-	                       // <y> Pull configuration
-	                       // <id> pad_pull_config
-	                       // <GPIO_PULL_OFF"> Off
-	                       // <GPIO_PULL_UP"> Pull-up
-	                       // <GPIO_PULL_DOWN"> Pull-down
-	                       GPIO_PULL_OFF);
-
+	gpio_set_pin_pull_mode(LORA_DIO, GPIO_PULL_OFF);
 	gpio_set_pin_function(LORA_DIO, PINMUX_PA10A_EIC_EXTINT10);
 
 	ext_irq_init();
