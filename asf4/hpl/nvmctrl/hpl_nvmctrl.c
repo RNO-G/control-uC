@@ -433,7 +433,6 @@ void NVMCTRL_Handler(void)
 	void *const hw = _nvm_dev->hw;
 
 	if (hri_nvmctrl_get_interrupt_READY_bit(hw)) {
-		hri_nvmctrl_clear_interrupt_READY_bit(hw);
 		if (NULL != _nvm_dev->flash_cb.ready_cb) {
 			_nvm_dev->flash_cb.ready_cb(_nvm_dev);
 		}

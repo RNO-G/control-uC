@@ -1718,6 +1718,12 @@ static struct i2cs_configuration _i2css[] = {
 #if CONF_SERCOM_5_I2CS_ENABLE == 1
     I2CS_CONFIGURATION(5),
 #endif
+#if CONF_SERCOM_6_I2CS_ENABLE == 1
+    I2CS_CONFIGURATION(6),
+#endif
+#if CONF_SERCOM_7_I2CS_ENABLE == 1
+    I2CS_CONFIGURATION(7),
+#endif
 };
 #endif
 
