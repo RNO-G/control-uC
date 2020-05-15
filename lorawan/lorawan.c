@@ -415,6 +415,14 @@ void lorawan_process()
           mibReq.Param.ChannelsDefaultTxPower = 14; 
           LoRaMacMibSetRequestConfirm( &mibReq );
 
+          mibReq.Type = MIB_SYSTEM_MAX_RX_ERROR; 
+          mibReq.Param.SystemMaxRxError = 100; 
+          LoRaMacMibSetRequestConfirm( &mibReq );
+
+          mibReq.Type = MIB_MIN_RX_SYMBOLS; 
+          mibReq.Param.MinRxSymbols = 50; 
+          LoRaMacMibSetRequestConfirm( &mibReq );
+
 
 
           /*
@@ -436,8 +444,7 @@ void lorawan_process()
             }
             printf("\r\n");
           }
-          */
-            
+          */ 
         
         DeviceState = DEVICE_STATE_START;
         break;

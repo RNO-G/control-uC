@@ -63,7 +63,7 @@ void SX1272IoInit( void )
     SX1272.DIO4.pin = NC; 
     SX1272.DIO5.pin = NC; 
 
-    spi_m_sync_set_baudrate(&LORA_SPI,50000); 
+//    spi_m_sync_set_baudrate(&LORA_SPI,1000000); 
     spi_m_sync_enable(&LORA_SPI); 
 }
 
