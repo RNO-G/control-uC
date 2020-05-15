@@ -31,17 +31,36 @@ static char lte_buf[] = "\r\nAT+GMR\r\n";
 static volatile int n_interrupts; 
 static volatile int n_nmi; 
 
+
+
+// bookkeeping for i2c expander output state 
+// TODO: make a saner interface in i2cbus
+// these both default to 0xff! 
+static i2c_task_t i2c_expander_a_state = {.addr = I2C_EXPANDER_A,
+                                          .write = 1, 
+                                          .reg=I2C_EXPANDER_SET_REGISTER, 
+                                          .data = 0xff, 
+                                          .done = 0 };
+
+static i2c_task_t i2c_expander_a_dir = { .addr = I2C_EXPANDER_A, 
+                                         .write = 1,
+                                         .reg=I2C_EXPANDER_CONFIGURE_REGISTER,
+                                         .data = 0xff,
+                                         .done = 0 }; 
+#define RADIANT_ENABLE_BIT I2C_EXPANDER_5V_ENABLE_1_BIT
+
 void NMI_Handler(void) 
 {
   n_nmi++; 
   EIC->NMIFLAG.reg = EIC_NMIFLAG_NMI; 
-
 }
 
 static void interrupt()
 {
   n_interrupts++; 
 }
+
+static uint64_t nticks = 0; 
 
 int main(void)
 {
@@ -59,7 +78,7 @@ int main(void)
 
 
 #ifndef _DEVBOARD_
-  /* Initailize SBC Console UART */ 
+  /* Initialize SBC Console UART */ 
   sbc_uart_console_read_async(&sbc_console); 
 
   /* Initialize LTE UART */ 
@@ -78,17 +97,15 @@ int main(void)
   }
 
 #ifndef _DEVBOARD_
-  //turn on the computer
-  i2c_task_t task1 = {.addr = 0x3a, .write = 1, .reg = I2C_EXPANDER_SET_REGISTER, .data = 0x10, .done = 0}; 
-  i2c_task_t task2 = {.addr = 0x3a, .write = 1, .reg = I2C_EXPANDER_CONFIGURE_REGISTER, .data = ~(0x10), .done = 0};
-  i2c_enqueue(&task1); 
-  i2c_enqueue(&task2); 
+  //turn on the sbc for now, nothing else. 
+  i2c_expander_a_state.data = (1 << I2C_EXPANDER_SBC_ENABLE_BIT);
 
-  i2c_task_t task3 = {.addr = 0x3f, .write = 0, .reg = I2C_EXPANDER_GET_REGISTER, .data = 0xab, .done = 0}; 
-  i2c_enqueue(&task3); 
-  delay_ms(1);
-  i2c_task_t task4 = {.addr = 0x3a, .write = 0, .reg = I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 0}; 
-  i2c_enqueue(&task4); 
+  // setup the outputs on exander a as outputs (note the inversion) 
+  i2c_expander_a_dir.data = ~ ( (1 << I2C_EXPANDER_SBC_ENABLE_BIT) | (1 << RADIANT_ENABLE_BIT)); 
+
+  i2c_enqueue(&i2c_expander_a_state); 
+  i2c_enqueue(&i2c_expander_a_dir); 
+
 #endif
 
   get_shared_memory()->nresets = 0; 
@@ -113,13 +130,16 @@ int main(void)
 
 
 #ifndef _DEVBOARD_
+
+    //TEMPORARY REALLY DUMB COMMANDS 
+    //
     char * where = strstr((char*)sbc.buf, "#LTE-ON\r\n");
     if (where)
     {
       *where=0; 
       async_read_buffer_shift(&sbc, 512); 
       lte_turn_on(); 
-      printf("Turning on LTE\n"); 
+      printf("Turning on LTE\\rn"); 
     }
 
 
@@ -130,11 +150,32 @@ int main(void)
       *where=0; 
       async_read_buffer_shift(&sbc, 512); 
       lte_turn_off(); 
-      printf("Turning off LTE\n"); 
+      printf("Turning off LTE\r\n"); 
+    }
+
+    where = strstr((char*)sbc.buf,"#RADIANT-ON\r\n"); 
+    if (where) 
+    {
+      *where = 0; 
+      async_read_buffer_shift(&sbc,512); 
+      i2c_expander_a_state.data |= (1 << RADIANT_ENABLE_BIT);
+      i2c_enqueue(&i2c_expander_a_state); 
+      printf("Turning on RADIANT\r\n"); 
+    }
+
+    where = strstr((char*)sbc.buf,"#RADIANT-OFF\r\n"); 
+    if (where) 
+    {
+      *where = 0; 
+      async_read_buffer_shift(&sbc,512); 
+      i2c_expander_a_state.data &= ~(1 << RADIANT_ENABLE_BIT);
+      i2c_enqueue(&i2c_expander_a_state); 
+      printf("Turning on RADIANT\r\n"); 
     }
 #endif
 
     delay_ms(10); 
+    nticks++; 
 
 	}
 }
