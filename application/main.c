@@ -83,7 +83,9 @@ int main(void)
 
   /* Initialize LTE UART */ 
   i2c_bus_init(); 
+#ifndef USE_RADIO_DEBUG
   ext_irq_register(GPIO1, interrupt); 
+#endif
   lte_init(); 
 #endif 
 

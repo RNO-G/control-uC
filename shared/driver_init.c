@@ -113,9 +113,11 @@ static void EXT_IRQ_INIT(void)
 {
 	_gclk_enable_channel(EIC_GCLK_ID, CONF_GCLK_EIC_SRC);
 
+#ifndef USE_RADIO_DEBUG
 	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
 	gpio_set_pin_pull_mode(GPIO1, GPIO_PULL_OFF);
 	gpio_set_pin_function(GPIO1, PINMUX_PA04A_EIC_EXTINT4);
+#endif
 
 
 	gpio_set_pin_direction(LORA_DIO2, GPIO_DIRECTION_IN);

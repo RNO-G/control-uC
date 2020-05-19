@@ -65,6 +65,8 @@ void SX1272IoInit( void )
 
 //    spi_m_sync_set_baudrate(&LORA_SPI,1000000); 
     spi_m_sync_enable(&LORA_SPI); 
+
+   SX1272IoDbgInit();
 }
 
 static void Dio0IrqHandler( void );
@@ -136,6 +138,10 @@ void SX1272IoDeInit( void )
 
 void SX1272IoDbgInit( void )
 {
+#ifdef USE_RADIO_DEBUG
+	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_OUT);
+	gpio_set_pin_direction(GPIO3, GPIO_DIRECTION_OUT);
+#endif
 }
 
 void SX1272IoTcxoInit( void )
@@ -252,6 +258,21 @@ void SX1272SetAntSw( uint8_t opMode )
 {
     // No antenna switch available
 }
+
+void SX1272DbgPinTxWrite( uint8_t state )
+{
+#ifdef USE_RADIO_DEBUG
+  gpio_set_pin_level(GPIO1,state); 
+#endif
+}
+
+void SX1272DbgPinRxWrite( uint8_t state )
+{
+#ifdef USE_RADIO_DEBUG
+  gpio_set_pin_level(GPIO3,state); 
+#endif
+}
+
 
 bool SX1272CheckRfFrequency( uint32_t frequency )
 {
