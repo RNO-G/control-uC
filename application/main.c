@@ -36,13 +36,13 @@ static volatile int n_nmi;
 // bookkeeping for i2c expander output state 
 // TODO: make a saner interface in i2cbus
 // these both default to 0xff! 
-static i2c_task_t i2c_expander_a_state = {.addr = I2C_EXPANDER_A,
+static i2c_task_t i2c_expander_b_state = {.addr = I2C_EXPANDER_B,
                                           .write = 1, 
                                           .reg=I2C_EXPANDER_SET_REGISTER, 
                                           .data = 0xff, 
                                           .done = 0 };
 
-static i2c_task_t i2c_expander_a_dir = { .addr = I2C_EXPANDER_A, 
+static i2c_task_t i2c_expander_b_dir = { .addr = I2C_EXPANDER_B, 
                                          .write = 1,
                                          .reg=I2C_EXPANDER_CONFIGURE_REGISTER,
                                          .data = 0xff,
@@ -98,13 +98,13 @@ int main(void)
 
 #ifndef _DEVBOARD_
   //turn on the sbc for now, nothing else. 
-  i2c_expander_a_state.data = (1 << I2C_EXPANDER_SBC_ENABLE_BIT);
+  i2c_expander_b_state.data = (1 << I2C_EXPANDER_SBC_ENABLE_BIT);
 
   // setup the outputs on exander a as outputs (note the inversion) 
-  i2c_expander_a_dir.data = ~ ( (1 << I2C_EXPANDER_SBC_ENABLE_BIT) | (1 << RADIANT_ENABLE_BIT)); 
+  i2c_expander_b_dir.data = ~ ( (1 << I2C_EXPANDER_SBC_ENABLE_BIT) | (1 << RADIANT_ENABLE_BIT)); 
 
-  i2c_enqueue(&i2c_expander_a_state); 
-  i2c_enqueue(&i2c_expander_a_dir); 
+  i2c_enqueue(&i2c_expander_b_state); 
+  i2c_enqueue(&i2c_expander_b_dir); 
 
 #endif
 
@@ -158,8 +158,8 @@ int main(void)
     {
       *where = 0; 
       async_read_buffer_shift(&sbc,512); 
-      i2c_expander_a_state.data |= (1 << RADIANT_ENABLE_BIT);
-      i2c_enqueue(&i2c_expander_a_state); 
+      i2c_expander_b_state.data |= (1 << RADIANT_ENABLE_BIT);
+      i2c_enqueue(&i2c_expander_b_state); 
       printf("Turning on RADIANT\r\n"); 
     }
 
@@ -168,9 +168,9 @@ int main(void)
     {
       *where = 0; 
       async_read_buffer_shift(&sbc,512); 
-      i2c_expander_a_state.data &= ~(1 << RADIANT_ENABLE_BIT);
-      i2c_enqueue(&i2c_expander_a_state); 
-      printf("Turning on RADIANT\r\n"); 
+      i2c_expander_b_state.data &= ~(1 << RADIANT_ENABLE_BIT);
+      i2c_enqueue(&i2c_expander_b_state); 
+      printf("Turning off RADIANT\r\n"); 
     }
 #endif
 
