@@ -139,7 +139,7 @@ void SX1272IoDeInit( void )
 void SX1272IoDbgInit( void )
 {
 #ifdef USE_RADIO_DEBUG
-	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_OUT);
+	gpio_set_pin_direction(GPIO2, GPIO_DIRECTION_OUT);
 	gpio_set_pin_direction(GPIO3, GPIO_DIRECTION_OUT);
 #endif
 }
@@ -262,7 +262,7 @@ void SX1272SetAntSw( uint8_t opMode )
 void SX1272DbgPinTxWrite( uint8_t state )
 {
 #ifdef USE_RADIO_DEBUG
-  gpio_set_pin_level(GPIO1,state); 
+  gpio_set_pin_level(GPIO2,state); 
 #endif
 }
 

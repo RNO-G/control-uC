@@ -104,13 +104,14 @@ static void timer_callback(const struct timer_task * const task)
 }
 
 static struct timer_task task; 
+static uint32_t previous_cc_per_tick; 
 
 void RtcInit( void )
 {
     if( RtcInitialized == false )
     {
 //        //this uses 32.768 clock with a prescaler of 8, so this results in ~1 ms
-        timer_set_clock_cycles_per_tick(&LORA_TIMER,4); 
+        timer_set_clock_cycles_per_tick(&LORA_TIMER,32); 
         timer_start(&LORA_TIMER); 
         RtcTimerContext.AlarmState = ALARM_STOPPED;
         RtcSetTimerContext( );
@@ -138,7 +139,8 @@ uint32_t RtcGetMinimumTimeout( void )
 
 uint32_t RtcMs2Tick( TimerTime_t milliseconds )
 {
-    return ( uint32_t )( milliseconds*1024/1000 );
+    return ( uint32_t )( milliseconds); 
+//    return ( uint32_t )( milliseconds*1024/1000*4/5 );
 }
 
 TimerTime_t RtcTick2Ms( uint32_t tick )
@@ -185,12 +187,16 @@ void RtcStartAlarm( uint32_t timeout )
     RtcTimeoutPendingPolling = false;
 
     RtcTimerContext.AlarmState = ALARM_RUNNING;
-    if (task_added) timer_remove_task(&LORA_TIMER,&task);
+    if (task_added) 
+    {
+      timer_remove_task(&LORA_TIMER,&task);
+      task_added = false; 
+    }
+
     task.interval = timeout; 
     task.cb = timer_callback; 
-    if( timer_add_task(&LORA_TIMER,&task) == ERR_NONE )
+    if( timer_add_task(&LORA_TIMER,&task) != ERR_NONE )
     {
-        task_added = true; 
         // If timer already passed
         if( RtcTimeoutPendingInterrupt == true )
         {
@@ -198,6 +204,10 @@ void RtcStartAlarm( uint32_t timeout )
             RtcTimeoutPendingPolling = true;
             RtcTimeoutPendingInterrupt = false;
         }
+    }
+    else
+    {
+        task_added = true; 
     }
     CRITICAL_SECTION_END( );
 }

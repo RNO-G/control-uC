@@ -13,8 +13,8 @@ struct power_system_state
 } power_system_state_t;
 
 const power_system_state_t * power_system_state()
-void schedule_power_system_read(); 
 
+void schedule_power_system_read(); 
 
 
 

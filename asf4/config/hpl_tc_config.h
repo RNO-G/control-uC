@@ -24,7 +24,7 @@
 // <i> This defines the prescaler value
 // <id> timer_prescaler
 #ifndef CONF_TC3_PRESCALER
-#define CONF_TC3_PRESCALER TC_CTRLA_PRESCALER_DIV8_Val
+#define CONF_TC3_PRESCALER TC_CTRLA_PRESCALER_DIV1_Val
 #endif
 
 // <o> Length of one timer tick in uS <0-4294967295>

@@ -2,11 +2,13 @@
 #include "lorawan/lorawan.h" 
 #include "shared/io.h" 
 #include "shared/printf.h" 
+#include "application/sbc.h" 
 #include "hal_ext_irq.h" 
 #include "hal_gpio.h" 
 #include "application/debug.h" 
 #include "shared/spi_flash.h" 
 #include "shared/shared_memory.h" 
+#include "application/gpio_expander.h" 
 
 #ifndef _DEVBOARD_
 #include "hal_i2c_m_sync.h" 
@@ -18,36 +20,14 @@
  *
  */ 
 
-ASYNC_READ_BUFFER(256, sbc); 
 
-#ifndef _DEVBOARD_
-ASYNC_READ_BUFFER(512, sbc_console); 
-#endif
 
 static  config_block_t cfg; 
-static char lte_buf[] = "\r\nAT+GMR\r\n"; 
 
 
 static volatile int n_interrupts; 
 static volatile int n_nmi; 
 
-
-
-// bookkeeping for i2c expander output state 
-// TODO: make a saner interface in i2cbus
-// these both default to 0xff! 
-static i2c_task_t i2c_expander_b_state = {.addr = I2C_EXPANDER_B,
-                                          .write = 1, 
-                                          .reg=I2C_EXPANDER_SET_REGISTER, 
-                                          .data = 0xff, 
-                                          .done = 0 };
-
-static i2c_task_t i2c_expander_b_dir = { .addr = I2C_EXPANDER_B, 
-                                         .write = 1,
-                                         .reg=I2C_EXPANDER_CONFIGURE_REGISTER,
-                                         .data = 0xff,
-                                         .done = 0 }; 
-#define RADIANT_ENABLE_BIT I2C_EXPANDER_5V_ENABLE_1_BIT
 
 void NMI_Handler(void) 
 {
@@ -70,19 +50,20 @@ int main(void)
   /* Initialize io system */ 
   io_init(); 
 
+#ifndef _DEVBOARD_
+  /* Initialize LTE UART */ 
+  i2c_bus_init(); 
+#endif
+
+  sbc_init(); 
+
+
   /* Initialize SPI flash */ 
   spi_flash_init(); 
 
-  /* Initialize main SBC UART */ 
-  sbc_uart_read_async(&sbc); 
 
 
-#ifndef _DEVBOARD_
-  /* Initialize SBC Console UART */ 
-  sbc_uart_console_read_async(&sbc_console); 
-
-  /* Initialize LTE UART */ 
-  i2c_bus_init(); 
+#ifndef DEVBOARD 
 #ifndef USE_RADIO_DEBUG
   ext_irq_register(GPIO1, interrupt); 
 #endif
@@ -99,14 +80,8 @@ int main(void)
   }
 
 #ifndef _DEVBOARD_
-  //turn on the sbc for now, nothing else. 
-  i2c_expander_b_state.data = (1 << I2C_EXPANDER_SBC_ENABLE_BIT);
-
-  // setup the outputs on exander a as outputs (note the inversion) 
-  i2c_expander_b_dir.data = ~ ( (1 << I2C_EXPANDER_SBC_ENABLE_BIT) | (1 << RADIANT_ENABLE_BIT)); 
-
-  i2c_enqueue(&i2c_expander_b_state); 
-  i2c_enqueue(&i2c_expander_b_dir); 
+  i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
+  set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
 
 #endif
 
@@ -116,6 +91,7 @@ int main(void)
 
 
   printf("IN APPLICATION\r\n"); 
+
 
   lorawan_init(); 
 //
@@ -129,55 +105,12 @@ int main(void)
     }
 
     lorawan_process(); 
-
-
-#ifndef _DEVBOARD_
-
-    //TEMPORARY REALLY DUMB COMMANDS 
-    //
-    char * where = strstr((char*)sbc.buf, "#LTE-ON\r\n");
-    if (where)
+    if (sbc_io_process())
     {
-      *where=0; 
-      async_read_buffer_shift(&sbc, 512); 
-      lte_turn_on(); 
-      printf("Turning on LTE\\rn"); 
+      sbc_turn_on(0); 
     }
-
-
-
-    where = strstr((char*)sbc.buf, "#LTE-OFF\r\n");
-    if (where)
-    {
-      *where=0; 
-      async_read_buffer_shift(&sbc, 512); 
-      lte_turn_off(); 
-      printf("Turning off LTE\r\n"); 
-    }
-
-    where = strstr((char*)sbc.buf,"#RADIANT-ON\r\n"); 
-    if (where) 
-    {
-      *where = 0; 
-      async_read_buffer_shift(&sbc,512); 
-      i2c_expander_b_state.data |= (1 << RADIANT_ENABLE_BIT);
-      i2c_enqueue(&i2c_expander_b_state); 
-      printf("Turning on RADIANT\r\n"); 
-    }
-
-    where = strstr((char*)sbc.buf,"#RADIANT-OFF\r\n"); 
-    if (where) 
-    {
-      *where = 0; 
-      async_read_buffer_shift(&sbc,512); 
-      i2c_expander_b_state.data &= ~(1 << RADIANT_ENABLE_BIT);
-      i2c_enqueue(&i2c_expander_b_state); 
-      printf("Turning off RADIANT\r\n"); 
-    }
-#endif
 
     delay_ms(10); 
     nticks++; 
-
 	}
 }

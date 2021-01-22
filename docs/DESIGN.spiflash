@@ -6,7 +6,7 @@ can also be configured to automatically be done so (with a specified priority
 order) in the event of too many early resets. 
 
 Our flash chip is 1024 kB. The ROM is 256 kB, with 8 kB to be used by the
-booloader.  This implies that the maximum application size is 248 kB. This
+bootloader.  This implies that the maximum application size is 248 kB. This
 leaves 32 kB at the beginning that can be used by the config block. 
 
 The config block doesn't need all that space, so wear leveling is implemented

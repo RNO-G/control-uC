@@ -33,7 +33,7 @@ static inline printf(const char * str, ...) { ; }
 
  /**************************
   *
-  *    Start off with the message queue handlig stuff since that's easier
+  *    Start off with the message queue handling stuff since that's easier
   */ 
 
 
@@ -42,6 +42,7 @@ static inline printf(const char * str, ...) { ; }
 // to add, copy data to back of tx_buffer, and put the offset in tx_offsets, then adjust n_tx_messages and tx_buffer used
 // since we want a fifo, we have to read from the beginning. since we don't have a circular buffer we then need to copy 
 // rest of the messages back to the beginning, which sucks. but at least it's simple... 
+//
 static uint8_t tx_buffer[LORAWAN_TX_BUFFER_SIZE]; 
 static uint16_t tx_offsets[LORAWAN_MAX_TX_MESSAGES]; 
 static uint8_t rx_buffer[LORAWAN_TX_BUFFER_SIZE]; 
@@ -272,6 +273,11 @@ static bool SendFrame( void ) {
   LoRaMacTxInfo_t txInfo;
   uint8_t buffer_length = first_message_length(&tx); 
 
+
+  //nothing to send, so don't try!
+  if (!buffer_length) 
+    return 0; 
+
   LoRaMacStatus_t cur_status = LoRaMacQueryTxPossible( buffer_length, &txInfo);
   if( cur_status != LORAMAC_STATUS_OK ) {
       printf("Sending empty Data, Loramac didn't return status ok. ");
@@ -309,12 +315,11 @@ static bool SendFrame( void ) {
     printf( "\r\n###### ===== MCPS-Request ==== ######\r\n" );
     printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
 
-        if( status == LORAMAC_STATUS_OK )
+    if( status == LORAMAC_STATUS_OK )
     {
         //can we pop off the buffer? 
         // I guess we'll find out! 
         consume_first_message(&rx); 
-
         return 0;
     }
     return 1;
@@ -465,17 +470,6 @@ void lorawan_process()
         mibReq.Param.SystemMaxRxError = 20;
         LoRaMacMibSetRequestConfirm( &mibReq );
 
-        /*
-        mibReq.Type = MIB_CHANNELS_MASK;
-        mibReq.Param.ChannelsMask[0] = 0x00FF;
-        mibReq.Param.ChannelsMask[1] = 0x0000;
-        mibReq.Param.ChannelsMask[2] = 0x0000;
-        mibReq.Param.ChannelsMask[3] = 0x0000;
-        mibReq.Param.ChannelsMask[4] = 0x0001;
-        mibReq.Param.ChannelsMask[5] = 0x0000;
-        LoRaMacMibSetRequestConfirm( &mibReq );      
-        */ 
-          
         LoRaMacStart( );
 
         mibReq.Type = MIB_NETWORK_ACTIVATION;
@@ -741,18 +735,18 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
                 LoRaMacMibGetRequestConfirm( &mibGet );
                 printf( "DATA RATE   : DR_%d\r\n", mibGet.Param.ChannelsDatarate );
                 printf( "\r\n" );
-		
-		mibGet.Type  = MIB_CHANNELS_MASK;
-		if( LoRaMacMibGetRequestConfirm( &mibGet ) == LORAMAC_STATUS_OK ) {
-		  printf("CHANNEL MASK: ");
-	    
-		  for( uint8_t i = 0; i < 5; i++) {
-		    printf("%04X ", mibGet.Param.ChannelsMask[i] );
-		  }
-		  printf("\r\n");
-		}
-	  
-		// Status is OK, node has joined the network
+                
+                mibGet.Type  = MIB_CHANNELS_MASK;
+                if( LoRaMacMibGetRequestConfirm( &mibGet ) == LORAMAC_STATUS_OK ) {
+                  printf("CHANNEL MASK: ");
+            
+                  for( uint8_t i = 0; i < 5; i++) {
+                    printf("%04X ", mibGet.Param.ChannelsMask[i] );
+                  }
+                  printf("\r\n");
+                }
+          
+                // Status is OK, node has joined the network
                 DeviceState = DEVICE_STATE_SEND;
             }
             else

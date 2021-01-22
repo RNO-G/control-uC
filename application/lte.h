@@ -1,15 +1,8 @@
 #ifndef _LTE_H
 #define _LTE_H
 
+#include "include/rno-g.h" 
 
-
-typedef enum lte_state
-{
-  LTE_OFF, 
-  LTE_TURNING_ON,
-  LTE_ON,
-  LTE_TURNING_OFF
-} lte_state_t; 
 
 
 lte_state_t lte_get_state(); 

@@ -38,9 +38,10 @@ SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.
 APP_SHARED_OBJS=$(addprefix $(BUILD_DIR)/shared/, $(SHARED_OBJS))
 BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 
-APP_OBJS=$(BUILD_DIR)/application/main.o $(BUILD_DIR)/application/debug.o $(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
+APP_OBJS=$(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o )
 ifneq ($(DEVBOARD),1)
-APP_OBJS+=$(BUILD_DIR)/application/lte.o $(BUILD_DIR)/application/i2cbus.o
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o )
 endif
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
