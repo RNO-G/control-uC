@@ -1,7 +1,7 @@
 #ifndef _rno_g_sbc_h
 #define _rno_g_sbc_h
 
-#include "include/rno-g.h" 
+#include "include/rno-g-control.h" 
 
 
 void sbc_init(); 
