@@ -32,8 +32,8 @@
  */
 
 #include <utils_event.h>
-#include <utils_assert.h>
 #include <string.h>
+#include <utils_assert.h>
 
 #define EVENT_WORD_BITS (sizeof(event_word_t) * 8)
 
