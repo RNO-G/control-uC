@@ -4,7 +4,7 @@
 #include "shared/driver_init.h" 
 #include "shared/io.h" 
 #include "shared/printf.h" 
-#include "include/rno-g.h" 
+#include "include/rno-g-control.h" 
 
 ASYNC_READ_BUFFER(256, sbc); 
 #ifndef _DEVBOARD_
