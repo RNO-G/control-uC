@@ -46,6 +46,8 @@ async_read_buffer_t * get_read_buffer(int d);
 //but is more space efficient (Since you don't need tomake a copy of the data across the boundary). Another option would be
 //a circular buffer with an overlap. 
 void async_read_buffer_shift(async_read_buffer_t * b, int N); 
+static inline void async_read_buffer_clear(async_read_buffer_t *b) { async_read_buffer_shift(b,b->offset); }
+
 
 int d_write_ready(int d); 
 

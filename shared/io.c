@@ -31,11 +31,11 @@ static void callback_rx(const struct usart_async_descriptor * const dev, int d)
 
   while (usart_async_is_rx_not_empty(desc[d]))
   {
-    b->busy = 1; 
     if (b->offset >= b->length) 
     {
       return; 
     }
+    b->busy = 1; 
     b->offset+= io_read(&desc[d]->io, b->buf + b->offset, b->length - b->offset); 
   }
   b->busy = 0; 
