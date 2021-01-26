@@ -1,5 +1,5 @@
 CFLAGS= \
--x c -mthumb -DDEBUG -Os -ffunction-sections -Wall -c -std=gnu99  \
+-x c -mthumb -DDEBUG -Os -ffunction-sections -Wall -Wextra -c -std=gnu99  \
 -D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3
 
 
