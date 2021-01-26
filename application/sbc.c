@@ -161,6 +161,18 @@ int sbc_io_process()
           printf("Buffer full! Clearing..\r\n"); 
           async_read_buffer_clear(&sbc);
         }
+
+        //clear the first \0 before the offset, if there is one
+        int i = 0; 
+        for (int i = 0; i < sbc.offset; i++) 
+        {
+          if (!sbc.buf[i])
+          {
+            async_read_buffer_shift(&sbc,i); 
+            break; 
+          }
+        }
+
         break; 
       }
 
