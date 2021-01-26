@@ -251,7 +251,9 @@ static void JoinNetwork( void )
   // Starts the join procedure
   status = LoRaMacMlmeRequest( &mlmeReq );
   printf( "\r\n###### ===== MLME-Request - MLME_JOIN ==== ######\r\n" );
+#ifdef LORAWAN_PRINT_DEBUG
   printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
+#endif
 
   if( status == LORAMAC_STATUS_OK ) {
       printf( "###### ===== JOINING ==== ######\r\n" );
@@ -281,7 +283,9 @@ static bool SendFrame( void ) {
   LoRaMacStatus_t cur_status = LoRaMacQueryTxPossible( buffer_length, &txInfo);
   if( cur_status != LORAMAC_STATUS_OK ) {
       printf("Sending empty Data, Loramac didn't return status ok. ");
+#ifdef LORAWAN_PRINT_DEBUG
       printf( "STATUS      : %s\r\n", MacStatusStrings[cur_status] );
+#endif 
       
       // Send empty frame in order to flush MAC commands
       mcpsReq.Type = MCPS_UNCONFIRMED;
@@ -313,7 +317,9 @@ static bool SendFrame( void ) {
     LoRaMacStatus_t status;
     status = LoRaMacMcpsRequest( &mcpsReq );
     printf( "\r\n###### ===== MCPS-Request ==== ######\r\n" );
+#ifdef LORAWAN_PRINT_DEBUG
     printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
+#endif 
 
     if( status == LORAMAC_STATUS_OK )
     {
@@ -560,7 +566,9 @@ void lorawan_process()
 static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
 {
     printf( "\r\n###### ===== MCPS-Confirm ==== ######\r\n" );
+#ifdef LORAWAN_PRINT_DEBUG
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mcpsConfirm->Status] );
+#endif
     if( mcpsConfirm->Status != LORAMAC_EVENT_INFO_STATUS_OK ) {
 
     } else {
@@ -637,8 +645,10 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
 
 static void McpsIndication( McpsIndication_t *mcpsIndication )
 {
+#ifdef LORAWAN_PRINT_DEBUG
     printf( "\r\n###### ===== MCPS-Indication ==== ######\r\n" );
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mcpsIndication->Status] );
+#endif
     if( mcpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ) { 
       return;
     }
@@ -691,8 +701,10 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
 
     if( mcpsIndication->BufferSize != 0 )
     {
+#ifdef LORAWAN_PRINT_DEBUG
         printf( "RX DATA     : \r\n" );
         PrintHexBuffer( mcpsIndication->Buffer, mcpsIndication->BufferSize );
+#endif
     }
 
     printf( "\r\n" );
@@ -711,8 +723,10 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
  */
 static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
 {
+#ifdef LORAWAN_PRINT_DEBUG
     printf( "\r\n###### ===== MLME-Confirm ==== ######\r\n" );
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mlmeConfirm->Status] );
+#endif
     if( mlmeConfirm->Status != LORAMAC_EVENT_INFO_STATUS_OK )
     {
     }
@@ -775,8 +789,10 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
  */
 static void MlmeIndication( MlmeIndication_t *mlmeIndication ) { 
   if( mlmeIndication->Status != LORAMAC_EVENT_INFO_STATUS_BEACON_LOCKED ) { 
+#ifdef LORAWAN_PRINT_DEBUG
     printf( "\r\n###### ===== MLME-Indication ==== ######\r\n" );
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mlmeIndication->Status] );
+#endif
   }
   if( mlmeIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ) {}
   
@@ -828,7 +844,9 @@ int lorawan_init()
   LoRaMacStatus_t status;
   status = LoRaMacInitialization( &macPrimitives, &macCallbacks, ACTIVE_REGION );
   if( status != LORAMAC_STATUS_OK ) {
+#ifdef LORAWAN_PRINT_DEBUG
    printf( "LoRaMac wasn't properly initialized, error: %s", MacStatusStrings[status] );
+#endif
    return status; 
   }
 
