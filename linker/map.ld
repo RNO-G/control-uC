@@ -3,7 +3,7 @@
 MEMORY
 {
 
-  /* 8 kB for the bootloader */ 
+  /* 16 kB for the bootloader */ 
   bootrom  (rx)  : ORIGIN = 0x00000000, LENGTH = 0x0004000
 
   /* The rest for the application */ 
