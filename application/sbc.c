@@ -164,11 +164,11 @@ int sbc_io_process()
 
         //clear the first \0 before the offset, if there is one
         int i = 0; 
-        for (int i = 0; i < sbc.offset; i++) 
+        for (i = 0; i < sbc.offset; i++) 
         {
           if (!sbc.buf[i])
           {
-            async_read_buffer_shift(&sbc,i); 
+            async_read_buffer_shift(&sbc,i+1); 
             break; 
           }
         }
@@ -273,7 +273,7 @@ int sbc_io_process()
       //consume 
       if (!dontconsume) 
       {
-        async_read_buffer_shift(&sbc, ending-(const char*) sbc.buf+2); 
+        async_read_buffer_shift(&sbc, ending-(const char*) sbc.buf+3); 
       }
 
       if (!valid) 
