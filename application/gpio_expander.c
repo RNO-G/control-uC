@@ -91,8 +91,6 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
   if (need_A) 
   {
 
-    A_dir.data=0xff;
-    A_state.data=0; 
 
     for (int i = 0; i < 6; i++) 
     {
@@ -110,8 +108,6 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
  
   if (need_B) 
   {
-    B_dir.data=0xff;
-    B_state.data=0; 
     for (int i = 0; i < 3; i++) 
     {
       if (mask.dh_amps & (1 << i)) 
