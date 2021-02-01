@@ -2,9 +2,9 @@
 #define _rno_g_io_h
 
 #include "hal_atomic.h"
-#include <string.h> 
-#include <stdint.h> 
 
+#include <stdint.h> 
+#include <string.h> 
 
 /** 
  *  IO helper functions 
@@ -47,7 +47,11 @@ async_read_buffer_t * get_read_buffer(int d);
 //a circular buffer with an overlap. 
 void async_read_buffer_shift(async_read_buffer_t * b, int N); 
 static inline void async_read_buffer_clear(async_read_buffer_t *b) { async_read_buffer_shift(b,b->offset); }
+static inline uint8_t* async_read_buffer_seek(async_read_buffer_t *b, uint8_t * what, int what_len)  { return (uint8_t*) memmem((void*)b->buf, b->offset, what, what_len); }
+static inline char* async_read_buffer_seek_str(async_read_buffer_t *b, char * what)  { return (char*) memmem((void*)b->buf, b->offset, (const char*) what, strlen(what)); }
 
+/** if c is between buffer start and offset, shifts until first instance of character. Can be used to e.g. remove \0 or whatever. Returns number of chars shifted. */ 
+int async_read_buffer_shift_until_char(async_read_buffer_t * b, uint8_t c)  ; 
 
 int d_write_ready(int d); 
 

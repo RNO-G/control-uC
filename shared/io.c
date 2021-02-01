@@ -8,6 +8,7 @@
 
 
 
+
 struct async_iod
 {
   int ncalled; 
@@ -33,6 +34,7 @@ static void callback_rx(const struct usart_async_descriptor * const dev, int d)
   {
     if (b->offset >= b->length) 
     {
+      b->busy=0; 
       return; 
     }
     b->busy = 1; 
@@ -108,6 +110,19 @@ int d_read_async(int d, async_read_buffer_t * b)
   return 0;
 }
 
+int async_read_buffer_shift_until_char(async_read_buffer_t * b, uint8_t c)  
+{
+  int i = 0; 
+  for (;i<b->offset; i++) 
+  {
+    if (b->buf[i]==c) 
+    {
+      async_read_buffer_shift(b,i+1); 
+      return i; 
+    }
+  }
+  return 0; 
+}
 
 void async_read_buffer_shift(async_read_buffer_t * b, int N) 
 {
@@ -122,9 +137,11 @@ void async_read_buffer_shift(async_read_buffer_t * b, int N)
   }
   else //move the back to the front 
   {
-    memmove(b->buf, b->buf+N, b->offset-N); 
+    for (int i = 0; i < b->offset-N; i++) 
+    {
+      b->buf[i] = b->buf[i+N]; 
+    }
     b->offset -= N; 
-
   }
   CRITICAL_SECTION_LEAVE();
 }
