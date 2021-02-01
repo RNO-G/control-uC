@@ -63,7 +63,7 @@ int main(void)
 
 
 
-#ifndef DEVBOARD 
+#ifndef _DEVBOARD_ 
 #ifndef USE_RADIO_DEBUG
   ext_irq_register(GPIO1, interrupt); 
 #endif
@@ -72,12 +72,6 @@ int main(void)
 
   spi_flash_read_config_block(&cfg); 
 
-  //to exercise 
-  if (cfg.app_cfg.station_number != 123) 
-  {
-    cfg.app_cfg.station_number = 123; 
-    spi_flash_write_config_block(&cfg); 
-  }
 
 #ifndef _DEVBOARD_
   i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
@@ -86,8 +80,6 @@ int main(void)
 #endif
 
   get_shared_memory()->nresets = 0; 
-
-
 
 
   printf("IN APPLICATION\r\n"); 
