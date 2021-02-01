@@ -294,14 +294,22 @@ int sbc_io_process()
 
 sbc_state_t sbc_get_state() { return state; } 
 
-
+__attribute__((section (".keepme")))
 int sbc_turn_off() 
 {
 
   if (state != SBC_ON) return -1; 
 
+  //we must hit the power for a bit
+  //
+  //
+  //
 
-
+  //kill the power
+  i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
+  i2c_gpio_expander_t turn_off_sbc_mask = {.sbc=1}; 
+  set_gpio_expander_state(turn_off_sbc,turn_off_sbc_mask); 
+  state = SBC_OFF; 
 
   return 0; 
 
