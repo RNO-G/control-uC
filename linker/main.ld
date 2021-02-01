@@ -15,6 +15,7 @@ SECTIONS
     _stext = .; 
     _sfixed = .; 
     KEEP(*(.vectors* .vectors.*)) 
+    KEEP(*(.keepme .keepme.*)) 
     *(.text*) 
     *(.rodata*) 
     . = ALIGN(4);
