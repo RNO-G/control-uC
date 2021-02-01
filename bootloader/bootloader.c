@@ -5,10 +5,9 @@
 #include "linker/map.h" 
 #include "shared/programmer.h" 
 #include "hal_gpio.h"
-#include "shared/io.h" 
 #include "hpl_reset.h" 
-#include <string.h>
 #include "shared/printf.h" 
+#include "shared/io.h" 
 
 static config_block_t config_block; 
 
@@ -161,7 +160,7 @@ int main(void)
       }
 
       //check for line returns
-      char * lr = strchr((char*)sbc.buf,'\n'); 
+      char * lr = async_read_buffer_seek_str(&sbc,"\r\n"); 
       while (lr) 
       {
         *lr = 0; 
@@ -183,8 +182,16 @@ int main(void)
         {
           async_read_buffer_shift(&sbc, (int) (lr-(char*)sbc.buf)); 
         }
-        lr = strchr((char*)sbc.buf,'\n'); 
+        lr = async_read_buffer_seek_str(&sbc,"\r\n"); 
       }
+
+      //check for overlow
+      
+      if (sbc.offset == sbc.length) async_read_buffer_clear(&sbc); 
+
+      //get rid of any potential \0 that snuck in preventing us from finding line returns. 
+      async_read_buffer_shift_until_char(&sbc,0); 
+
     }
   }
 
