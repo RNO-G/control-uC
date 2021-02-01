@@ -331,6 +331,7 @@ static void _find_config_block()
 
 int spi_flash_read_config_block(config_block_t * config_block) 
 {
+  spi_flash_wakeup(); 
   // we have to find it 
   if (current_config_block < 0) 
   {
@@ -342,16 +343,20 @@ int spi_flash_read_config_block(config_block_t * config_block)
   if (current_config_block  < 0 ) 
   {
     default_init_block(config_block); 
+    spi_flash_deep_sleep(); 
     return -1; 
   }
 
   //don't read magic
   _spi_flash_read(current_config_block * block_size+sizeof(config_block_magic), sizeof(config_block_t), (uint8_t*)  config_block); 
+  spi_flash_deep_sleep(); 
   return 0; 
 }
 
 void spi_flash_write_config_block(const config_block_t * block) 
 {
+  spi_flash_wakeup(); 
+
   //try to find config block if not set
   if (current_config_block < 0) 
     _find_config_block(); 
@@ -382,11 +387,11 @@ void spi_flash_write_config_block(const config_block_t * block)
   if (current_config_block >=0) 
   {
     _spi_flash_erase(current_config_block * block_size, block_size); 
-    // don't wait unitl ready here since we probably won't immediately touch the flash 
   }
 
   _spi_flash_change_protection(1, 0, block_size*n_config_slots); 
   current_config_block = next_config_block; 
+  spi_flash_deep_sleep(); 
 }
 
 #define N_applications 4 
