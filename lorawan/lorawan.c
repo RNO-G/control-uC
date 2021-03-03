@@ -4,7 +4,8 @@
 #if LORAWAN_PRINT_DEBUG
 #include "shared/printf.h" 
 #else
-static inline printf(const char * str, ...) { ; } 
+//hope this gets inlined 
+static inline int printf(const char * str, ...) { (void) str; return 0; } 
 #endif
 
 
@@ -43,10 +44,19 @@ static inline printf(const char * str, ...) { ; }
 // since we want a fifo, we have to read from the beginning. since we don't have a circular buffer we then need to copy 
 // rest of the messages back to the beginning, which sucks. but at least it's simple... 
 //
+// 
+//
 static uint8_t tx_buffer[LORAWAN_TX_BUFFER_SIZE]; 
 static uint16_t tx_offsets[LORAWAN_MAX_TX_MESSAGES]; 
+static uint8_t tx_flags[LORAWAN_MAX_TX_MESSAGES]; 
+static uint8_t tx_ports[LORAWAN_MAX_TX_MESSAGES]; 
+
 static uint8_t rx_buffer[LORAWAN_TX_BUFFER_SIZE]; 
 static uint16_t rx_offsets[LORAWAN_MAX_TX_MESSAGES]; 
+static uint8_t rx_flags[LORAWAN_MAX_TX_MESSAGES]; 
+static uint8_t rx_ports[LORAWAN_MAX_TX_MESSAGES]; 
+
+static volatile int joined = 0; 
 
 struct msg_buffer 
 {
@@ -54,10 +64,15 @@ struct msg_buffer
   uint16_t * offsets;
   uint16_t used; 
   uint8_t n_messages; 
+  uint8_t got_mem; 
+  uint8_t * flags; 
+  uint8_t * ports; 
+  uint32_t dropped; 
+  uint32_t count; 
 }; 
 
-static struct msg_buffer tx = {.buffer = tx_buffer, .offsets = tx_offsets, .used = 0, .n_messages = 0};
-static struct msg_buffer rx = {.buffer = rx_buffer, .offsets = rx_offsets, .used = 0, .n_messages = 0};
+static struct msg_buffer tx = {.buffer = tx_buffer, .offsets = tx_offsets, .used = 0, .n_messages = 0, .flags = tx_flags, .ports = tx_ports, .dropped = 0, .count=0};
+static struct msg_buffer rx = {.buffer = rx_buffer, .offsets = rx_offsets, .used = 0, .n_messages = 0, .flags = rx_flags, .ports = rx_ports, .dropped = 0, .count=0};
 
 static inline  uint8_t * first_message(struct msg_buffer * b) {return b->buffer; }
 
@@ -66,6 +81,16 @@ static int first_message_length(struct msg_buffer * b)
   return b->n_messages == 0 ? -1 : 
          b->n_messages == 1 ? b->used : 
          b->offsets[1]; 
+}
+
+static uint8_t first_message_flags(struct msg_buffer * b) 
+{
+  return b->flags[0]; 
+}
+
+static uint8_t first_message_port(struct msg_buffer * b) 
+{
+  return b->ports[0]; 
 }
 
 static void consume_first_message(struct msg_buffer *b)
@@ -85,17 +110,17 @@ static void consume_first_message(struct msg_buffer *b)
   b->used-=len; 
   memmove(b->buffer, b->buffer+len, b->used); 
   b->n_messages--; 
-  memmove(b->offsets, b->offsets+1, b->n_messages*sizeof(*b->offsets)); 
+
+  if (b->n_messages) 
+  {
+    //NOTE: these 3 can be circular buffers... change later. 
+    memmove(b->flags, b->flags+1, b->n_messages); 
+    memmove(b->ports, b->ports+1, b->n_messages); 
+    memmove(b->offsets, b->offsets+1, b->n_messages*sizeof(*b->offsets)); 
+  }
 }
 
-/** DOES NOT CHECK CAPACITY!!!! */ 
-static void append_message(struct msg_buffer * b, int len, const uint8_t * msg) 
-{
-  b->offsets[b->n_messages] = b->used; 
-  memcpy(b->offsets+b->used,msg, len); 
-  b->n_messages++; 
-  b->used+= len; 
-}
+
 
 static int have_tx_capacity(int len)
 {
@@ -106,22 +131,96 @@ static int have_rx_capacity(int len)
   return len+rx.used < LORAWAN_RX_BUFFER_SIZE && rx.n_messages < LORAWAN_MAX_RX_MESSAGES;
 }
 
-int lorawan_send_message(uint8_t len, const uint8_t * msg) 
-{
 
-  if (!have_tx_capacity(len)) 
+
+
+
+int msg_getmem(struct msg_buffer *b, uint8_t len, uint8_t port, uint8_t **msg, uint8_t flags) 
+{
+  if (b->got_mem) 
   {
-    return -1; //tx buffer full
+    tx.dropped++; 
+    return -2; 
   }
 
-  append_message(&tx, len, msg); 
+  b->offsets[b->n_messages] = b->used; 
+  b->flags[b->n_messages] = flags; 
+  b->ports[b->n_messages] = port; 
+  *msg = b->buffer+b->used; 
+  b->used+= len; 
+  b->got_mem = 1; 
   return 0; 
 }
 
-uint8_t lorawan_next_received_message(uint8_t * msg, uint8_t maxlen)
+
+int msg_push(struct msg_buffer *b) 
+{
+  if (!b->got_mem) 
+  {
+    return -1;
+  }
+  b->n_messages++; 
+  b->count++; 
+  b->got_mem = 0; 
+  return 0; 
+
+}
+
+int lorawan_tx_getmem(uint8_t len, uint8_t port, uint8_t **msg, uint8_t flags) 
+{
+  if (!have_tx_capacity(len))
+  {
+    tx.dropped++; 
+    return -1; 
+  }
+  return msg_getmem(&tx,len,port,msg,flags);
+}
+
+int lorawan_tx_push() 
+{
+  return msg_push(&tx); 
+}
+
+int lorawan_tx_copy(uint8_t len, uint8_t port, const uint8_t* msg, uint8_t flags) 
+{
+  uint8_t * dest = 0; 
+  int ret = lorawan_tx_getmem(len,port,&dest,flags); 
+
+  if (ret)
+  {
+    return ret;
+  }
+
+  memcpy(dest,msg,len); 
+  return lorawan_tx_push(); 
+}
+
+
+
+int lorawan_rx_peek(uint8_t *len, uint8_t * port, uint8_t **msg, uint8_t * flags) 
+{
+  if (!rx.n_messages) return 0; 
+  if (len) *len = first_message_length(&rx); 
+  if (port) *port = first_message_port(&rx); 
+  if (flags) *flags = first_message_flags(&rx); 
+  if (msg) *msg= first_message(&rx); 
+  return rx.n_messages; 
+}
+
+int lorawan_rx_pop() 
+{
+  if (!rx.n_messages) return -1; 
+  consume_first_message(&rx); 
+  return 0; 
+}
+
+
+uint8_t lorawan_copy_next_received_message(uint8_t * msg, uint8_t maxlen, uint8_t * port, uint8_t  * flags)
 {
  int len = first_message_length(&rx); 
  if (len <= 0)  return 0; // nothing to see here 
+ if (flags) *flags = first_message_flags(&rx); 
+ if (port) *port = first_message_port(&rx); 
  uint8_t copy_len = maxlen < len ? maxlen : len; 
  memcpy(msg, first_message(&rx), copy_len); 
  consume_first_message(&rx); 
@@ -148,8 +247,11 @@ static LoRaMacCallback_t macCallbacks;
 static MibRequestConfirm_t mibReq;
 static uint8_t devEui[] = LORAWAN_DEVICE_EUI;
 static uint8_t joinEui[] = LORAWAN_JOIN_EUI;
-static uint8_t AppKey[] = LORAWAN_APP_KEY;
+#if( ABP_ACTIVATION_LRWAN_VERSION == ABP_ACTIVATION_LRWAN_VERSION_V10x )
 static uint8_t GenAppKey[] = LORAWAN_APP_KEY;
+#else
+static uint8_t AppKey[] = LORAWAN_APP_KEY;
+#endif
 static uint8_t NwkKey[] = LORAWAN_NWK_KEY;
 // Timer to handle the application data transmission duty cycle
 static TimerEvent_t TxNextPacketTimer;
@@ -159,85 +261,50 @@ static uint32_t TxDutyCycleTime;
 //Defines a random delay for application data transmission duty cycle. 1s, value in [ms].
 #define APP_TX_DUTYCYCLE_RND                        1000
 
-#ifdef LORAWAN_PRINT_DEBUG
-// MAC status strings
-static const char* MacStatusStrings[] =
+#if LORAWAN_PRINT_DEBUG
+#include "lorawan_dbg.h"
+#endif
+
+
+static bool ShouldSendLinkCheck(void) 
 {
-    "OK",                            // LORAMAC_STATUS_OK
-    "Busy",                          // LORAMAC_STATUS_BUSY
-    "Service unknown",               // LORAMAC_STATUS_SERVICE_UNKNOWN
-    "Parameter invalid",             // LORAMAC_STATUS_PARAMETER_INVALID
-    "Frequency invalid",             // LORAMAC_STATUS_FREQUENCY_INVALID
-    "Datarate invalid",              // LORAMAC_STATUS_DATARATE_INVALID
-    "Frequency or datarate invalid", // LORAMAC_STATUS_FREQ_AND_DR_INVALID
-    "No network joined",             // LORAMAC_STATUS_NO_NETWORK_JOINED
-    "Length error",                  // LORAMAC_STATUS_LENGTH_ERROR
-    "Region not supported",          // LORAMAC_STATUS_REGION_NOT_SUPPORTED
-    "Skipped APP data",              // LORAMAC_STATUS_SKIPPED_APP_DATA
-    "Duty-cycle restricted",         // LORAMAC_STATUS_DUTYCYCLE_RESTRICTED
-    "No channel found",              // LORAMAC_STATUS_NO_CHANNEL_FOUND
-    "No free channel found",         // LORAMAC_STATUS_NO_FREE_CHANNEL_FOUND
-    "Busy beacon reserved time",     // LORAMAC_STATUS_BUSY_BEACON_RESERVED_TIME
-    "Busy ping-slot window time",    // LORAMAC_STATUS_BUSY_PING_SLOT_WINDOW_TIME
-    "Busy uplink collision",         // LORAMAC_STATUS_BUSY_UPLINK_COLLISION
-    "Crypto error",                  // LORAMAC_STATUS_CRYPTO_ERROR
-    "FCnt handler error",            // LORAMAC_STATUS_FCNT_HANDLER_ERROR
-    "MAC command error",             // LORAMAC_STATUS_MAC_COMMAD_ERROR
-    "ClassB error",                  // LORAMAC_STATUS_CLASS_B_ERROR
-    "Confirm queue error",           // LORAMAC_STATUS_CONFIRM_QUEUE_ERROR
-    "Multicast group undefined",     // LORAMAC_STATUS_MC_GROUP_UNDEFINED
-    "Unknown error",                 // LORAMAC_STATUS_ERROR
-};
+  static uint32_t counter = 0; 
 
+  if (LORAWAN_LINK_CHECK_INTERVAL <= 0) return 0; 
 
-// MAC event info status strings.
-static const char* EventInfoStatusStrings[] =
-{ 
-    "OK",                            // LORAMAC_EVENT_INFO_STATUS_OK
-    "Error",                         // LORAMAC_EVENT_INFO_STATUS_ERROR
-    "Tx timeout",                    // LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT
-    "Rx 1 timeout",                  // LORAMAC_EVENT_INFO_STATUS_RX1_TIMEOUT
-    "Rx 2 timeout",                  // LORAMAC_EVENT_INFO_STATUS_RX2_TIMEOUT
-    "Rx1 error",                     // LORAMAC_EVENT_INFO_STATUS_RX1_ERROR
-    "Rx2 error",                     // LORAMAC_EVENT_INFO_STATUS_RX2_ERROR
-    "Join failed",                   // LORAMAC_EVENT_INFO_STATUS_JOIN_FAIL
-    "Downlink repeated",             // LORAMAC_EVENT_INFO_STATUS_DOWNLINK_REPEATED
-    "Tx DR payload size error",      // LORAMAC_EVENT_INFO_STATUS_TX_DR_PAYLOAD_SIZE_ERROR
-    "Downlink too many frames loss", // LORAMAC_EVENT_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS
-    "Address fail",                  // LORAMAC_EVENT_INFO_STATUS_ADDRESS_FAIL
-    "MIC fail",                      // LORAMAC_EVENT_INFO_STATUS_MIC_FAIL
-    "Multicast fail",                // LORAMAC_EVENT_INFO_STATUS_MULTICAST_FAIL
-    "Beacon locked",                 // LORAMAC_EVENT_INFO_STATUS_BEACON_LOCKED
-    "Beacon lost",                   // LORAMAC_EVENT_INFO_STATUS_BEACON_LOST
-    "Beacon not found"               // LORAMAC_EVENT_INFO_STATUS_BEACON_NOT_FOUND
-};
-
-/*!
- * Prints the provided buffer in HEX
- * 
- * \param buffer Buffer to be printed
- * \param size   Buffer size to be printed
- */
-void PrintHexBuffer( uint8_t *buffer, uint8_t size )
-{
-    uint8_t newline = 0;
-
-    for( uint8_t i = 0; i < size; i++ ) { 
-      if( newline != 0 ) { 
-        printf( "\r\n" );
-        newline = 0;
-      }
-      
-      printf( "%02X ", buffer[i] );
-
-      if( ( ( i + 1 ) % 16 ) == 0 ) {
-        newline = 1;
-      }
-    }
-    printf( "\r\n" );
+  if (counter++ > LORAWAN_LINK_CHECK_INTERVAL) 
+  {
+    counter = 0; 
+    return true; 
+  }
+  return false; 
 }
 
+
+/** Send a link check packet */
+static bool LinkCheck (void) 
+{
+
+  LoRaMacStatus_t status; 
+  MlmeReq_t mlmeReq; 
+  mlmeReq.Type = MLME_LINK_CHECK; 
+  mlmeReq.Req.Join.Datarate = LORAWAN_DEFAULT_DATARATE; 
+
+  status = LoRaMacMlmeRequest(&mlmeReq); 
+
+#if LORAWAN_PRINT_DEBUG
+  printf( "\r\n###### ===== MLME-Request - MLME_LINK_CHECK ==== ######\r\n" );
+  printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
 #endif
+ DeviceState = DEVICE_STATE_CYCLE;
+
+ if (status == LORAMAC_STATUS_OK) 
+ {
+   return 0; 
+ }
+ return 1; 
+}
+
 
 
 
@@ -250,8 +317,8 @@ static void JoinNetwork( void )
   
   // Starts the join procedure
   status = LoRaMacMlmeRequest( &mlmeReq );
+#if LORAWAN_PRINT_DEBUG
   printf( "\r\n###### ===== MLME-Request - MLME_JOIN ==== ######\r\n" );
-#ifdef LORAWAN_PRINT_DEBUG
   printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
 #endif
 
@@ -273,17 +340,26 @@ static bool SendFrame( void ) {
 
   McpsReq_t mcpsReq;
   LoRaMacTxInfo_t txInfo;
-  uint8_t buffer_length = first_message_length(&tx); 
-
-
-  //nothing to send, so don't try!
-  if (!buffer_length) 
+  int buffer_length = first_message_length(&tx); 
+  if (buffer_length < 0 || !buffer_length) 
+  {
+    //we have nothing to send right now, consider sending a link check 
+    if (ShouldSendLinkCheck())
+    {
+      return LinkCheck(); 
+    }
     return 0; 
+  }
+
+  uint8_t flags = first_message_flags(&tx); 
+  uint8_t port = first_message_port(&tx); 
+  IsTxConfirmed = !!(flags & LORAWAN_MSG_CONFIRMED); 
+
 
   LoRaMacStatus_t cur_status = LoRaMacQueryTxPossible( buffer_length, &txInfo);
   if( cur_status != LORAMAC_STATUS_OK ) {
       printf("Sending empty Data, Loramac didn't return status ok. ");
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
       printf( "STATUS      : %s\r\n", MacStatusStrings[cur_status] );
 #endif 
       
@@ -299,14 +375,14 @@ static bool SendFrame( void ) {
       if( IsTxConfirmed == false ) {
         printf("Sending unconfirmed Data.");
         mcpsReq.Type = MCPS_UNCONFIRMED;
-        mcpsReq.Req.Unconfirmed.fPort = LORAWAN_APP_PORT;
+        mcpsReq.Req.Unconfirmed.fPort = port;
         mcpsReq.Req.Unconfirmed.fBuffer = buffer;
         mcpsReq.Req.Unconfirmed.fBufferSize = buffer_length;
         mcpsReq.Req.Unconfirmed.Datarate = LORAWAN_DEFAULT_DATARATE;
       } else {
         printf("Sending Confirmed Data.");
         mcpsReq.Type = MCPS_CONFIRMED;
-        mcpsReq.Req.Confirmed.fPort = LORAWAN_APP_PORT;
+        mcpsReq.Req.Confirmed.fPort = port;
         mcpsReq.Req.Confirmed.fBuffer = buffer;
         mcpsReq.Req.Confirmed.fBufferSize = buffer_length;
         mcpsReq.Req.Confirmed.NbTrials = 8;
@@ -317,15 +393,14 @@ static bool SendFrame( void ) {
     LoRaMacStatus_t status;
     status = LoRaMacMcpsRequest( &mcpsReq );
     printf( "\r\n###### ===== MCPS-Request ==== ######\r\n" );
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
     printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
 #endif 
 
     if( status == LORAMAC_STATUS_OK )
     {
-        //can we pop off the buffer? 
+        //can we pop off the buffer already? 
         // I guess we'll find out! 
-        consume_first_message(&rx); 
         return 0;
     }
     return 1;
@@ -345,6 +420,7 @@ static uint8_t IsMacProcessPending = 0;
  */
 static void OnTxNextPacketTimerEvent( void* context )
 {
+    (void) context; 
     MibRequestConfirm_t mibReq;
     LoRaMacStatus_t status;
 
@@ -367,10 +443,12 @@ static void OnTxNextPacketTimerEvent( void* context )
 
 
 
-void lorawan_process()
+
+int lorawan_process()
 {
 
     //check the interrupts
+    int cant_sleep = 1; 
 
         
     TimerProcess( );
@@ -384,7 +462,6 @@ void lorawan_process()
   
     switch( DeviceState ) 
     { 
-
       case DEVICE_STATE_RESTORE: {        
 
    #if( ABP_ACTIVATION_LRWAN_VERSION == ABP_ACTIVATION_LRWAN_VERSION_V10x )
@@ -427,35 +504,14 @@ void lorawan_process()
           LoRaMacMibSetRequestConfirm( &mibReq );
 
           mibReq.Type = MIB_SYSTEM_MAX_RX_ERROR; 
-          mibReq.Param.SystemMaxRxError = 100; 
+          mibReq.Param.SystemMaxRxError = LORAWAN_RX_ERROR; 
           LoRaMacMibSetRequestConfirm( &mibReq );
 
-          mibReq.Type = MIB_MIN_RX_SYMBOLS; 
-          mibReq.Param.MinRxSymbols = 50; 
-          LoRaMacMibSetRequestConfirm( &mibReq );
+//          mibReq.Type = MIB_MIN_RX_SYMBOLS; 
+//          mibReq.Param.MinRxSymbols = 10; 
+//          LoRaMacMibSetRequestConfirm( &mibReq );
 
 
-
-          /*
-          mibReq.Type = MIB_CHANNELS_MASK;
-          mibReq.Param.ChannelsMask[0] = 0x00FF;
-          mibReq.Param.ChannelsMask[1] = 0x0000;
-          mibReq.Param.ChannelsMask[2] = 0x0000;
-          mibReq.Param.ChannelsMask[3] = 0x0000;
-          mibReq.Param.ChannelsMask[4] = 0x0001;
-          mibReq.Param.ChannelsMask[5] = 0x0000;
-
-          // Prints out the mask as requested
-          mibReq.Type  = MIB_CHANNELS_MASK;
-          if( LoRaMacMibGetRequestConfirm( &mibReq ) == LORAMAC_STATUS_OK ) {
-            printf("CHANNEL MASK: ");
-              
-            for( uint8_t i = 0; i < 5; i++) {
-              printf("%04X ", mibReq.Param.ChannelsMask[i] );
-            }
-            printf("\r\n");
-          }
-          */ 
         
         DeviceState = DEVICE_STATE_START;
         break;
@@ -473,7 +529,7 @@ void lorawan_process()
         LoRaMacMibSetRequestConfirm( &mibReq );
 
         mibReq.Type = MIB_SYSTEM_MAX_RX_ERROR;
-        mibReq.Param.SystemMaxRxError = 20;
+        mibReq.Param.SystemMaxRxError = LORAWAN_RX_ERROR;
         LoRaMacMibSetRequestConfirm( &mibReq );
 
         LoRaMacStart( );
@@ -522,7 +578,7 @@ void lorawan_process()
 
       case DEVICE_STATE_SEND: {
         if(NextTx == true) {
-          NextTx = SendFrame( );
+            NextTx = SendFrame( );
         }
         DeviceState = DEVICE_STATE_CYCLE;
         break;
@@ -544,6 +600,7 @@ void lorawan_process()
         if( IsMacProcessPending == 1 ) {
           IsMacProcessPending = 0; // Clear flag and prevent MCU to go into low power modes.
         } else {      
+          cant_sleep = 0; 
           //BoardLowPowerHandler( ); // The MCU wakes up through events
         }
         CRITICAL_SECTION_END( );
@@ -557,7 +614,7 @@ void lorawan_process()
       
     } // end of switch
 
-  return;
+  return cant_sleep;
 
 }
 
@@ -566,7 +623,7 @@ void lorawan_process()
 static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
 {
     printf( "\r\n###### ===== MCPS-Confirm ==== ######\r\n" );
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mcpsConfirm->Status] );
 #endif
     if( mcpsConfirm->Status != LORAMAC_EVENT_INFO_STATUS_OK ) {
@@ -606,7 +663,7 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
 
     printf( "CLASS       : %c\r\n", "ABC"[mibReq.Param.Class] );
     printf( "\r\n" );
-    printf( "TX PORT     : %d\r\n", LORAWAN_APP_PORT );
+    printf( "TX PORT     : %d\r\n", first_message_port(&tx));
 
     /*
     if( AppData.BufferSize != 0 ) {
@@ -641,11 +698,13 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
     }
 
     printf( "\r\n" );
+
+   consume_first_message(&tx); 
 }
 
 static void McpsIndication( McpsIndication_t *mcpsIndication )
 {
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
     printf( "\r\n###### ===== MCPS-Indication ==== ######\r\n" );
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mcpsIndication->Status] );
 #endif
@@ -686,9 +745,25 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     // Check RxSlot
 
     if( mcpsIndication->RxData == true ) {
-      if( mcpsIndication->BufferSize == 1 ) {
-//        AppLedStateOn = mcpsIndication->Buffer[0] & 0x01;
+      int len = mcpsIndication->BufferSize; 
+      if (have_rx_capacity(len)) 
+      {
+        uint8_t * dest = 0; 
+        int ok = msg_getmem(&rx, len, mcpsIndication->Port, &dest, 0); 
+        if (!ok)
+        {
+          printf("could not get rx mem?\n"); 
+          rx.dropped++; 
+          memcpy(dest, mcpsIndication->Buffer, len ); 
+          msg_push(&rx); 
+        }
       }
+      else
+      {
+        printf("!!!! Dropped packet !!!!!"); 
+        rx.dropped++; 
+      }
+
     }
 
     const char *slotStrings[] = { "1", "2", "C", "C Multicast", "B Ping-Slot", "B Multicast Ping-Slot" };
@@ -701,7 +776,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
 
     if( mcpsIndication->BufferSize != 0 )
     {
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
         printf( "RX DATA     : \r\n" );
         PrintHexBuffer( mcpsIndication->Buffer, mcpsIndication->BufferSize );
 #endif
@@ -711,7 +786,6 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     printf( "DATA RATE   : DR_%d\r\n", mcpsIndication->RxDatarate );
     printf( "RX RSSI     : %d\r\n", mcpsIndication->Rssi );
     printf( "RX SNR      : %d\r\n", mcpsIndication->Snr );
-
     printf( "\r\n" );
 }
 
@@ -723,7 +797,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
  */
 static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
 {
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
     printf( "\r\n###### ===== MLME-Confirm ==== ######\r\n" );
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mlmeConfirm->Status] );
 #endif
@@ -733,6 +807,8 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
     switch( mlmeConfirm->MlmeRequest )
     {
         case MLME_JOIN:
+        case MLME_REJOIN_0:
+        case MLME_REJOIN_1:
         {
             if( mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
             {
@@ -760,11 +836,13 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
                   printf("\r\n");
                 }
           
+                joined = 1; 
                 // Status is OK, node has joined the network
                 DeviceState = DEVICE_STATE_SEND;
             }
             else
             {
+                joined = 0; 
                 // Join was not successful. Try to join again
                 JoinNetwork( );
             }
@@ -774,6 +852,13 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
         {
             if( mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
             {
+              printf(" Link check succeeded?\n"); 
+
+            }
+            else
+            {
+                joined = 0; 
+                DeviceState = DEVICE_STATE_RESTORE;
             }
             break;
         }
@@ -789,7 +874,7 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
  */
 static void MlmeIndication( MlmeIndication_t *mlmeIndication ) { 
   if( mlmeIndication->Status != LORAMAC_EVENT_INFO_STATUS_BEACON_LOCKED ) { 
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
     printf( "\r\n###### ===== MLME-Indication ==== ######\r\n" );
     printf( "STATUS      : %s\r\n", EventInfoStatusStrings[mlmeIndication->Status] );
 #endif
@@ -819,6 +904,20 @@ uint8_t GetBatteryLevel (void)
 }
 
 
+lwan_state_t lorawan_state(void) 
+{
+
+  switch (joined)
+  {
+    case 0:
+      return LORAWAN_JOINING;
+    default: 
+      return LORAWAN_READY; 
+  }
+}
+
+
+
 
 int lorawan_init() 
 {
@@ -844,7 +943,7 @@ int lorawan_init()
   LoRaMacStatus_t status;
   status = LoRaMacInitialization( &macPrimitives, &macCallbacks, ACTIVE_REGION );
   if( status != LORAMAC_STATUS_OK ) {
-#ifdef LORAWAN_PRINT_DEBUG
+#if LORAWAN_PRINT_DEBUG
    printf( "LoRaMac wasn't properly initialized, error: %s", MacStatusStrings[status] );
 #endif
    return status; 

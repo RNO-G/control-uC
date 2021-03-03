@@ -110,8 +110,9 @@ void RtcInit( void )
 {
     if( RtcInitialized == false )
     {
-//        //this uses 32.768 clock with a prescaler of 8, so this results in ~1 ms
-        timer_set_clock_cycles_per_tick(&LORA_TIMER,32); 
+        timer_get_clock_cycles_in_tick(&LORA_TIMER,&previous_cc_per_tick); 
+//        //this uses 32.768 clock with a prescaler of 1, so this results in ~1 ms
+//        timer_set_clock_cycles_per_tick(&LORA_TIMER,32); 
         timer_start(&LORA_TIMER); 
         RtcTimerContext.AlarmState = ALARM_STOPPED;
         RtcSetTimerContext( );
@@ -137,11 +138,26 @@ uint32_t RtcGetMinimumTimeout( void )
     return( MIN_ALARM_DELAY );
 }
 
+
+static uint32_t convert_multiply = 1;
+static uint8_t convert_shift = 0;
+static uint8_t convert_offset = 0; 
+
 uint32_t RtcMs2Tick( TimerTime_t milliseconds )
 {
-    return ( uint32_t )( milliseconds); 
-//    return ( uint32_t )( milliseconds*1024/1000*4/5 );
+    if (milliseconds < convert_offset) return 0; 
+    return ( uint32_t )(  ((milliseconds-convert_offset)  * convert_multiply) >> convert_shift  ); 
 }
+
+void setRtcMs2Tick(uint32_t multiply, uint8_t shift) 
+{
+  if (shift >= 0 && shift <32) 
+  {
+    convert_multiply = multiply; 
+    convert_shift = shift; 
+  }
+}
+
 
 TimerTime_t RtcTick2Ms( uint32_t tick )
 {

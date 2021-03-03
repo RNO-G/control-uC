@@ -11,7 +11,7 @@
 #define LORAWAN_RX_BUFFER_SIZE 512
 #define LORAWAN_MAX_RX_MESSAGES 8
 
-//#define LORAWAN_PRINT_DEBUG 1
+#define LORAWAN_PRINT_DEBUG 0
 
 #define LORAWAN_CONFIRMED_MSG_ON 0 
 
@@ -39,7 +39,9 @@
 #define LORAWAN_DEFAULT_DATARATE                    DR_3
 #define LORAWAN_ADR_ON                              0
 
-//what the hell does this mean? 
-#define LORAWAN_APP_PORT   2
+#define LORAWAN_RX_ERROR  100 
+
+
+#define LORAWAN_LINK_CHECK_INTERVAL 3600 
 
 #endif

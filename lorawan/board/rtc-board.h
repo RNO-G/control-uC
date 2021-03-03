@@ -74,6 +74,8 @@ uint32_t RtcGetMinimumTimeout( void );
  */
 uint32_t RtcMs2Tick( TimerTime_t milliseconds );
 
+void setRtcMs2Tick(uint32_t multiply, uint8_t shift); 
+
 /*!
  * \brief converts time in ticks to time in ms
  *
