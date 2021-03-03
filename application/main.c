@@ -22,7 +22,6 @@
 
 
 
-static  config_block_t cfg; 
 
 
 static volatile int n_interrupts; 
@@ -70,7 +69,8 @@ int main(void)
   lte_init(); 
 #endif 
 
-  spi_flash_read_config_block(&cfg); 
+  // read in the config block
+  config_block_t * cfg = config_block(); 
 
 
 #ifndef _DEVBOARD_

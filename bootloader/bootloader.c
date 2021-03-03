@@ -9,7 +9,6 @@
 #include "shared/printf.h" 
 #include "shared/io.h" 
 
-static config_block_t config_block; 
 
 
 static void __attribute__((naked)) start_app(uint32_t sp, uint32_t start) 
@@ -70,12 +69,12 @@ int main(void)
   spi_flash_init(); 
 
   //read the bootloader config block 
-  spi_flash_read_config_block(&config_block); 
+  config_block_t * cfgblock = config_block(); 
 
   //initialize shared memory
   init_shared_memory(); 
   
-  bootloader_cfg_t * cfg = &config_block.boot_cfg;
+  bootloader_cfg_t * cfg = &cfgblock->boot_cfg;
   volatile shared_memory_t * shm = get_shared_memory();
 
 

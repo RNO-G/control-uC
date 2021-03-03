@@ -17,8 +17,15 @@ void spi_flash_deep_sleep();
 //1 if busy, 0 if not
 int spi_flash_busy(); 
 
-void spi_flash_write_config_block(const config_block_t * config_block) ; 
-int spi_flash_read_config_block(config_block_t * config_block) ; 
+
+/** This obtains the config block. On boot up, this will read it from SPI flash (or default init it, if we have none)
+ * but subsequently it will be cached.
+ **/ 
+config_block_t * config_block(); 
+void config_block_force_read(); 
+void config_block_sync(); 
+
+
 
 /*Valid slots are 1-4 (since 0 is used for ROM) */ 
 

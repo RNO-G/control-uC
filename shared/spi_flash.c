@@ -329,7 +329,12 @@ static void _find_config_block()
 }
 
 
-int spi_flash_read_config_block(config_block_t * config_block) 
+
+
+
+
+
+static int spi_flash_read_config_block(config_block_t * config_block) 
 {
   spi_flash_wakeup(); 
   // we have to find it 
@@ -353,7 +358,7 @@ int spi_flash_read_config_block(config_block_t * config_block)
   return 0; 
 }
 
-void spi_flash_write_config_block(const config_block_t * block) 
+static void spi_flash_write_config_block(const config_block_t * block) 
 {
   spi_flash_wakeup(); 
 
@@ -393,6 +398,34 @@ void spi_flash_write_config_block(const config_block_t * block)
   current_config_block = next_config_block; 
   spi_flash_deep_sleep(); 
 }
+
+static int already_read_config_block = 0; 
+static config_block_t the_config_block; 
+
+
+config_block_t * config_block() 
+{
+  if (!already_read_config_block) 
+  {
+    spi_flash_read_config_block(&the_config_block); 
+    already_read_config_block = 1; 
+  }
+  return &the_config_block;
+}
+
+void config_block_force_read() 
+{
+  spi_flash_read_config_block(&the_config_block); 
+  already_read_config_block =1 ; 
+}
+
+
+void config_block_sync()
+{
+  spi_flash_write_config_block(&the_config_block); 
+}
+
+
 
 #define N_applications 4 
 #define application_start  (64 * 1024)
