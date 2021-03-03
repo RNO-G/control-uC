@@ -37,7 +37,7 @@
 // <e> Advanced configuration
 // <id> timer_advanced_configuration
 #ifndef CONF_TC3__ADVANCED_CONFIGURATION_ENABLE
-#define CONF_TC3__ADVANCED_CONFIGURATION_ENABLE 0
+#define CONF_TC3__ADVANCED_CONFIGURATION_ENABLE 1
 #endif
 
 // <y> Prescaler and Counter Synchronization Selection

@@ -214,7 +214,7 @@
 // <i> If this bit is 1: the oscillator will only be running when requested by a peripheral.
 // <id> xosc32k_arch_ondemand
 #ifndef CONF_XOSC32K_ONDEMAND
-#define CONF_XOSC32K_ONDEMAND 1
+#define CONF_XOSC32K_ONDEMAND 0
 #endif
 
 // <q> Run In Standby

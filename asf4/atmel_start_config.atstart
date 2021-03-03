@@ -2,16 +2,16 @@ format_version: '2'
 name: rno-g uC
 versions:
   api: '1.0'
-  backend: 1.7.303
-  commit: 1e07622763d149970fd8808a8f12ff3b1e84e0d7
+  backend: 1.8.491
+  commit: 605bd5a7663644fb84783aa2b00942b79b0d8955
   content: unknown
   content_pack_name: unknown
   format: '2'
-  frontend: 1.7.303
-  packs_version_avr8: 1.0.1410
+  frontend: 1.8.491
+  packs_version_avr8: 1.0.1446
   packs_version_qtouch: unknown
-  packs_version_sam: 1.0.1554
-  version_backend: 1.7.303
+  packs_version_sam: 1.0.1726
+  version_backend: 1.8.491
   version_frontend: ''
 board:
   identifier: CustomBoard
@@ -234,6 +234,18 @@ drivers:
     functionality: System
     api: HAL:HPL:GCLK
     configuration:
+      $input: 400000
+      $input_id: External Crystal Oscillator 0.4-32MHz (XOSC)
+      RESERVED_InputFreq: 400000
+      RESERVED_InputFreq_id: External Crystal Oscillator 0.4-32MHz (XOSC)
+      _$freq_output_Generic clock generator 0: 48000000
+      _$freq_output_Generic clock generator 1: 1000000
+      _$freq_output_Generic clock generator 2: 32768
+      _$freq_output_Generic clock generator 3: 32768
+      _$freq_output_Generic clock generator 4: 400000
+      _$freq_output_Generic clock generator 5: 400000
+      _$freq_output_Generic clock generator 6: 400000
+      _$freq_output_Generic clock generator 7: 400000
       enable_gclk_gen_0: true
       enable_gclk_gen_0__externalclock: 1000000
       enable_gclk_gen_1: false
@@ -337,6 +349,11 @@ drivers:
     functionality: System
     api: HAL:HPL:PM
     configuration:
+      $input: 48000000
+      $input_id: Generic clock generator 0
+      RESERVED_InputFreq: 48000000
+      RESERVED_InputFreq_id: Generic clock generator 0
+      _$freq_output_CPU: 48000000
       apba_div: '1'
       apbb_div: '1'
       apbc_div: '1'
@@ -686,9 +703,9 @@ drivers:
       tc_arch_runstdby: false
       tc_arch_tcei: false
       tc_arch_tceinv: false
-      timer_advanced_configuration: false
+      timer_advanced_configuration: true
       timer_event_control: false
-      timer_prescaler: Divide by 8
+      timer_prescaler: No division
       timer_tick: 1000
     optional_signals: []
     variant: null
@@ -1017,6 +1034,14 @@ drivers:
     functionality: System
     api: HAL:HPL:SYSCTRL
     configuration:
+      $input: 32768
+      $input_id: Generic clock generator 3
+      RESERVED_InputFreq: 32768
+      RESERVED_InputFreq_id: Generic clock generator 3
+      _$freq_output_8MHz Internal Oscillator (OSC8M): 1000000
+      _$freq_output_Digital Frequency Locked Loop (DFLL48M): 48000000
+      _$freq_output_External Crystal Oscillator 0.4-32MHz (XOSC): 400000
+      _$freq_output_Fractional Digital Phase Locked Loop (FDPLL96M): 47998976
       dfll48m_arch_bplckc: false
       dfll48m_arch_calibration: false
       dfll48m_arch_ccdis: false
@@ -1072,7 +1097,7 @@ drivers:
       xosc32k_arch_en1k: false
       xosc32k_arch_en32k: true
       xosc32k_arch_enable: true
-      xosc32k_arch_ondemand: true
+      xosc32k_arch_ondemand: false
       xosc32k_arch_runstdby: false
       xosc32k_arch_startup: 122 us
       xosc32k_arch_wrtlock: false

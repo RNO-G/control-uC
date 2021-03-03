@@ -121,7 +121,6 @@ int32_t _calendar_init(struct calendar_dev *const dev)
 
 	_rtc_dev = dev;
 
-	hri_rtcmode0_wait_for_sync(dev->hw);
 	if (hri_rtcmode0_get_CTRL_ENABLE_bit(dev->hw)) {
 #if !CONF_RTC_INIT_RESET
 		return ERR_DENIED;
