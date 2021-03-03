@@ -3,14 +3,8 @@ CFLAGS= \
 -D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3 -D_GNU_SOURCE 
 
 
-ifeq ($(DEVBOARD),1) 
-BUILD_DIR=builddev
-ASF4_PREFIX=devboard
-CFLAGS+=-D_DEVBOARD_
-else
 BUILD_DIR=build
 ASF4_PREFIX=asf4
-endif
 
 
 
@@ -40,9 +34,7 @@ BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 
 APP_OBJS=$(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o )
-ifneq ($(DEVBOARD),1)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o )
-endif
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
 

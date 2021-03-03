@@ -12,7 +12,6 @@
 #include <hpl_pm_base.h>
 
 #ifndef _BOOTLOADER_
-#ifndef _DEVBOARD_
 #include <hpl_adc_base.h>
 
 /*! The buffer size for USART */
@@ -21,7 +20,6 @@
 /*! The buffer size for USART */
 #define SBC_UART_CONSOLE_BUFFER_SIZE 16
 
-#endif 
 #endif
 
 /*! The buffer size for USART */
@@ -34,7 +32,6 @@ struct spi_m_sync_descriptor  SPI_FLASH;
 struct spi_m_sync_descriptor  LORA_SPI;
 struct timer_descriptor       LORA_TIMER;
 
-#ifndef _DEVBOARD_
 struct usart_async_descriptor SBC_UART_CONSOLE;
 struct usart_async_descriptor LTE_UART;
 struct adc_sync_descriptor ANALOGIN;
@@ -42,19 +39,16 @@ struct timer_descriptor       SHARED_TIMER;
 
 static uint8_t LTE_UART_buffer[LTE_UART_BUFFER_SIZE];
 static uint8_t SBC_UART_CONSOLE_buffer[SBC_UART_CONSOLE_BUFFER_SIZE];
-#endif
 #endif 
 static uint8_t SBC_UART_buffer[SBC_UART_BUFFER_SIZE];
 
 
 struct flash_descriptor FLASH;
 
-#ifndef _DEVBOARD_
 #if USE_SYNCHRONOUS_I2C
 struct i2c_m_sync_desc I2C;
 #else
 struct i2c_m_async_desc I2C;
-#endif
 #endif
 
 #ifndef _BOOTLOADER_
@@ -63,9 +57,6 @@ struct wdt_descriptor INTERNAL_WATCHDOG;
 #endif 
 
 
-#ifdef _DEVBOARD_
-#include "shared/driver_init_devboard.c"
-#else
 #ifndef _BOOTLOADER_
 static void ANALOGIN_PORT_init(void)
 {
@@ -416,7 +407,6 @@ static void SHARED_TIMER_init(void)
 
 
 #endif  //not bootloader
-#endif //not devboard
 
 
 ///// common to all 
@@ -528,7 +518,6 @@ void system_init(void)
 
 	gpio_set_pin_function(LORA_SPI_CS, GPIO_PIN_FUNCTION_OFF);
 
-#ifndef _DEVBOARD_
 
 	gpio_set_pin_level(VICOR_EN, true);
 	gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_OUT);
@@ -584,11 +573,8 @@ void system_init(void)
 	LTE_UART_init();
 	I2C_init();
   SHARED_TIMER_init(); 
-#endif //devbaord
 #endif  // bootloader
 
-//these need to be in normal bootlaoder, but not dev board
-#ifndef _DEVBOARD_ 
 	// Set pin direction to input
 	gpio_set_pin_direction(GPIO3, GPIO_DIRECTION_IN);
 	gpio_set_pin_pull_mode(GPIO3, GPIO_PULL_OFF);
@@ -601,7 +587,6 @@ void system_init(void)
 	gpio_set_pin_direction(GPIO1, GPIO_DIRECTION_IN);
 	gpio_set_pin_pull_mode(GPIO1, GPIO_PULL_OFF);
 	gpio_set_pin_function(GPIO1, GPIO_PIN_FUNCTION_OFF);
-#endif
 
 	FLASH_init();
 	SBC_UART_init();
@@ -628,11 +613,7 @@ void system_init(void)
 
 static void SPI_FLASH_deinit(void)
 {
-#ifndef _DEVBOARD_
   _pm_disable_bus_clock(PM_BUS_APBC, SERCOM2); 
-#else
-  _pm_disable_bus_clock(PM_BUS_APBC, SERCOM5); 
-#endif
 	spi_m_sync_deinit(&SPI_FLASH); 
   gpio_set_pin_function(SPI_FLASH_SCLK, GPIO_PIN_FUNCTION_OFF);
   gpio_set_pin_function(SPI_FLASH_MOSI, GPIO_PIN_FUNCTION_OFF);
@@ -641,12 +622,7 @@ static void SPI_FLASH_deinit(void)
 
 static void SBC_UART_deinit(void) 
 {
-#ifndef _DEVBOARD_
 	_pm_disable_bus_clock(PM_BUS_APBC, SERCOM0);
-#else
-	_pm_disable_bus_clock(PM_BUS_APBC, SERCOM3);
-
-#endif
 	usart_async_deinit(&SBC_UART); 
 	gpio_set_pin_function(SBC_UART_TX, GPIO_PIN_FUNCTION_OFF);
 	gpio_set_pin_function(SBC_UART_RX, GPIO_PIN_FUNCTION_OFF);
@@ -660,10 +636,10 @@ static void FLASH_deinit(void)
 }
 
 
-void system_deinit() 
+void system_deinit(void) 
 {
   SPI_FLASH_deinit(); 
   FLASH_deinit(); 
   SBC_UART_deinit(); 
 }
-#endif
+#endif 

@@ -23,11 +23,9 @@
 #include <hal_usart_async.h>
 #include <hal_spi_m_sync.h>
 
-#ifndef _DEVBOARD_
 #include <hal_i2c_m_async.h>
 #include <hal_i2c_m_sync.h>
 #include <hal_adc_sync.h>
-#endif
 
 #ifndef _BOOTLOADER_
 #include <hal_delay.h>
@@ -51,7 +49,6 @@ extern struct timer_descriptor    LORA_TIMER;
 extern struct wdt_descriptor INTERNAL_WATCHDOG;
 
 
-#ifndef _DEVBOARD_
 extern struct usart_async_descriptor LTE_UART;
 extern struct usart_async_descriptor SBC_UART_CONSOLE;
 extern struct timer_descriptor    SHARED_TIMER;
@@ -60,9 +57,10 @@ extern struct adc_sync_descriptor ANALOGIN;
 extern struct i2c_m_sync_desc I2C;
 #else
 extern struct i2c_m_async_desc I2C;
-#endif
-#endif 
-#endif
+#endif //synchrnous i2c
+ 
+
+#endif  //!bootloader
 
 
 /**
