@@ -24,20 +24,20 @@
 // <i> This defines the prescaler value
 // <id> timer_prescaler
 #ifndef CONF_TC3_PRESCALER
-#define CONF_TC3_PRESCALER TC_CTRLA_PRESCALER_DIV1_Val
+#define CONF_TC3_PRESCALER TC_CTRLA_PRESCALER_DIV8_Val
 #endif
 
 // <o> Length of one timer tick in uS <0-4294967295>
 // <id> timer_tick
 #ifndef CONF_TC3_TIMER_TICK
-#define CONF_TC3_TIMER_TICK 1000
+#define CONF_TC3_TIMER_TICK 10000
 #endif
 // </h>
 
 // <e> Advanced configuration
 // <id> timer_advanced_configuration
 #ifndef CONF_TC3__ADVANCED_CONFIGURATION_ENABLE
-#define CONF_TC3__ADVANCED_CONFIGURATION_ENABLE 1
+#define CONF_TC3__ADVANCED_CONFIGURATION_ENABLE 0
 #endif
 
 // <y> Prescaler and Counter Synchronization Selection

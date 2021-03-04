@@ -38,6 +38,7 @@ int lorawan_tx_getmem(uint8_t len, uint8_t opcode, uint8_t ** payload, uint8_t f
 int lorawan_tx_push(); 
 
 
+int lorawan_request_datetime(); 
 
 
 /** run the lorawan state machine for a bit 

@@ -481,7 +481,7 @@
 
 // <i> Select the clock source for RTC.
 #ifndef CONF_GCLK_RTC_SRC
-#define CONF_GCLK_RTC_SRC GCLK_CLKCTRL_GEN_GCLK3_Val
+#define CONF_GCLK_RTC_SRC GCLK_CLKCTRL_GEN_GCLK1_Val
 #endif
 
 /**
@@ -489,7 +489,7 @@
  * \brief RTC's Clock frequency
  */
 #ifndef CONF_GCLK_RTC_FREQUENCY
-#define CONF_GCLK_RTC_FREQUENCY 32768
+#define CONF_GCLK_RTC_FREQUENCY 1024
 #endif
 
 // <y> TC Clock Source
@@ -577,14 +577,14 @@
 
 // <i> Select the clock source for WDT.
 #ifndef CONF_GCLK_WDT_SRC
-#define CONF_GCLK_WDT_SRC GCLK_CLKCTRL_GEN_GCLK2_Val
+#define CONF_GCLK_WDT_SRC GCLK_CLKCTRL_GEN_GCLK1_Val
 #endif
 /**
  * \def CONF_GCLK_WDT_FREQUENCY
  * \brief WDT's Clock frequency
  */
 #ifndef CONF_GCLK_WDT_FREQUENCY
-#define CONF_GCLK_WDT_FREQUENCY 32768
+#define CONF_GCLK_WDT_FREQUENCY 1024
 #endif
 
 // <<< end of configuration section >>>

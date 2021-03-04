@@ -10,6 +10,7 @@
 #include "shared/spi_flash.h" 
 #include "shared/shared_memory.h" 
 #include "application/gpio_expander.h" 
+#include "config/config.h" 
 
 #include "hal_i2c_m_sync.h" 
 #include "application/lte.h" 
@@ -78,7 +79,10 @@ int main(void)
 
   printf("#INFO: BOOTED! \r\n"); 
 
-
+  //enable the calendar
+  calendar_enable(&CALENDAR); 
+  struct calendar_date_time now;
+  uint64_t time_check = 0; 
 
   /** Initialize LoRaWAN */ 
   lorawan_init(); 
@@ -119,32 +123,59 @@ int main(void)
     // Service LoRaWAN 
     lorawan_process(); 
 
-
-
-    /// See if we need to do anything
-
-
-
-
-    /// See if we need to send anything 
-
-    // Do we have time? 
-    // If not we should ask for it
-
-
-
-    //Let's testing sending something 
-    if ((nticks & 0x7ff) == 0 && lorawan_state() == LORAWAN_READY) 
+    //did we get anything? 
+    uint8_t lora_len, lora_port, *lora_bytes, lora_flags; 
+    while (lorawan_rx_peek(&lora_len, &lora_port, &lora_bytes, &lora_flags))
     {
-      lorawan_tx_copy(sizeof(nticks), 2, (uint8_t*) &nticks,0); 
-
-
-
+      printf("#LORA_RECV(len=%u,port=%u,flags=%u): ", lora_len, lora_port, lora_flags ); 
+      for (uint8_t i = 0; i < lora_len ; i++) 
+      {
+        printf("%02x ", lora_bytes[i]); 
+      }
+      printf("\n"); 
+      lorawan_rx_pop(); 
     }
     
 
 
-    delay_ms(10); 
+
+
+
+    /// See if we need to do anything
+
+    if (nticks %50 ==0 ) calendar_get_date_time(&CALENDAR, &now); 
+    if (nticks %1000 == 0) 
+    {
+      printf("#NOW: %d-%d-%d %02d:%02d:%02d\n", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec); 
+    }
+
+    /// See if we need to send anything 
+
+
+    if (lorawan_state() == LORAWAN_READY) 
+    {
+      //our time isn't valid, let's request it
+      if (now.date.year < 2021 && nticks >= time_check) 
+      {
+       lorawan_request_datetime() ;
+       time_check+= (15000 / DELAY_MS) ; //check again in ~15 seconds
+      }
+
+      //Let's testing sending something 
+      if ((nticks & 0x7ff) == 0 && lorawan_state() == LORAWAN_READY) 
+      {
+        lorawan_tx_copy(sizeof(nticks), 2, (uint8_t*) &nticks,0); 
+
+      }
+   
+
+
+    }
+
+   
+
+
+    delay_ms(DELAY_MS); 
     nticks++; 
 	}
 }

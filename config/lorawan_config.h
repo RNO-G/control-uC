@@ -39,7 +39,7 @@
 #define LORAWAN_DEFAULT_DATARATE                    DR_3
 #define LORAWAN_ADR_ON                              0
 
-#define LORAWAN_RX_ERROR  100 
+#define LORAWAN_RX_ERROR  250 
 
 
 #define LORAWAN_LINK_CHECK_INTERVAL 3600 

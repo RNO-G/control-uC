@@ -281,6 +281,37 @@ static bool ShouldSendLinkCheck(void)
 }
 
 
+
+static bool should_request_time = 0; 
+static bool RequestTime(void) 
+{
+  //This sends a time request packet 
+
+  LoRaMacStatus_t status; 
+  MlmeReq_t mlmeReq; 
+  mlmeReq.Type = MLME_DEVICE_TIME; 
+  mlmeReq.Req.Join.Datarate = LORAWAN_DEFAULT_DATARATE; 
+
+  status = LoRaMacMlmeRequest(&mlmeReq); 
+
+#if LORAWAN_PRINT_DEBUG
+  printf( "\r\n###### ===== MLME-Request - MLME_DEVICE_TIME ==== ######\r\n" );
+  printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
+#endif
+ DeviceState = DEVICE_STATE_SLEEP;
+
+ should_request_time=0;
+
+ if (status == LORAMAC_STATUS_OK) 
+ {
+   return 0; 
+ }
+ else return 1; 
+
+
+}
+
+
 /** Send a link check packet */
 static bool LinkCheck (void) 
 {
@@ -296,7 +327,7 @@ static bool LinkCheck (void)
   printf( "\r\n###### ===== MLME-Request - MLME_LINK_CHECK ==== ######\r\n" );
   printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
 #endif
- DeviceState = DEVICE_STATE_CYCLE;
+ DeviceState = DEVICE_STATE_SLEEP;
 
  if (status == LORAMAC_STATUS_OK) 
  {
@@ -343,8 +374,15 @@ static bool SendFrame( void ) {
   int buffer_length = first_message_length(&tx); 
   if (buffer_length < 0 || !buffer_length) 
   {
+
+    //do I need to send time? 
+    if (should_request_time)
+    {
+      return RequestTime(); 
+    }
+
     //we have nothing to send right now, consider sending a link check 
-    if (ShouldSendLinkCheck())
+    else if (ShouldSendLinkCheck())
     {
       return LinkCheck(); 
     }
@@ -911,6 +949,7 @@ lwan_state_t lorawan_state(void)
   {
     case 0:
       return LORAWAN_JOINING;
+    case 1: 
     default: 
       return LORAWAN_READY; 
   }
@@ -956,6 +995,10 @@ int lorawan_init()
 
 
 
-
+int lorawan_request_datetime() 
+{
+  should_request_time =1; 
+  return 0; 
+}
 
 

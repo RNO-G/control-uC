@@ -145,8 +145,7 @@ static uint8_t convert_offset = 0;
 
 uint32_t RtcMs2Tick( TimerTime_t milliseconds )
 {
-    if (milliseconds < convert_offset) return 0; 
-    return ( uint32_t )(  ((milliseconds-convert_offset)  * convert_multiply) >> convert_shift  ); 
+  return milliseconds / 10; 
 }
 
 void setRtcMs2Tick(uint32_t multiply, uint8_t shift) 
@@ -161,10 +160,11 @@ void setRtcMs2Tick(uint32_t multiply, uint8_t shift)
 
 TimerTime_t RtcTick2Ms( uint32_t tick )
 {
-    uint32_t seconds = tick >> 10;
+  return tick *10; 
+//    uint32_t seconds = tick *100; 
 
-    tick = tick & 0x3FF;
-    return ( ( seconds * 1000 ) + ( ( tick * 1000 ) >> 10 ) );
+ //   tick = tick & 0x3FF;
+ //   return ( ( seconds * 1000 ) + ( ( tick * 1000 ) >> 10 ) );
 }
 
 void RtcDelayMs( TimerTime_t milliseconds )
@@ -244,9 +244,9 @@ uint32_t RtcGetCalendarTime( uint16_t *milliseconds )
 
     uint32_t calendarValue = LORA_TIMER.time; 
 
-    uint32_t seconds = ( uint32_t )calendarValue >> 10;
+    uint32_t seconds = ( uint32_t )calendarValue / 1000;
 
-    ticks =  ( uint32_t )calendarValue & 0x3FF;
+    ticks =  ( uint32_t )calendarValue % 1000;
 
     *milliseconds = RtcTick2Ms( ticks );
 

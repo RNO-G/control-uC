@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include "rtc-board.h"
 #include "systime.h"
+#include "hal_calendar.h" 
+#include "driver_init.h" 
 
 #define END_OF_FEBRUARY_LEAP                         60 //31+29
 #define END_OF_JULY_LEAP                            213 //31+29+...
@@ -113,6 +115,22 @@ void SysTimeSet( SysTime_t sysTime )
     deltaTime = SysTimeSub( sysTime, calendarTime );
 
     RtcBkupWrite( deltaTime.Seconds, ( uint32_t )deltaTime.SubSeconds );
+
+    //Now set it for the calendar instance 
+
+    struct calendar_date d; 
+    struct calendar_time t; 
+    struct tm localtime; 
+    SysTimeLocalTime(sysTime.Seconds, &localtime); 
+    d.year = 1900 + localtime.tm_year; 
+    d.month= localtime.tm_mon+1; 
+    d.day=localtime.tm_mday; 
+    calendar_set_date(&CALENDAR, &d); 
+
+    t.hour = localtime.tm_hour; 
+    t.min = localtime.tm_min; 
+    t.sec = localtime.tm_sec; 
+    calendar_set_time(&CALENDAR, &t); 
 }
 
 SysTime_t SysTimeGet( void )

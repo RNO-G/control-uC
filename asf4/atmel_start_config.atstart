@@ -234,13 +234,13 @@ drivers:
     functionality: System
     api: HAL:HPL:GCLK
     configuration:
-      $input: 400000
-      $input_id: External Crystal Oscillator 0.4-32MHz (XOSC)
-      RESERVED_InputFreq: 400000
-      RESERVED_InputFreq_id: External Crystal Oscillator 0.4-32MHz (XOSC)
+      $input: 32768
+      $input_id: 32kHz External Crystal Oscillator (XOSC32K)
+      RESERVED_InputFreq: 32768
+      RESERVED_InputFreq_id: 32kHz External Crystal Oscillator (XOSC32K)
       _$freq_output_Generic clock generator 0: 48000000
-      _$freq_output_Generic clock generator 1: 1000000
-      _$freq_output_Generic clock generator 2: 32768
+      _$freq_output_Generic clock generator 1: 1024
+      _$freq_output_Generic clock generator 2: null
       _$freq_output_Generic clock generator 3: 32768
       _$freq_output_Generic clock generator 4: 400000
       _$freq_output_Generic clock generator 5: 400000
@@ -248,9 +248,9 @@ drivers:
       _$freq_output_Generic clock generator 7: 400000
       enable_gclk_gen_0: true
       enable_gclk_gen_0__externalclock: 1000000
-      enable_gclk_gen_1: false
+      enable_gclk_gen_1: true
       enable_gclk_gen_1__externalclock: 1000000
-      enable_gclk_gen_2: true
+      enable_gclk_gen_2: false
       enable_gclk_gen_2__externalclock: 1000000
       enable_gclk_gen_3: true
       enable_gclk_gen_3__externalclock: 1000000
@@ -268,12 +268,12 @@ drivers:
       gclk_arch_gen_0_oe: false
       gclk_arch_gen_0_oov: false
       gclk_arch_gen_1_RUNSTDBY: false
-      gclk_arch_gen_1_enable: false
+      gclk_arch_gen_1_enable: true
       gclk_arch_gen_1_idc: false
       gclk_arch_gen_1_oe: false
       gclk_arch_gen_1_oov: false
-      gclk_arch_gen_2_RUNSTDBY: true
-      gclk_arch_gen_2_enable: true
+      gclk_arch_gen_2_RUNSTDBY: false
+      gclk_arch_gen_2_enable: false
       gclk_arch_gen_2_idc: false
       gclk_arch_gen_2_oe: false
       gclk_arch_gen_2_oov: false
@@ -305,12 +305,12 @@ drivers:
       gclk_gen_0_div: 1
       gclk_gen_0_div_sel: false
       gclk_gen_0_oscillator: Digital Frequency Locked Loop (DFLL48M)
-      gclk_gen_1_div: 1
+      gclk_gen_1_div: 32
       gclk_gen_1_div_sel: false
-      gclk_gen_1_oscillator: 8MHz Internal Oscillator (OSC8M)
-      gclk_gen_2_div: 1
+      gclk_gen_1_oscillator: 32kHz External Crystal Oscillator (XOSC32K)
+      gclk_gen_2_div: 32
       gclk_gen_2_div_sel: false
-      gclk_gen_2_oscillator: 32kHz Ultra Low Power Internal Oscillator (OSCULP32K)
+      gclk_gen_2_oscillator: 32kHz External Crystal Oscillator (XOSC32K)
       gclk_gen_3_div: 1
       gclk_gen_3_div_sel: false
       gclk_gen_3_oscillator: 32kHz External Crystal Oscillator (XOSC32K)
@@ -483,7 +483,7 @@ drivers:
       spi_master_arch_dord: MSB first
       spi_master_arch_ibon: In data stream
       spi_master_arch_runstdby: false
-      spi_master_baud_rate: 50000
+      spi_master_baud_rate: 8000000
       spi_master_character_size: 8 bits
       spi_master_dummybyte: 511
       spi_master_rx_enable: true
@@ -683,11 +683,11 @@ drivers:
       domain_group:
         nodes:
         - name: RTC
-          input: Generic clock generator 3
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         configuration:
-          rtc_clk_selection: Generic clock generator 3
+          rtc_clk_selection: Generic clock generator 1
   LORA_TIMER:
     user_label: LORA_TIMER
     definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::TC3::driver_config_definition::Timer::HAL:Driver:Timer
@@ -703,10 +703,10 @@ drivers:
       tc_arch_runstdby: false
       tc_arch_tcei: false
       tc_arch_tceinv: false
-      timer_advanced_configuration: true
+      timer_advanced_configuration: false
       timer_event_control: false
-      timer_prescaler: No division
-      timer_tick: 1000
+      timer_prescaler: Divide by 8
+      timer_tick: 10000
     optional_signals: []
     variant: null
     clocks:
@@ -1097,7 +1097,7 @@ drivers:
       xosc32k_arch_en1k: false
       xosc32k_arch_en32k: true
       xosc32k_arch_enable: true
-      xosc32k_arch_ondemand: false
+      xosc32k_arch_ondemand: true
       xosc32k_arch_runstdby: false
       xosc32k_arch_startup: 122 us
       xosc32k_arch_wrtlock: false
@@ -1120,7 +1120,7 @@ drivers:
     functionality: WDT
     api: HAL:Driver:WDT
     configuration:
-      wdt_arch_per: 8 clock cycles
+      wdt_arch_per: 16384 clock cycles
       wdt_arch_window: 8 clock cycles
       wdt_arch_window_en: false
     optional_signals: []
@@ -1129,11 +1129,11 @@ drivers:
       domain_group:
         nodes:
         - name: WDT
-          input: Generic clock generator 2
+          input: Generic clock generator 1
           external: false
           external_frequency: 0
         configuration:
-          wdt_gclk_selection: Generic clock generator 2
+          wdt_gclk_selection: Generic clock generator 1
 pads:
   AIN1:
     name: PA03
