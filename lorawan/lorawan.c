@@ -790,10 +790,13 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
         int ok = msg_getmem(&rx, len, mcpsIndication->Port, &dest, 0); 
         if (!ok)
         {
-          printf("could not get rx mem?\n"); 
-          rx.dropped++; 
           memcpy(dest, mcpsIndication->Buffer, len ); 
           msg_push(&rx); 
+        }
+        else
+        {
+          rx.dropped++; 
+          printf("could not get rx mem?\n"); 
         }
       }
       else
