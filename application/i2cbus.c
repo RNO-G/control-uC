@@ -31,17 +31,28 @@ int i2c_enqueue(i2c_task_t * task)
   i2c_m_sync_set_slaveaddr(&I2C, task->addr, I2C_M_SEVEN); 
 
   int ret = 0; 
+  int regless = task->flags & I2CTSK_REG_LESS; 
+
 
   if (task->write)
   {
     uint8_t buf[2] = {task->reg, task->data}; 
-    struct _i2c_m_msg msg = {.addr = task->addr, .flags = I2C_M_STOP, .buffer = buf, .len =2 }; 
+    struct _i2c_m_msg msg = {.addr = task->addr, .flags = I2C_M_STOP, .buffer = buf + regless,  .len =2-regless }; 
     ret = i2c_m_sync_transfer(&I2C, &msg); 
 
   }
   else
   {
-    ret = i2c_m_sync_cmd_read(&I2C, task->reg, &task->data, 1); 
+    if (regless) 
+    {
+      struct _i2c_m_msg msg = {.addr = task->addr, .flags = I2C_M_STOP | I2C_M_RD, .buffer = &task->data, .len=1}; 
+      ret = i2c_m_sync_transfer(&I2C, &msg); 
+    }
+    else 
+    {
+      ret = i2c_m_sync_cmd_read(&I2C, task->reg, &task->data, 1); 
+    }
+
   }
 
   if (ret < 0) i2c_m_sync_send_stop(&I2C); //this should only be necessary on error, I think? 
@@ -124,17 +135,27 @@ static int sched_next_task(int check_busy)
   i2c_task_t * task = tasks[tasks_done % I2C_TASK_BUFFER_SIZE]; 
   i2c_m_async_set_slaveaddr(&I2C, task->addr, I2C_M_SEVEN); 
   task->done = 0; 
+  int regless = task->flags & I2CTSK_REG_LESS; 
   if (task->write) 
   { 
     uint8_t buf[2] = {task->reg, task->data}; 
-    struct _i2c_m_msg msg = {.addr = task->addr, .flags = I2C_M_STOP, .buffer = buf, .len =2 }; 
+    struct _i2c_m_msg msg = {.addr = task->addr, .flags = I2C_M_STOP, .buffer = buf+regless, .len =2 -regless}; 
     return i2c_m_async_transfer( &I2C, &msg); 
   }
   else
   {
     //well crap, we need to write the register first. 
-    struct _i2c_m_msg msg = {.addr = task->addr, .flags = 0, .buffer = &task->reg, .len =1 }; 
-    return i2c_m_async_transfer( &I2C, &msg); 
+    if (!regless) 
+    {
+      struct _i2c_m_msg msg = {.addr = task->addr, .flags = 0, .buffer = &task->reg, .len =1 }; 
+      return i2c_m_async_transfer( &I2C, &msg); 
+    }
+    else
+    {
+      struct _i2c_m_msg msg = {.addr = task->addr, .flags = I2C_M_RD | I2C_M_STOP , .buffer = &task->data, .len =1 }; 
+      return i2c_m_async_transfer( &I2C, &msg); 
+
+    }
   }
 
 }

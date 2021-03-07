@@ -10,6 +10,10 @@ void i2c_bus_init();
 
 
 
+enum i2c_task_flags
+{
+  I2CTSK_REG_LESS = 1 // this is for devices that just want a single byte, not more than one 
+}; 
 
 
 typedef struct i2c_task
@@ -19,6 +23,7 @@ typedef struct i2c_task
   uint8_t reg;  //register
   uint8_t data;  //either the data to write, or data will appear here when done
   volatile int8_t done ;  // set to 0 when task started, 1 when task is done,  negative if error. 
+  uint8_t flags;  // 
 } i2c_task_t;
 
 
