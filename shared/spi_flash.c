@@ -306,7 +306,7 @@ void spi_flash_wakeup()
 }
 
 
-const uint32_t config_block_magic = 0xcabba935 ; 
+const uint32_t config_block_magic = (0xc0f9 << 16 ) | (CONFIG_BLOCK_VERSION & 0xffff) ; 
 const int n_config_slots = 16; //64 kB 
 
 
