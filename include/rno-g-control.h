@@ -37,6 +37,19 @@ typedef struct rno_g_state
   uint8_t dh_amp_power : 3; 
 } rno_g_state_t; 
 
+
+/** voltages, temperatures, etc. */ 
+typedef struct rno_g_monitor
+{
+  uint32_t when; 
+  int16_t temp_cC; 
+  int16_t i_surf3v[6]; 
+  int16_t i_down3v[3]; 
+  int16_t i_sbc5v; 
+  int16_t i_5v[2]; 
+} rno_g_monitor_t;
+
+
 typedef enum lte_state
 {
   LTE_OFF, 
