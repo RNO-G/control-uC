@@ -24,7 +24,7 @@ LD_FLAGS_PRE= -Wl,--start-group -lm -Wl,--end-group -mthumb
 LD_FLAGS_POST=-Llinker/ --specs=nano.specs -mcpu=cortex-m0plus -Wl,--gc-sections 
 
 
-INCLUDES=$(ASF4_INCLUDES) -I./ 
+INCLUDES=$(ASF4_INCLUDES) -I./ -Iinclude/
 
 SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.o driver_init.o 
  
@@ -33,7 +33,7 @@ APP_SHARED_OBJS=$(addprefix $(BUILD_DIR)/shared/, $(SHARED_OBJS))
 BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 
 APP_OBJS=$(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
-APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o )
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o monitors.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o )
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
