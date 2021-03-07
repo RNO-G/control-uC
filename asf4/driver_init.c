@@ -50,6 +50,11 @@ void ANALOGIN_PORT_init(void)
 {
 
 	// Disable digital pin circuitry
+	gpio_set_pin_direction(TEMP_SENSOR, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(TEMP_SENSOR, PINMUX_PA02B_ADC_AIN0);
+
+	// Disable digital pin circuitry
 	gpio_set_pin_direction(AIN1, GPIO_DIRECTION_OFF);
 
 	gpio_set_pin_function(AIN1, PINMUX_PA03B_ADC_AIN1);

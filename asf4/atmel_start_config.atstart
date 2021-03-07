@@ -26,12 +26,12 @@ drivers:
     functionality: ADC
     api: HAL:Driver:ADC_Sync
     configuration:
-      adc_advanced_settings: false
+      adc_advanced_settings: true
       adc_arch_adjres: 0
       adc_arch_corren: false
       adc_arch_dbgrun: false
       adc_arch_event_settings: false
-      adc_arch_gain: 1x
+      adc_arch_gain: 1/2x
       adc_arch_gaincorr: 0
       adc_arch_inputoffset: 0
       adc_arch_inputscan: 0
@@ -50,12 +50,19 @@ drivers:
       adc_arch_winut: 0
       adc_differential_mode: false
       adc_freerunning_mode: false
-      adc_pinmux_negative: ADC AIN0 pin
+      adc_pinmux_negative: Internal ground
       adc_pinmux_positive: ADC AIN0 pin
       adc_prescaler: Peripheral clock divided by 4
-      adc_reference: 1.0V voltage reference
+      adc_reference: 1/2 VDDANA (only for VDDANA > 2.0V)
       adc_resolution: 12-bit
     optional_signals:
+    - identifier: ANALOGIN:AIN/0
+      pad: PA02
+      mode: Enabled
+      configuration: null
+      definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::optional_signal_definition::ADC.AIN.0
+      name: ADC/AIN/0
+      label: AIN/0
     - identifier: ANALOGIN:AIN/1
       pad: PA03
       mode: Enabled
@@ -736,7 +743,7 @@ drivers:
       timer_advanced_configuration: false
       timer_event_control: false
       timer_prescaler: Divide by 8
-      timer_tick: 1000
+      timer_tick: 10000
     optional_signals: []
     variant: null
     clocks:
@@ -1135,6 +1142,12 @@ drivers:
         configuration:
           wdt_gclk_selection: Generic clock generator 1
 pads:
+  TEMP_SENSOR:
+    name: PA02
+    definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA02
+    mode: Analog
+    user_label: TEMP_SENSOR
+    configuration: null
   AIN1:
     name: PA03
     definition: Atmel:SAMD21_Drivers:0.0.1::SAMD21J18A-AF::pad::PA03

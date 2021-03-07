@@ -40,7 +40,7 @@ static void do_release_boot(const struct timer_task * const task)
     gpio_set_pin_direction(SBC_BOOT_SDCARD, GPIO_DIRECTION_IN); 
 }
 
-static struct timer_task sbc_release_boot_task = { .cb  = do_release_boot, .interval = 1500, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task sbc_release_boot_task = { .cb  = do_release_boot, .interval = 150, .mode = TIMER_TASK_ONE_SHOT }; 
 
 static void do_turn_on(const struct timer_task * const task)
 {
@@ -56,7 +56,7 @@ static void do_turn_on(const struct timer_task * const task)
 }
 
 //could use the same task for both, I guess? 
-static struct timer_task sbc_turn_on_task = { .cb  = do_turn_on, .interval = 500, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task sbc_turn_on_task = { .cb  = do_turn_on, .interval = 50, .mode = TIMER_TASK_ONE_SHOT }; 
 
 int sbc_turn_on(sbc_boot_mode_t boot_mode) 
 {

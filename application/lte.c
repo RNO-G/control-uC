@@ -23,7 +23,7 @@ static void lte_turn_on_cb(const struct timer_task * const task)
   state = LTE_ON;
 }
 
-static struct timer_task lte_turn_on_task = { .cb  = lte_turn_on_cb, .interval = 5000, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_turn_on_task = { .cb  = lte_turn_on_cb, .interval = 500, .mode = TIMER_TASK_ONE_SHOT }; 
 
 static void lte_turn_off_cb(const struct timer_task * const task)
 {
@@ -32,7 +32,7 @@ static void lte_turn_off_cb(const struct timer_task * const task)
   state = LTE_OFF; 
 }
 
-static struct timer_task lte_turn_off_task = { .cb  = lte_turn_off_cb, .interval = 3000, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_turn_off_task = { .cb  = lte_turn_off_cb, .interval = 300, .mode = TIMER_TASK_ONE_SHOT }; 
 
 int lte_init() 
 {
