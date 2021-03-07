@@ -26,7 +26,8 @@
 #include "rtc-board.h"
 #include "systime.h"
 #include "hal_calendar.h" 
-#include "driver_init.h" 
+#include "shared/driver_init.h"
+#include "shared/spi_flash.h"
 
 #define END_OF_FEBRUARY_LEAP                         60 //31+29
 #define END_OF_JULY_LEAP                            213 //31+29+...
@@ -121,7 +122,7 @@ void SysTimeSet( SysTime_t sysTime )
     struct calendar_date d; 
     struct calendar_time t; 
     struct tm localtime; 
-    SysTimeLocalTime(sysTime.Seconds, &localtime); 
+    SysTimeLocalTime(sysTime.Seconds - config_block()->app_cfg.gps_offset, &localtime); 
     d.year = 1900 + localtime.tm_year; 
     d.month= localtime.tm_mon+1; 
     d.day=localtime.tm_mday; 
