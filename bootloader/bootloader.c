@@ -58,7 +58,7 @@ int check_application(int slot)
 }
 
 
-ASYNC_READ_BUFFER(512, sbc); 
+ASYNC_TOKENIZED_BUFFER(512, sbc,"\r\n", SBC_UART_DESC); 
 
 
 int main(void)
@@ -144,7 +144,6 @@ int main(void)
   {
     io_init(); 
     sbc_uart_put("BOOTLOADER!\r\n"); 
-    sbc_uart_read_async(&sbc); 
 
     int programmer_entered = 0; 
     while(1) 
@@ -159,38 +158,28 @@ int main(void)
       }
 
       //check for line returns
-      char * lr = async_read_buffer_seek_str(&sbc,"\r\n"); 
-      while (lr) 
+
+      while (async_tokenized_buffer_ready(&sbc) )
       {
-        *lr = 0; 
         if (programmer_check_command(sbc.buf))
         {
           programmer_enter(sbc.buf,SBC_UART_DESC);
           programmer_entered = 1;
           break;
         }
-        else if (strcmp(sbc.buf,"#RESET"))
+        else if (!strcmp(sbc.buf,"#RESET"))
         {
           _reset_mcu();
         }
-        else if (strcmp(sbc.buf,"#EXIT"))
+        else if (!strcmp(sbc.buf,"#EXIT"))
         {
           break;
         }
         else
         {
-          async_read_buffer_shift(&sbc, (int) (lr-(char*)sbc.buf)); 
+          async_tokenized_buffer_discard(&sbc); 
         }
-        lr = async_read_buffer_seek_str(&sbc,"\r\n"); 
       }
-
-      //check for overlow
-      
-      if (sbc.offset == sbc.length) async_read_buffer_clear(&sbc); 
-
-      //get rid of any potential \0 that snuck in preventing us from finding line returns. 
-      async_read_buffer_shift_until_char(&sbc,0); 
-
     }
   }
 

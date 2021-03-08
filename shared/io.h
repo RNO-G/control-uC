@@ -23,66 +23,68 @@ void io_init();
 
 int d_write(int d, int n, const uint8_t * data); 
 
-typedef struct async_read_buffer
+/** This will collect (via callbacks) characters from the UART 
+ * until a token is reached. Guaranteed to be NULL terminated  */ 
+
+typedef struct async_tokenized_buffer
 {
   volatile uint8_t * buf; 
-  uint16_t length; 
-  volatile uint16_t offset; 
-  volatile int busy; 
-} async_read_buffer_t; 
+  const char * token;  // The token to match on (null-terminated). if empty string or NULL, match on null character, otherwise it's a null-terminated string. 
+  volatile uint16_t len;  //max is capacity-1 due to null-termination 
+  uint16_t capacity; 
+  volatile uint8_t token_matched; // Did we match the token? 
+  volatile uint8_t matched_chars; //how many chars have we matched
+  uint8_t drop_nulls;  //if a null is encountered before the token, start over. 
+  int desc; 
+  int noverflow; 
+  int nread_called ;
+} async_tokenized_buffer_t; 
 
-#define ASYNC_READ_BUFFER(N, NAME) \
+#define ASYNC_TOKENIZED_BUFFER(N, NAME, TOKEN, DESC) \
 uint8_t NAME##_buf_[N]; \
-async_read_buffer_t NAME = {.buf = NAME##_buf_, .length = N, .offset = 0, .busy = 0} 
+async_tokenized_buffer_t NAME = {.buf = NAME##_buf_, .capacity = N, .len = 0, .drop_nulls=1, .token=TOKEN, .desc = DESC} 
 
 
-//note that this is asynchronous! will return immediately and continue  reading either
-//until n is hit or another call to d_read is made. 
-int d_read_async(int d, async_read_buffer_t * buffer); 
-async_read_buffer_t * get_read_buffer(int d); 
+int d_read(int d, int len, uint8_t* buf);  //non-blocking read 
 
-//shift the read buffer discarding the first N bytes and moving the rest of the bytes forward
-//useful for e.g. parsing commands. This is very inefficient compared to a circular buffer
-//but is more space efficient (Since you don't need tomake a copy of the data across the boundary). Another option would be
-//a circular buffer with an overlap. 
-void async_read_buffer_shift(async_read_buffer_t * b, int N); 
-static inline void async_read_buffer_clear(async_read_buffer_t *b) { async_read_buffer_shift(b,b->offset); }
-static inline uint8_t* async_read_buffer_seek(async_read_buffer_t *b, uint8_t * what, int what_len)  { return (uint8_t*) memmem((void*)b->buf, b->offset, what, what_len); }
-static inline char* async_read_buffer_seek_str(async_read_buffer_t *b, char * what)  { return (char*) memmem((void*)b->buf, b->offset, (const char*) what, strlen(what)); }
 
-/** if c is between buffer start and offset, shifts until first instance of character. Can be used to e.g. remove \0 or whatever. Returns number of chars shifted. */ 
-int async_read_buffer_shift_until_char(async_read_buffer_t * b, uint8_t c)  ; 
+/** This reads into the buffer, returns 1 if we have matched */ 
+int async_tokenized_buffer_ready(async_tokenized_buffer_t * b); 
+/* get rid of what's in thh buffer */ 
+void async_tokenized_buffer_discard(async_tokenized_buffer_t * b); 
+
+/* Return the length of what's in the buffer (but only if the token matched */ 
+inline uint16_t async_tokenized_buffer_len(async_tokenized_buffer_t * b) { return b->token_matched ? b->len : 0; } 
+
+
+/** This checks if there have been more than threshold errors since the last 
+ * time this was called, and resets the UART if so. 
+ * */ 
+int d_check(int d, int threshold); 
 
 int d_write_ready(int d); 
 
 static inline int d_put(int d, const char * str) { return d_write(d, strlen(str), (uint8_t*)  str); } 
+void flush_buffers(); 
 
 static inline int sbc_uart_write_ready()  { return d_write_ready(SBC_UART_DESC); }
 static inline int sbc_uart_put(const char *str) { return d_put(SBC_UART_DESC, str) ; }
 static inline int sbc_uart_write(int n, uint8_t *data) { return d_write(SBC_UART_DESC,n,data) ; } 
-static inline int sbc_uart_read_async(async_read_buffer_t * b)  { return d_read_async(SBC_UART_DESC,b) ; } 
+static inline int sbc_uart_read( int n, uint8_t * data)  { return d_read(SBC_UART_DESC,n,data) ; } 
 
 #ifndef _DEVBOARD_
 #ifndef _BOOTLOADER_
 static inline int sbc_uart_console_write_ready() { return d_write_ready(SBC_UART_CONSOLE_DESC) ; }
 static inline int sbc_uart_console_put(const char * str) { return d_put(SBC_UART_CONSOLE_DESC, str) ; } 
 static inline int sbc_uart_console_write(int n, uint8_t* data) { return d_write(SBC_UART_CONSOLE_DESC, n, data) ; }
-static inline int sbc_uart_console_read_async(async_read_buffer_t * b) { return d_read_async(SBC_UART_CONSOLE_DESC,b) ; }
+static inline int sbc_uart_console_read( int n, uint8_t * data)  { return d_read(SBC_UART_CONSOLE_DESC,n,data) ; } 
 
 static inline int lte_uart_write_ready() { return d_write_ready(LTE_UART_DESC) ; }
 static inline int lte_uart_put(const char * str) { return d_put(LTE_UART_DESC, str) ; } 
 static inline int lte_uart_write(int n, uint8_t* data) { return d_write(LTE_UART_DESC, n, data) ; }
-static inline int lte_uart_read_async(async_read_buffer_t * b) { return d_read_async(LTE_UART_DESC, b) ; }
+static inline int lte_uart_read( int n, uint8_t * data)  { return d_read(LTE_UART_DESC,n,data) ; } 
 #endif
 #endif
-
-/*
-static inline int usb_cdc_console_write_ready() { return d_write_ready(USB_CDC_DESC) ; }
-static inline int usb_cdc_console_put(const char * str) { return d_put(USB_CDC_DESC, str) ; } 
-static inline int usb_cdc_console_write(int n, uint8_t* data) { return d_write(USB_CDC_DESC, n, data) ; }
-static inline int usb_cdc_console_read(int n, uint8_t*data) { return d_read(USB_CDC_DESC, n, data) ; }
-static inline int usb_cdc_console_bytes_available() { return d_bytes_available(USB_CDC_DESC) ; }
-*/
 
 
 

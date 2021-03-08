@@ -5,10 +5,9 @@
 #include "shared/io.h" 
 #include "shared/printf.h" 
 
-ASYNC_READ_BUFFER(256, lte_io); 
+ASYNC_TOKENIZED_BUFFER(128, lte_io,"\r\n", LTE_UART_DESC); 
 
 static lte_state_t state; 
-
 
 lte_state_t lte_get_state() { return state; } 
 
@@ -19,7 +18,6 @@ static void lte_turn_on_cb(const struct timer_task * const task)
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_IN);
   gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_UART_ENABLE,0); 
-  lte_uart_read_async(&lte_io); //nbd if this is called multiple times 
   state = LTE_ON;
 }
 
@@ -79,7 +77,6 @@ int lte_turn_off()
   }
 
   gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_IN);
-  usart_async_disable(&LTE_UART); 
 
 
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_OUT);

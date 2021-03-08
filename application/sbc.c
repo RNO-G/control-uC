@@ -3,28 +3,27 @@
 #include "application/lte.h" 
 #include "shared/driver_init.h" 
 #include "shared/io.h" 
+#include "shared/spi_flash.h" 
+#include "hal_calendar.h" 
 #include "shared/printf.h" 
 #include "include/rno-g-control.h" 
 #include "application/i2cbus.h" 
 
-#define SBC_BUF_LEN 256
-#define SBC_CONSOLE_BUF_LEN 512
+//these define the maximum line length! 
+#define SBC_BUF_LEN 128 
+#define SBC_CONSOLE_BUF_LEN 128
 
-ASYNC_READ_BUFFER(SBC_BUF_LEN, sbc); 
+ASYNC_TOKENIZED_BUFFER(SBC_BUF_LEN, sbc,"\r\n", SBC_UART_DESC); 
+
 #ifndef _DEVBOARD_
-ASYNC_READ_BUFFER(SBC_CONSOLE_BUF_LEN, sbc_console); 
+ASYNC_TOKENIZED_BUFFER(SBC_CONSOLE_BUF_LEN, sbc_console,"\r\n", SBC_UART_CONSOLE_DESC); 
 #endif
 
 static sbc_state_t state; 
 
 void sbc_init()
 {
-  /* Initialize main SBC UART reading*/ 
-  sbc_uart_read_async(&sbc); 
-
 #ifndef _DEVBOARD_
-  sbc_uart_console_read_async(&sbc_console); 
-
   //figure out if we're on or not 
   i2c_gpio_expander_t i2c_gpio; 
   get_gpio_expander_state(&i2c_gpio,1); //this must be called after i2cbus_init, so we'll have a value; 
@@ -37,6 +36,7 @@ void sbc_init()
 
 static void do_release_boot(const struct timer_task * const task)
 {
+    (void) task; 
     gpio_set_pin_direction(SBC_BOOT_SDCARD, GPIO_DIRECTION_IN); 
 }
 
@@ -84,9 +84,38 @@ static int char2val(char c)
   return -1; 
 }
 
+static int parse_int(const char * start, const char **end, int * num) 
+{
+  if (!num) return 1; 
+  const char * ptr = start; 
+  int sign = 1; 
+  while (*ptr==' ' || *ptr=='\t') ptr++; 
+
+  *num = 0; 
+  char first = *ptr; 
+  if (first=='-') 
+  {
+    sign = -1; 
+  }
+  
+  while(*ptr >= '0' && *ptr <='9')
+  {
+    *num *= 10; 
+    *num += (*ptr-'0'); 
+    ptr++; 
+  }
+
+
+   if (end) *end = ptr; 
+  *num*=sign; 
+  return 0; 
+}
+
+
 //returns 0 on success
 static int parse_hex(const char * start, const char **end, uint8_t * byte)
 {
+  if (!byte) return 1; 
   const char * ptr = start;
   //skip leading whitespace
   while (*ptr==' ' || *ptr =='\t') ptr++;
@@ -130,59 +159,44 @@ static int parse_hex(const char * start, const char **end, uint8_t * byte)
 }
 
 
+static int prefix_matches(const char * haystack, const char * prefix) 
+{
+  int i = 0; 
+  while(prefix[i] && haystack[i]) 
+  {
+    if (haystack[i] != prefix[i]) return 0; 
+    i++; 
+  }
+  return 1; 
+}
+
+
 int sbc_io_process()
 {
 
 
-    //TEMPORARY REALLY DUMB COMMANDS 
-    //
+    // SBC Commands
     //
     //  Commands start with a # and end with \r\n 
     //  Must not contain \r\n or \0. 
     //
     //  This might be torn out and replaced with something better later 
     //
+    //  Note that this in addition to the "normal" command processing, that can 
+    //  come via LoRaWAN and eventually LTE. 
+
 
     //find the next \r\n: 
     
     int dontconsume = 0; 
     int nvalid = 0; 
 
-    while(true) 
+    while(async_tokenized_buffer_ready(&sbc)) 
     {
-      char * ending = strstr((char*) sbc.buf,"\r\n"); 
-
-      //no line ending 
-      if (!ending)
-      {
-        // check if our buffer is full 
-        if (sbc.offset == sbc.length) 
-        {
-          printf("Buffer full! Clearing..\r\n"); 
-          async_read_buffer_clear(&sbc);
-        }
-
-        //clear the first \0 before the offset, if there is one
-        int i = 0; 
-        for (i = 0; i < sbc.offset; i++) 
-        {
-          if (!sbc.buf[i])
-          {
-            async_read_buffer_shift(&sbc,i+1); 
-            break; 
-          }
-        }
-
-        break; 
-      }
-
-      //let's set the \r to a 0 so we can use string
-      *ending =0;
-
       int valid = 0; 
       char * in = (char*) sbc.buf+1; 
-      //we found a line ending, but we don't start with a #. Skip to end
-      if (ending && sbc.buf[0] !='#')
+      //we don't start with a #. Skip to end
+      if (sbc.buf[0] !='#')
       {
 
       }
@@ -193,20 +207,20 @@ int sbc_io_process()
       {
         valid=1; 
         lte_turn_on(); 
-        printf("Turning on LTE\r\n"); 
+        printf("#LTE-ON: ACK \r\n"); 
       }
       else if (!strcmp(in,"LTE-ON"))
       {
         valid =1; 
         lte_turn_off(); 
-        printf("Turning off LTE\r\n"); 
+        printf("#LTE-OFF: ACK\r\n"); 
       }
       else if (!strcmp(in,"RADIANT-ON"))
       {
         valid=1; 
         i2c_gpio_expander_t turn_on_radiant = {.radiant = 1}; 
         set_gpio_expander_state(turn_on_radiant, turn_on_radiant); 
-        printf("Turning on RADIANT\r\n"); 
+        printf("#RADIANT-ON: ACK\r\n"); 
       }
 
       else if (!strcmp(in,"RADIANT-OFF") )
@@ -215,9 +229,9 @@ int sbc_io_process()
         i2c_gpio_expander_t turn_off_radiant = {0}; 
         i2c_gpio_expander_t turn_off_radiant_mask = {.radiant = 1}; 
         set_gpio_expander_state(turn_off_radiant, turn_off_radiant_mask); 
-        printf("Turning off RADIANT\r\n"); 
+        printf("#RADIANT-OFF: ACK\r\n"); 
       }
-      else if (strstr(in,"I2C-WRITE"))
+      else if (prefix_matches(in,"I2C-WRITE"))
       {
         static i2c_task_t write_task  = {.addr=0,.write=1,.reg=0,.data=0,.done=1};
 
@@ -238,7 +252,7 @@ int sbc_io_process()
             parse_hex(nxt,&nxt,&reg) ||
             parse_hex(nxt,&nxt,&data))
         {
-          printf("Failed to interpret #%s\r\n",in); 
+          printf("#ERR: Failed to interpret #%s\r\n",in); 
         }
         else
         {
@@ -246,10 +260,10 @@ int sbc_io_process()
           write_task.reg=reg;
           write_task.data=data;
           i2c_enqueue(&write_task); 
-          printf("Writing 0x%x to reg 0x%x at addr 0x%x\r\n", data,reg,addr); 
+          printf("#I2C_WRITE( val=0x%x,reg=0x%x,addr=0x%x)\r\n", data,reg,addr); 
         }
       }
-      else if (strstr(in,"I2C-READ"))
+      else if (prefix_matches(in,"I2C-READ"))
       {
         const char *nxt = 0; 
         uint8_t addr;
@@ -257,7 +271,7 @@ int sbc_io_process()
         if (parse_hex(in+sizeof("I2C-READ"),&nxt, &addr) ||
             parse_hex(nxt,&nxt,&reg) )
         {
-          printf("Failed to interpret #%s\r\n",in);
+          printf("#ERR: Failed to interpret #%s\r\n",in);
           valid=1; 
         }
         else
@@ -265,27 +279,85 @@ int sbc_io_process()
           i2c_task_t read_task = {.addr=addr, .write=0, .reg=reg}; 
           i2c_enqueue(&read_task); 
           while (!read_task.done); //busy wait 
-          printf("#I2C-READ %x %x = %x\r\n", read_task.addr, read_task.reg, read_task.data); 
+          printf("#I2C-READ: addr(%x) reg(%x) = %x\r\n", read_task.addr, read_task.reg, read_task.data); 
           valid=3; //only do one of these tasks per process, since they can take a while 
         }
       }
 
-      //consume 
-      if (!dontconsume) 
+      else if (prefix_matches(in,"SET-STATION"))
       {
-        async_read_buffer_shift(&sbc, ending-(const char*) sbc.buf+3); 
+        const char * nxt = 0; 
+        int station; 
+        if (!parse_int(in+sizeof("SET-STATION"), &nxt, &station))
+        {
+          config_block()->app_cfg.station_number= station;
+          config_block_sync(); 
+          printf("#SET-STATION: %d\r\n", station); 
+          valid = 1; 
+        }
+        else
+        {
+          printf("#ERR: trouble parsing int"); 
+        }
       }
+      else if (prefix_matches(in,"SET-GPS-OFFSET"))
+      {
+        const char * nxt = 0; 
+        int offset; 
+        if (!parse_int(in+sizeof("SET-GPS-OFFSET"), &nxt, &offset))
+        {
+          config_block()->app_cfg.gps_offset= offset;
+          config_block_sync(); 
+          printf("#SET-GPS-OFFSET: %d\r\n", offset); 
+          valid = 1; 
+        }
+        else
+        {
+          printf("#ERR: trouble parsing int"); 
+        }
+      }
+ 
+      else if (!strcmp(in,"GET-STATION"))
+      {
+        printf("#GET-STATION: %d\r\n", config_block()->app_cfg.station_number); 
+        valid = 1; 
+      }
+      else if (!strcmp(in,"FLUSH"))
+      {
+        flush_buffers(); 
+        printf("#FLUSH: ACK\r\n"); 
+        valid = 1; 
+      }
+
+
+      else if (!strcmp(in,"NOW"))
+      {
+        struct calendar_date_time now; 
+        calendar_get_date_time(&CALENDAR,&now); 
+        valid = 1; 
+        printf("#NOW: %d-%02d-%02d %02d:%02d:%02d\n", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec); 
+      }
+
+
+
 
       if (!valid) 
       {
-        printf("Unrecognized command: %s\r\n", (char*) sbc.buf); 
+        printf("#ERR don't understand: %s\r\n", sbc.buf); 
       }
       else 
       {
         nvalid+=valid; 
       }
 
-      // only do up to 3 commands at a time! 
+      //consume 
+      if (!dontconsume) 
+      {
+        async_tokenized_buffer_discard(&sbc); 
+      }
+ 
+
+     // only do up to 3 commands at a time! 
       if (dontconsume || nvalid > 3) break; 
     }
 

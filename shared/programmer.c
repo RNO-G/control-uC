@@ -73,7 +73,8 @@ static int N;
 
 
 static int fd; 
-static async_read_buffer_t * b; 
+static uint8_t programmer_buf[260]; 
+static async_tokenized_buffer_t b = { .buf=programmer_buf, .capacity = sizeof(programmer_buf), .token = "\r\n"}; 
 
 static volatile enum 
 {
@@ -85,11 +86,13 @@ static volatile enum
 
 static void flash_ready_callback(struct flash_descriptor * const d) 
 {
+  (void) d;
   flash_status = FLASH_READY; 
 }
 
 static void flash_error_callback(struct flash_descriptor * const d) 
 {
+  (void) d; 
   flash_status = FLASH_ERROR; 
 }
 
@@ -109,14 +112,15 @@ int programmer_enter(const char * cmd, int dev)
 
   if (!which || check_slot < 0 || check_slot > 4)
   {
-    d_put(fd,"#ERR\n"); 
+    d_put(fd,"#ERR\r\n"); 
     return 1; 
   }
   
   i = 0; 
   fd = dev; 
-  b = get_read_buffer(fd); 
-  async_read_buffer_shift(b,b->length); //flush the buffer
+  b.desc = fd; 
+
+
   slot = check_slot; 
 
   if (slot == 0) 
@@ -153,31 +157,18 @@ int programmer_enter(const char * cmd, int dev)
 
 static void write_confirm() 
 {
-  dprintf(fd,"?CONFIRM@%d\n",slot); 
-}
-
-
-//Wait until buffer has a \n. Will return true when that happens (or -1 if maximum size exceeded) 
-static int accumulate_until_lf(void) 
-{
-  char * c = strchr((char*)b->buf,'\n'); 
-  if (c)
-  {
-    *c = 0; 
-    return 1; 
-  }
-
-  return 0; 
+  dprintf(fd,"?CONFIRM@%d\r\n",slot); 
 }
 
 
 
 static int check_confirm_slot(int success_state) 
 {
-
-  if (strlen((char*) b->buf) == 1 && b->buf[0] == slot + '0' )
+  if (!async_tokenized_buffer_ready(&b)) return 0; 
+  if (b.len == 1 && b.buf[0] == slot + '0' )
   {
       program_state = success_state; 
+      async_tokenized_buffer_discard(&b); 
       return 1; 
   }
   program_state = PROGRAM_ERROR; 
@@ -190,16 +181,16 @@ static int read_nblocks()
 
   int total = 0; 
   int mult = 1; 
-  int buf_len = strlen((char*) b->buf);
+  int buf_len = b.len; 
   for (int idig = 0; idig < buf_len; idig++) 
   {
-    char c = b->buf[buf_len-1-idig]; 
+    char c = b.buf[buf_len-1-idig]; 
     if (c < '0' || c > '9') return 0; 
     total += mult*(c-'0'); 
     mult*=10; 
   }
 
-  async_read_buffer_shift(b, buf_len+1); 
+  async_tokenized_buffer_discard(&b); 
 
   N = total; 
   return total; 
@@ -209,7 +200,12 @@ static int read_nblocks()
 
 static int accumulate_flash_buffer() 
 {
-  if (b->offset >= 256) return 1; 
+  if  (b.len < 256) 
+  {
+    b.len+= d_read(fd, 256-b.len, (uint8_t*) b.buf+ b.len); 
+  }
+
+  if (b.len >= 256) return 1; 
   return 0; 
 }
 
@@ -241,16 +237,16 @@ static void process_write()
 
     if (i == N) 
     {
-      dprintf(fd,"#DONE_PROG@%d:%d\n", slot,N); 
+      dprintf(fd,"#DONE_PROG@%d:%d\r\n", slot,N); 
       program_state = PROGRAM_DONE; 
       return; 
     }
-    async_read_buffer_shift(b, 256); 
+    b.len = 0; 
   }
 
   if (sent_query < i)
   {
-    dprintf(fd,"BLOCK_%03d\n",i); 
+    dprintf(fd,"BLOCK_%03d\r\n",i); 
     sent_query = i; 
   }
 
@@ -261,13 +257,13 @@ static void process_write()
     //otherwise, let's write 256 bytes
     if (slot==0) 
     {
-      flash_append(&FLASH, 8*1024 + 256*i, b->buf,256); 
+      flash_append(&FLASH, 8*1024 + 256*i, (uint8_t*) b.buf,256); 
       flash_status = FLASH_BUSY; 
     }
     else
     {
       if (i == 0) spi_flash_application_seek(slot,0); 
-      spi_flash_application_write(slot,256, b->buf); 
+      spi_flash_application_write(slot,256, (uint8_t*) b.buf); 
     }
 
     transfer_was_started = 1;
@@ -299,7 +295,7 @@ static void process_read()
 
   if ( i >=N) 
   {
-    dprintf(fd,"#DONE_READ@%d:%d\n", slot,N);
+    dprintf(fd,"#DONE_READ@%d:%d\r\n", slot,N);
     program_state = PROGRAM_DONE; 
   }
 }
@@ -352,9 +348,13 @@ static void process_erase()
 
 int check_nblocks(int success_state)
 {
-  if (accumulate_until_lf() ==1 && !read_nblocks())
+  if (!async_tokenized_buffer_ready(&b)) return 0; 
+
+  if (!read_nblocks())
   {
      i = 0; 
+     b.token_matched =0; 
+     b.len = 0; 
      program_state = success_state; 
      return 0; 
   }
@@ -384,20 +384,23 @@ int programmer_process()
     case PROGRAM_WRITE_INIT: 
       write_confirm(); 
       program_state = PROGRAM_WRITE_CONFIRM; 
+      break; 
     case PROGRAM_WRITE_CONFIRM:  
-      if (accumulate_until_lf() && check_confirm_slot(PROGRAM_WRITE_NBLOCKS))
+      if (check_confirm_slot(PROGRAM_WRITE_NBLOCKS))
       {
         (d_put(fd,"?N_256B_BLOCKS\n")); 
       }
       else break;
     case PROGRAM_WRITE_NBLOCKS: 
-      if (check_nblocks(PROGRAM_WRITE_WRITING)) break; 
+      check_nblocks(PROGRAM_WRITE_WRITING);
+      break; 
    case PROGRAM_WRITE_WRITING:
       process_write() ;
       break; 
     case PROGRAM_READ_INIT: 
       d_put(fd,"?NBYTES"); 
       program_state = PROGRAM_READ_NBLOCKS; 
+      break; 
     case PROGRAM_READ_NBLOCKS: 
       if (check_nblocks(PROGRAM_READ_READING)) break; 
     case PROGRAM_READ_READING: 
@@ -406,8 +409,9 @@ int programmer_process()
     case PROGRAM_ERASE_INIT: 
       write_confirm(); 
       program_state = PROGRAM_ERASE_CONFIRM; 
+      break;
     case PROGRAM_ERASE_CONFIRM: 
-      if(accumulate_until_lf() && check_confirm_slot(PROGRAM_ERASE_NBLOCKS))
+      if(check_confirm_slot(PROGRAM_ERASE_NBLOCKS))
       {
         d_put(fd,"?N_4KB_BLOCKS\n"); 
       }
@@ -428,6 +432,7 @@ int programmer_process()
 int programmer_copy_application_to_flash(int slot) 
 {
 #ifndef _BOOTLOADER_ 
+  (void) slot; 
   return -1; 
 #else
   static int copy_started = 0; 

@@ -15,15 +15,15 @@
 #include <hpl_adc_base.h>
 
 /*! The buffer size for USART */
-#define LTE_UART_BUFFER_SIZE 16
+#define LTE_UART_BUFFER_SIZE 256
 
 /*! The buffer size for USART */
-#define SBC_UART_CONSOLE_BUFFER_SIZE 16
+#define SBC_UART_CONSOLE_BUFFER_SIZE 256
 
 #endif
 
 /*! The buffer size for USART */
-#define SBC_UART_BUFFER_SIZE 16
+#define SBC_UART_BUFFER_SIZE 256
 
 struct usart_async_descriptor SBC_UART;
 struct spi_m_sync_descriptor  SPI_FLASH;
