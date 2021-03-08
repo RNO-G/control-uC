@@ -130,7 +130,7 @@ static void cb_lte(const struct usart_async_descriptor * dev)
 static void cb_lte_tx(const struct usart_async_descriptor * dev) 
 {
   (void) dev;
-  tx_in_progress[SBC_UART_CONSOLE_DESC]=0; 
+  tx_in_progress[LTE_UART_DESC]=0; 
 }
 
 
@@ -185,6 +185,7 @@ int d_check(int d, int thresh)
      usart_async_flush_rx_buffer(desc[d]); 
      usart_async_enable(desc[d]); 
      last_err_called[d]=err_called[d]; 
+     tx_in_progress[d] = 0; 
      printf("#INFO: %d errors detected on %s\n", nerr, get_name(d)); 
      return 1; 
   }
@@ -196,7 +197,7 @@ int d_check(int d, int thresh)
 
 int d_write_ready(int d)
 {
-	return !tx_in_progress[d]; 
+  return !tx_in_progress[d]; 
 }
 
 int d_write(int d, int n, const uint8_t * data) 
