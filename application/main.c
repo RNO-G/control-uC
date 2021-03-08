@@ -7,6 +7,7 @@
 #include "hal_gpio.h" 
 #include "hal_calendar.h" 
 #include "application/debug.h" 
+#include "application/monitors.h" 
 #include "shared/spi_flash.h" 
 #include "shared/shared_memory.h" 
 #include "application/gpio_expander.h" 
@@ -88,6 +89,11 @@ int main(void)
   lorawan_init(); 
 
 
+  /** Initialize ADC monitors */ 
+
+  monitor_init(); 
+  rno_g_monitor_t mon; 
+   
 
 
   /** Reset reset counter */ 
@@ -138,8 +144,10 @@ int main(void)
     
 
 
+    /// See if we need to do anything
 
 
+    if ((nticks & 0x3ff) == 0) monitor_fill(&mon,1); 
 
     /// See if we need to do anything
 
