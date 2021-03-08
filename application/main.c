@@ -82,7 +82,6 @@ int main(void)
 
   //enable the calendar
   calendar_enable(&CALENDAR); 
-  struct calendar_date_time now;
   uint64_t time_check = 0; 
 
   /** Initialize LoRaWAN */ 
@@ -117,19 +116,20 @@ int main(void)
       printf("#INFO: number of interrupts now %d\r\n", ++last_nint); 
     }
 
+
     // Service any messages from the SBC
     if (sbc_io_process())
     {
       sbc_turn_on(0); 
     }
 
-    // Service LTE
+    // Service LTE (this does nothign for now) 
     lte_process(); 
    
     // Service LoRaWAN 
     lorawan_process(); 
 
-    //did we get anything? 
+    //
     uint8_t lora_len, lora_port, *lora_bytes, lora_flags; 
     while (lorawan_rx_peek(&lora_len, &lora_port, &lora_bytes, &lora_flags))
     {
@@ -138,7 +138,7 @@ int main(void)
       {
         printf("%02x ", lora_bytes[i]); 
       }
-      printf("\n"); 
+      printf("\r\n"); 
       lorawan_rx_pop(); 
     }
     
@@ -149,13 +149,6 @@ int main(void)
 
     if ((nticks & 0x3ff) == 0) monitor_fill(&mon,1); 
 
-    /// See if we need to do anything
-
-    if (nticks %50 ==0 ) calendar_get_date_time(&CALENDAR, &now); 
-    if (nticks %1000 == 0) 
-    {
-      printf("#NOW: %d-%d-%d %02d:%02d:%02d\n", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec); 
-    }
 
     /// See if we need to send anything 
 
@@ -163,7 +156,7 @@ int main(void)
     if (lorawan_state() == LORAWAN_READY) 
     {
       //our time isn't valid, let's request it
-      if (now.date.year < 2021 && nticks >= time_check) 
+      if (nticks >= time_check && RTC->MODE0.COUNT.reg < 1000000000) 
       {
        lorawan_request_datetime() ;
        time_check+= (15000 / DELAY_MS) ; //check again in ~15 seconds
@@ -175,8 +168,6 @@ int main(void)
         lorawan_tx_copy(sizeof(nticks), 2, (uint8_t*) &nticks,0); 
 
       }
-   
-
 
     }
 
