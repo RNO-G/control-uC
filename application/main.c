@@ -78,7 +78,7 @@ int main(void)
   i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
   set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
 
-  printf("#INFO: BOOTED! \r\n"); 
+  printf("#INFO: BOOTED! Station: %d \r\n", cfg->app_cfg.station_number); 
 
   //enable the calendar
   calendar_enable(&CALENDAR); 
