@@ -47,10 +47,10 @@ static uint16_t read_adc(int chan, int navg)
   if (navg < 1) navg = 1; 
   adc_sync_set_inputs(&ANALOGIN, chan, 0x18,0); 
   adc_sync_enable_channel(&ANALOGIN, 0); 
-  while (i <= navg) 
+  while (i <= navg+1) 
   {
     adc_sync_read_channel(&ANALOGIN, 0, (uint8_t*) &buf, 2); 
-    if (i > 0) //skip first read 
+    if (i > 1) //skip first two reads 
       sum+= buf[0] + (buf[1] << 8); 
     i++; 
   }
@@ -81,11 +81,11 @@ int16_t monitor_temperature(int navg)
 }
 
 
-int16_t imon(int input, int navg) 
+int16_t imon(int input, int navg, int R) 
 {
   uint16_t raw = read_adc (input, navg); 
-  double v = raw * 3.3/4096; 
-   return v / (276e-6*20);   //3.3 V is reference, 276 uA/A, 20 kOhms) 
+  double v = raw * 3.3/4096; //3.3 V effective reference
+   return v / (276e-6*R) * 1e3;   //276 uA/A) 
 }
 
 
@@ -159,17 +159,19 @@ int16_t monitor(monitor_t what, int navg)
     case MON_SURF3V_5:
     case MON_SURF3V_6:
       mon_a_select(what); 
-      return imon(ADC_MONA, navg); 
+      return imon(ADC_MONA, navg, 1400); 
     case MON_SBC_5V: 
+      mon_b_select(what); 
+      return imon(ADC_MONB,navg,620); 
     case MON_DOWN_3V1: 
     case MON_DOWN_3V2: 
     case MON_DOWN_3V3: 
       mon_b_select(what); 
-      return imon(ADC_MONB,navg); 
+      return imon(ADC_MONB,navg,1400); 
     case  MON_5V1: 
-      return imon(ADC_MON_5V1,navg); 
+      return imon(ADC_MON_5V1,navg,620); 
     case  MON_5V2: 
-      return imon(ADC_MON_5V2,navg); 
+      return imon(ADC_MON_5V2,navg,620); 
     default: 
       return -32768; 
   }

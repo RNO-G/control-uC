@@ -147,7 +147,7 @@ int main(void)
     /// See if we need to do anything
 
 
-    if ((nticks & 0x3ff) == 0) monitor_fill(&mon,1); 
+    if ((nticks & 0x3ff) == 0) monitor_fill(&mon,10); 
 
 
     /// See if we need to send anything 
