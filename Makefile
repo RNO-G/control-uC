@@ -1,16 +1,23 @@
+include config.mk 
+
+
 CFLAGS= \
--x c -mthumb -DDEBUG -Os -ffunction-sections -Wall -Wextra -c -std=gnu99  \
+-x c -mthumb -Os -ffunction-sections -c -std=gnu99  \
 -D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3 -D_GNU_SOURCE 
 
+ifeq ($(LORA_DEBUG_GPIO),1)
+	CFLAGS += -DUSE_RADIO_DEBUG
+endif
 
-BUILD_DIR=build
-ASF4_PREFIX=asf4
+ifeq ($(DEBUG_FLAG),1)
+	CFLAGS += -DDEBUG
+endif
 
+
+CFLAGS+= $(WARNINGS) 
 
 
 include asf4.mk 
-
-#This includes the LoRaWAN implementation 
 include lorawan.mk 
 
 
@@ -96,7 +103,7 @@ $(BL_OUTPUT_NAME).elf: $(BL_OBJS)
 
 
 # special case lorawan includes  (so we don't have to modify the reference implementation files) 
-$(BUILD_DIR)/lorawan/%.o: lorawan/%.c
+$(BUILD_DIR)/lorawan/%.o: lorawan/%.c config.mk lorawan.mk 
 	@echo Building lorawan file: $<
 	$(CC) $(CFLAGS) $(INCLUDES) $(LORAWAN_INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o) -DREGION_US915 -o $@ $<
 	@echo Finished building: $<
@@ -107,10 +114,16 @@ $(BUILD_DIR)/bootloader/shared/%.o: shared/%.c
 	$(CC) $(CFLAGS) -D_BOOTLOADER_ $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d)  -MT$(@:%.o=%.o) -o $@ $<
 	@echo Finished building: $<
 
+# likewise special case shared for bootloader to define _BOOTLOADER_
+$(BUILD_DIR)/bootloader/%.o: bootloader/%.c Makefile config.mk 
+	@echo Building bootloader file: $<
+	$(CC) -D_BOOTLOADER_ $(CFLAGS)  $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d)  -MT$(@:%.o=%.o) -o $@ $<
+	@echo Finished building: $<
+
 
 
 # Compiler targets
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/%.o: %.c Makefile config.mk
 	@echo Building file: $<
 	$(CC) $(CFLAGS) $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o) -o $@ $<
 	@echo Finished building: $<

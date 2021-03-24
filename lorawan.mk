@@ -1,10 +1,6 @@
 
 # this defaults to a cmake build, but we don't need to do it that way 
 #
-ifeq ($(LORA_DEBUG_GPIO),1)
-	CFLAGS +=-DUSE_RADIO_DEBUG
-endif
-
 
 LORAWAN_INCLUDES=-Ilorawan/system -Ilorawan/board -Ilorawan/mac -Ilorawan/radio/ -Ilorawan/peripherals/soft-se/
 
