@@ -306,7 +306,8 @@ void spi_flash_wakeup()
 }
 
 
-const uint32_t config_block_magic = (0xc0f9 << 16 ) | (CONFIG_BLOCK_VERSION & 0xffff) ; 
+const uint32_t config_block_magic = (0xbcf9 << 16 ) | (CONFIG_BLOCK_BOOT_VERSION & 0xffff) ; 
+const uint32_t config_block_app_magic = (0xacf9 << 16 ) | (CONFIG_BLOCK_APP_VERSION& 0xffff) ; 
 const int n_config_slots = 16; //64 kB 
 
 
@@ -344,7 +345,7 @@ static int spi_flash_read_config_block(config_block_t * config_block)
   }
 
 
-  // we couldn't find the config block anywhere! 
+  // we couldn't find a valid config block anywhere, so default init! 
   if (current_config_block  < 0 ) 
   {
     default_init_block(config_block); 
@@ -352,8 +353,23 @@ static int spi_flash_read_config_block(config_block_t * config_block)
     return -1; 
   }
 
+  //read in the app magic
+  uint32_t app_test; 
+  _spi_flash_read(current_config_block * block_size+sizeof(config_block_magic), sizeof(app_test), (uint8_t*) &app_test); 
+
   //don't read magic
-  _spi_flash_read(current_config_block * block_size+sizeof(config_block_magic), sizeof(config_block_t), (uint8_t*)  config_block); 
+  _spi_flash_read(current_config_block * block_size+sizeof(config_block_magic) + sizeof(config_block_app_magic), sizeof(config_block_t), (uint8_t*)  config_block); 
+
+
+  //if app magic is not the same as magic, default init the application block
+  if (app_test != config_block_app_magic) 
+  {
+    default_init_app_cfg(&config_block->app_cfg); 
+    return -2; 
+  }
+
+
+
   spi_flash_deep_sleep(); 
   return 0; 
 }
@@ -381,10 +397,11 @@ static void spi_flash_write_config_block(const config_block_t * block)
     _spi_flash_erase(next_config_block * block_size, block_size); 
   }
 
-  _spi_flash_write(next_config_block*block_size + sizeof(config_block_magic), sizeof(config_block_t), (uint8_t*)  block); 
+  _spi_flash_write(next_config_block*block_size + sizeof(config_block_magic) + sizeof(config_block_app_magic), sizeof(config_block_t), (uint8_t*)  block); 
 
+  uint32_t both_blocks[2] = { config_block_magic, config_block_app_magic };
   //write the magic AFTER the config block to make sure we wrote the config block! 
-  _spi_flash_write(next_config_block * block_size, sizeof(config_block_magic), (uint8_t *) &config_block_magic); 
+  _spi_flash_write(next_config_block * block_size, sizeof(both_blocks), (uint8_t *) both_blocks); 
 
   //erase the old config block, if there was one 
   //note that we could end up with two config blocks if we are turned off in the middle here, but that's ok  since 
@@ -461,9 +478,6 @@ int spi_flash_application_erase_async(int slot, int nblk)
   if (nblk < 0 || nblk > application_blocks) nblk = application_blocks; 
   if (slot > N_applications || slot < 1) return -1; 
 
-  uint32_t start_addr = application_get_address(slot,0); 
-  uint32_t size = nblk << 12; 
-   _spi_flash_change_protection(0, start_addr, start_addr+size); 
   if (erasing & (1 < (slot-1)))
   {
     _spi_flash_erase_async(&ectx[slot-1]); 
@@ -478,6 +492,10 @@ int spi_flash_application_erase_async(int slot, int nblk)
 
   else
   {
+    uint32_t start_addr = application_get_address(slot,0); 
+    uint32_t size = nblk << 12; 
+     _spi_flash_change_protection(0, start_addr, start_addr+size); 
+
     //set the erase bit 
     erasing |= ( 1 << (slot-1)); 
     _init_erase_context(&ectx[(slot-1)],start_addr, size); 
@@ -512,13 +530,15 @@ int spi_flash_application_write(int slot, uint16_t len, const uint8_t * data)
 
   uint32_t start_addr =application_get_address(slot, application_offsets[slot-1]);
   _spi_flash_change_protection(0, start_addr, start_addr+len);
-  int written = _spi_flash_write(start_addr, len, data); 
-  _spi_flash_change_protection(1, start_addr, start_addr+len);
-  if (written > 0) 
+  int total = 0; 
+  while (total < len) 
   {
-    application_offsets[slot-1] += written; 
+    int written = _spi_flash_write(start_addr+total, len-total, data+total); 
+    total += written; 
   }
-  return written; 
+  _spi_flash_change_protection(1, start_addr, start_addr+len);
+  application_offsets[slot-1] += total; 
+  return total; 
 }
 
 

@@ -3,7 +3,9 @@
 
 #include <stdint.h> 
 #include "rno-g-control.h" 
-#define CONFIG_BLOCK_VERSION 1
+
+#define CONFIG_BLOCK_BOOT_VERSION 1
+#define CONFIG_BLOCK_APP_VERSION 1
 
 /** Shared configuration block in SPI flash between application and bootloader. 
  *
@@ -63,5 +65,7 @@ typedef struct config_block
 } config_block_t; 
 
 void default_init_block(config_block_t * block); 
+void default_init_boot_cfg(bootloader_cfg_t * bc); 
+void default_init_app_cfg(application_cfg_t * ac); 
 
 #endif
