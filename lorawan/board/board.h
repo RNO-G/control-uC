@@ -25,11 +25,11 @@
 uint32_t BoardGetRandomSeed( void );
 
 /*!
- * \brief Gets the board 64 bits unique ID
+ * \brief Gets the board 16 bits unique ID
  *
  * \param [IN] id Pointer to an array that will contain the Unique ID
  */
-void BoardGetUniqueId( uint8_t *id );
+void BoardGetUniqueId( uint16_t *id );
 
 /*!
  * \brief Get the board version

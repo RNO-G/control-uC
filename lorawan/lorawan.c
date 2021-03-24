@@ -518,11 +518,11 @@ int lorawan_process()
           LoRaMacMibSetRequestConfirm( &mibReq );
             
           // Initialize LoRaMac device unique ID if not already defined in Commissioning.h
-          if( ( devEui[0] == 0 ) && ( devEui[1] == 0 ) &&
-              ( devEui[2] == 0 ) && ( devEui[3] == 0 ) &&
-              ( devEui[4] == 0 ) && ( devEui[5] == 0 ) &&
-              ( devEui[6] == 0 ) && ( devEui[7] == 0 ) ) {
-            BoardGetUniqueId( devEui );
+          if( ( devEui[3] == 0 ) && ( devEui[4] == 0 ) && ( devEui[5] == 0 ) && ( devEui[6] == 0 ) && ( devEui[7] == 0 ) ) {
+            uint16_t unique;
+            BoardGetUniqueId( &unique );
+            devEui[6] = (unique >> 8) & 0xff;
+            devEui[7] = unique & 0xff;
           }
 
           mibReq.Type = MIB_DEV_EUI;
