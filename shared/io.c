@@ -203,7 +203,7 @@ int d_write_ready(int d)
 int d_write(int d, int n, const uint8_t * data) 
 {
   volatile int ncycles = 0; 
-  while (!d_write_ready(d)) //this should be enough
+  while (!d_write_ready(d) && ncycles++ < 3600) //this should be enough
   {
     ; 
   }
@@ -244,4 +244,95 @@ void flush_buffers()
   usart_async_flush_rx_buffer(&LTE_UART); 
 #endif
 
+}
+
+int prefix_matches(const char * haystack, const char * prefix) 
+{
+  int i = 0; 
+  while(prefix[i] && haystack[i]) 
+  {
+    if (haystack[i] != prefix[i]) return 0; 
+    i++; 
+  }
+  return 1; 
+}
+
+static int char2val(char c) 
+{
+  if (c>=0x30 && c <=0x39) return c-0x30; 
+  if (c>=0x41 && c <=0x36) return 10+c-0x41; 
+  if (c>=0x61 && c <=0x66) return 10+c-0x61; 
+  return -1; 
+}
+
+int parse_int(const char * start, const char **end, int * num) 
+{
+  if (!num) return 1; 
+  const char * ptr = start; 
+  int sign = 1; 
+  while (*ptr==' ' || *ptr=='\t') ptr++; 
+
+  *num = 0; 
+  char first = *ptr; 
+  if (first=='-') 
+  {
+    sign = -1; 
+  }
+  
+  while(*ptr >= '0' && *ptr <='9')
+  {
+    *num *= 10; 
+    *num += (*ptr-'0'); 
+    ptr++; 
+  }
+
+
+   if (end) *end = ptr; 
+  *num*=sign; 
+  return 0; 
+}
+//returns 0 on success
+int parse_hex(const char * start, const char **end, uint8_t * byte)
+{
+  if (!byte) return 1; 
+  const char * ptr = start;
+  //skip leading whitespace
+  while (*ptr==' ' || *ptr =='\t') ptr++;
+
+  char first= *ptr++; 
+  char second = *ptr; 
+  int ok = 0; 
+
+  //check if second is a whitespace or 0, in this case we just have one  
+  if (!second  || second == ' ' || second=='\t') 
+  {
+    int val = char2val(first); 
+    if (val < 0) ok = 1; 
+    else *byte =val; 
+  }
+  else
+  {
+    ptr++; //increment pointer to point after consumed
+
+    int msb = char2val(first); 
+    if (msb < 0) 
+    {
+      ok = 1; 
+    }
+    else
+    {
+      int lsb = char2val(second); 
+      if (lsb < 0) 
+      {
+        ok = 1; 
+      }
+      else
+      {
+        *byte = (msb<<4)+lsb;
+      }
+    }
+  }
+
+  *end = ptr; 
+  return ok; 
 }

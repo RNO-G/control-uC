@@ -33,7 +33,7 @@ LD_FLAGS_POST=-Llinker/ --specs=nano.specs -mcpu=cortex-m0plus -Wl,--gc-sections
 
 INCLUDES=$(ASF4_INCLUDES) -I./ -Iinclude/
 
-SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.o driver_init.o 
+SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.o driver_init.o base64.o
  
 #these need to be compiled separately so that we can use the _BOOTLOADER_ flag 
 APP_SHARED_OBJS=$(addprefix $(BUILD_DIR)/shared/, $(SHARED_OBJS))
@@ -48,6 +48,7 @@ BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS)
 # List the dependency files
 APP_DEPS := $(APP_OBJS:%.o=%.d)
 BL_DEPS := $(BL_OBJS:%.o=%.d)
+
 
 
 MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application $(BUILD_DIR)/bootloader  $(BUILD_DIR)/shared $(BUILD_DIR)/bootloader/shared

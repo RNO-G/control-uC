@@ -86,6 +86,9 @@ static inline int lte_uart_read( int n, uint8_t * data)  { return d_read(LTE_UAR
 #endif
 #endif
 
+int prefix_matches (const char * haystack, const char * prefix); 
+int parse_int(const char * start, const char ** end, int * num); 
+int parse_hex(const char * start, const char ** end, uint8_t * byte); 
 
 
 #endif 

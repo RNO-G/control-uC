@@ -429,6 +429,44 @@ int programmer_process()
 }
 
 
+int programmer_copy_flash_to_application(int slot) 
+{
+
+  static int copy_started = 0; 
+
+  if (program_state != PROGRAM_IDLE) 
+  {
+    //we can't have another programming task going on
+    return -1; 
+  }
+
+  uint8_t* offset = (uint8_t*) &__rom_start__; 
+  if (!copy_started) 
+  {
+    i = 0;
+    N = (int) &__rom_size__; 
+    spi_flash_wakeup();
+    spi_flash_application_seek(slot,0); 
+    copy_started = 1; 
+  }
+
+  uint8_t buf[256]; 
+
+  //try doing it all in one go for now? split it up if we need to. 
+  while (i < N) 
+  {
+    int howmany = i + 256 < N ? 256 : N -i; 
+    flash_read(&FLASH, (uint32_t) offset+i, buf, howmany); 
+    spi_flash_application_write(slot,howmany, buf); 
+    i+=howmany; 
+  }
+  
+  copy_started = 0; 
+  spi_flash_deep_sleep(); 
+  return 0; 
+}
+
+
 int programmer_copy_application_to_flash(int slot) 
 {
 #ifndef _BOOTLOADER_ 
@@ -439,7 +477,7 @@ int programmer_copy_application_to_flash(int slot)
 
   if (program_state != PROGRAM_IDLE) 
   {
-    //we can't have another programmign task going on
+    //we can't have another programmiing task going on
     return -1; 
   }
 
@@ -448,7 +486,7 @@ int programmer_copy_application_to_flash(int slot)
     flash_register_callback(&FLASH, FLASH_CB_READY, flash_ready_callback); 
     flash_register_callback(&FLASH, FLASH_CB_ERROR, flash_error_callback); 
     i = 0;
-    N = __rom_size__; 
+    N = (int) &__rom_size__; 
     spi_flash_application_seek(slot,0); 
     spi_flash_wakeup();
     copy_started = 1; 

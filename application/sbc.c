@@ -7,7 +7,11 @@
 #include "hal_calendar.h" 
 #include "shared/printf.h" 
 #include "include/rno-g-control.h" 
+#include "hal_flash.h"
 #include "application/i2cbus.h" 
+#include "shared/programmer.h" 
+#include "linker/map.h"
+#include "lorawan/lorawan.h" 
 
 //these define the maximum line length! 
 #define SBC_BUF_LEN 128 
@@ -76,99 +80,9 @@ int sbc_turn_on(sbc_boot_mode_t boot_mode)
   return 0; 
 }
 
-static int char2val(char c) 
-{
-  if (c>=0x30 && c <=0x39) return c-0x30; 
-  if (c>=0x41 && c <=0x36) return 10+c-0x41; 
-  if (c>=0x61 && c <=0x66) return 10+c-0x61; 
-  return -1; 
-}
-
-static int parse_int(const char * start, const char **end, int * num) 
-{
-  if (!num) return 1; 
-  const char * ptr = start; 
-  int sign = 1; 
-  while (*ptr==' ' || *ptr=='\t') ptr++; 
-
-  *num = 0; 
-  char first = *ptr; 
-  if (first=='-') 
-  {
-    sign = -1; 
-  }
-  
-  while(*ptr >= '0' && *ptr <='9')
-  {
-    *num *= 10; 
-    *num += (*ptr-'0'); 
-    ptr++; 
-  }
 
 
-   if (end) *end = ptr; 
-  *num*=sign; 
-  return 0; 
-}
 
-
-//returns 0 on success
-static int parse_hex(const char * start, const char **end, uint8_t * byte)
-{
-  if (!byte) return 1; 
-  const char * ptr = start;
-  //skip leading whitespace
-  while (*ptr==' ' || *ptr =='\t') ptr++;
-
-  char first= *ptr++; 
-  char second = *ptr; 
-  int ok = 0; 
-
-  //check if second is a whitespace or 0, in this case we just have one  
-  if (!second  || second == ' ' || second=='\t') 
-  {
-    int val = char2val(first); 
-    if (val < 0) ok = 1; 
-    else *byte =val; 
-  }
-  else
-  {
-    ptr++; //increment pointer to point after consumed
-
-    int msb = char2val(first); 
-    if (msb < 0) 
-    {
-      ok = 1; 
-    }
-    else
-    {
-      int lsb = char2val(second); 
-      if (lsb < 0) 
-      {
-        ok = 1; 
-      }
-      else
-      {
-        *byte = (msb<<4)+lsb;
-      }
-    }
-  }
-
-  *end = ptr; 
-  return ok; 
-}
-
-
-static int prefix_matches(const char * haystack, const char * prefix) 
-{
-  int i = 0; 
-  while(prefix[i] && haystack[i]) 
-  {
-    if (haystack[i] != prefix[i]) return 0; 
-    i++; 
-  }
-  return 1; 
-}
 
 
 int sbc_io_process()
@@ -190,6 +104,7 @@ int sbc_io_process()
     
     int dontconsume = 0; 
     int nvalid = 0; 
+    int need_sync = 0; 
 
     while(async_tokenized_buffer_ready(&sbc)) 
     {
@@ -291,7 +206,7 @@ int sbc_io_process()
         if (!parse_int(in+sizeof("SET-STATION"), &nxt, &station))
         {
           config_block()->app_cfg.station_number= station;
-          config_block_sync(); 
+          need_sync = 1; 
           printf("#SET-STATION: %d\r\n", station); 
           valid = 1; 
         }
@@ -307,7 +222,7 @@ int sbc_io_process()
         if (!parse_int(in+sizeof("SET-GPS-OFFSET"), &nxt, &offset))
         {
           config_block()->app_cfg.gps_offset= offset;
-          config_block_sync(); 
+          need_sync = 1; 
           printf("#SET-GPS-OFFSET: %d\r\n", offset); 
           valid = 1; 
         }
@@ -329,17 +244,89 @@ int sbc_io_process()
         valid = 1; 
       }
 
+      /*
+      else if (prefix_matched(in,"PGM"))
+      {
+        programmer_command(sbc.buf); 
+      }
+      */ 
+
+
+      else if (prefix_matches(in,"COPY-FLASH-TO-SLOT"))
+      {
+        int slot =-1; 
+        const char * nxt = 0; 
+        if (!parse_int(in + sizeof("COPY-FLASH-TO-SLOT"), &nxt, &slot) && slot >= 1 && slot <=4)
+        {
+          printf("#COPY-FLASH-TO-SLOT %d  STARTED\r\n", slot);
+          int ret = programmer_copy_flash_to_application(slot); 
+          printf("#COPY-FLASH-TO-SLOT %d  DONE: %d\r\n", slot, ret);
+          valid = 1; 
+        }
+        else
+        {
+          printf("#ERR: Bad slot: %d\r\n",slot); 
+
+        }
+        valid = 1; 
+      }
+
+      else if (prefix_matches(in,"DUMP-SLOT")) 
+      {
+        const char * nxt = 0; 
+        int slot; 
+        int offset; 
+        int len; 
+        if (!parse_int(in + sizeof("DUMP-SLOT"), &nxt, &slot)
+            && !parse_int(nxt,&nxt,&offset)
+            && !parse_int(nxt,&nxt,&len))
+        {
+          printf("#DUMP-SLOT(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
+          if (slot > 0) 
+          {
+            spi_flash_wakeup();
+            spi_flash_application_seek(slot, offset); 
+          }
+          uint8_t buf[32]; 
+
+          for (int i = 0; i < len; i+=32) 
+          {
+            int howmany = i + 32  > len ? len-i : 32; 
+            if (slot > 0) spi_flash_application_read(slot, howmany, buf); 
+            else flash_read(&FLASH, (uint32_t) &__rom_start__+i,  buf, howmany); 
+            printf("# %04x ", offset + i); 
+            for (int j = 0; j < howmany; j++) 
+            {
+              printf(" %02x", buf[j]); 
+            }
+            printf("\r\n"); 
+          }
+          valid = 1; 
+          if (slot > 0) 
+            spi_flash_deep_sleep(); 
+        }
+
+      }
+
+
 
       else if (!strcmp(in,"NOW"))
       {
         struct calendar_date_time now; 
         calendar_get_date_time(&CALENDAR,&now); 
         valid = 1; 
-        printf("#NOW: %d-%02d-%02d %02d:%02d:%02d\n", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec); 
+        printf("#NOW: %d-%02d-%02d %02d:%02d:%02d LORA: ", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec);  
+        int ntx, nrx, ntx_dropped, nrx_dropped; 
+        if (lorawan_state()  ==LORAWAN_READY) 
+        {
+          lorawan_stats(&ntx,&nrx, &ntx_dropped, &nrx_dropped); 
+          printf("tx=%d/%d, rx=%d/%d\r\n", ntx, ntx+ntx_dropped, nrx, nrx+nrx_dropped);
+        }
+        else
+        {
+          printf("JOINING\r\n"); 
+        }
       }
-
-
-
 
       if (!valid) 
       {
@@ -360,6 +347,8 @@ int sbc_io_process()
      // only do up to 3 commands at a time! 
       if (dontconsume || nvalid > 3) break; 
     }
+
+    if (need_sync) config_block_sync(); 
 
     return 0; 
 }

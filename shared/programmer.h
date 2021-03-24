@@ -8,6 +8,7 @@ int programmer_check_command(const char * cmd);
 
 /* Enter programmer mode, with the command, and the io device. 
  * Returns 0 if we entered succsefully, otherwise 1 (probably because we're already in programmer mode). 
+ * This should only happen in the bootloader. 
  **/ 
 struct io_descriptor; 
 int programmer_enter(const char * cmd, int fd); 
@@ -22,5 +23,8 @@ int programmer_process();
  * */
 int programmer_copy_application_to_flash(int slot); 
 
+
+/** Copy from flash to application (useful for debugging, maybe?) */ 
+int programmer_copy_flash_to_application(int slot); 
 
 #endif
