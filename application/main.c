@@ -30,6 +30,9 @@ static volatile int n_interrupts;
 static volatile int n_nmi; 
 
 
+static rno_g_monitor_t last_mon; 
+
+
 void NMI_Handler(void) 
 {
   n_nmi++; 
@@ -91,7 +94,6 @@ int main(void)
   /** Initialize ADC monitors */ 
 
   monitor_init(); 
-  rno_g_monitor_t mon; 
    
 
 
@@ -118,10 +120,7 @@ int main(void)
 
 
     // Service any messages from the SBC
-    if (sbc_io_process())
-    {
-      sbc_turn_on(0); 
-    }
+    sbc_io_process();
 
     // Service LTE (this does nothign for now) 
     lte_process(); 
@@ -145,9 +144,7 @@ int main(void)
 
 
     /// See if we need to do anything
-
-
-    if ((nticks & 0x3ff) == 0) monitor_fill(&mon,10); 
+    if ((nticks & 0x3ff) == 0) monitor_fill(&last_mon,10); 
 
 
     /// See if we need to send anything 
@@ -156,17 +153,18 @@ int main(void)
     if (lorawan_state() == LORAWAN_READY) 
     {
       //our time isn't valid, let's request it
-      if (nticks >= time_check && RTC->MODE0.COUNT.reg < 1000000000) 
+      if (nticks >= time_check ) 
       {
+       int have_time = (RTC->MODE0.COUNT.reg > 1000000000); 
        lorawan_request_datetime() ;
-       time_check+= (15000 / DELAY_MS) ; //check again in ~15 seconds
+       int delay_in_secs = have_time ? 3600*4 : 15; 
+       time_check+= (delay_in_secs*1000 / DELAY_MS) ;
       }
 
       //Let's testing sending something 
       if ((nticks & 0x7ff) == 0 && lorawan_state() == LORAWAN_READY) 
       {
         lorawan_tx_copy(sizeof(nticks), 2, (uint8_t*) &nticks,0); 
-
       }
 
     }
