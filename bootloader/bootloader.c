@@ -127,8 +127,16 @@ int main(void)
 
   if (copy_application) 
   {
+    printf("#INFO: COPYING FROM SLOT %d to FLASH\n", copy_application); 
     
-    programmer_copy_application_to_flash(copy_application); 
+
+    int val; 
+    while ((val = programmer_copy_application_to_flash(copy_application))) 
+    {
+      printf(val == 1 ? "." : " !"); 
+    }
+    printf("done!\n"); 
+
     shm->nresets = 0; 
     shm->booted_from = copy_application; 
     have_application = 1; 
