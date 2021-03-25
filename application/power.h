@@ -1,24 +1,16 @@
 #ifndef _rno_g_power_h
 #define _rno_g_power_h
 
+#include "rno-g-control.h" 
 
 
-struct power_system_state
-{
-  uint16_t PVv_cV; 
-  uint16_t PVi_mA; 
-  uint16_t BATv_cV; 
-  uint16_t BATi_mA;  //
-  int16_t T_dC; //deci-celsius
-} power_system_state_t;
+int power_monitor_init(); 
 
-const power_system_state_t * power_system_state()
-
-void schedule_power_system_read(); 
+int power_monitor_fill(power_system_monitor_t * state); 
 
 
-
-
+/** schedules a read of the power system  */ 
+int power_monitor_schedule(); 
 
 
 #endif
