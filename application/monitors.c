@@ -2,6 +2,7 @@
 #include "application/monitors.h" 
 #include "shared/driver_init.h" 
 #include "hal_adc_sync.h" 
+#include "hpl_calendar.h" 
 #include "shared/printf.h" 
 
 
@@ -127,8 +128,8 @@ static void mon_b_select(monitor_t what)
 int monitor_fill(rno_g_monitor_t * m, int navg)
 {
   int i;
-  m->when = RTC->MODE0.COUNT.reg; 
-  m->temp_cC = monitor(MON_TEMPERATURE,navg); 
+  m->when = _calendar_get_counter(&CALENDAR.device); 
+  m->temp_cc = monitor(MON_TEMPERATURE,navg); 
   for (i = 0; i < 6; i++) 
   {
     m->i_surf3v[i] = monitor(MON_SURF3V_1+i, navg); 

@@ -1,6 +1,31 @@
 
 #include "shared/base64.h" 
+#ifndef _TEST_
 #include "shared/printf.h" 
+#else 
+#include <stdio.h> 
+#include <string.h> 
+#endif 
+
+
+static char val2char(uint8_t val) 
+{
+  if (val < 26) return val + 'A'; 
+  else if (val < 52) return val-26 + 'a'; 
+  else if (val < 62) return val-52 + '0'; 
+  else return val == 62 ? '+' : 
+              val == 63 ? '/' : 
+              '!'; 
+}
+
+static uint8_t char2val(char c) 
+{
+  if ( c >= 'A' && c <= 'Z') return c-'A'; 
+  else if ( c >= 'a' && c <= 'z') return c-'a'+26; 
+  else if (c >='0' && c <='9') return c-'0' + 52; 
+  else return c == '+' ? 62 : 
+              c == '/' ? 63 : 64; 
+}
 
 
 
@@ -17,8 +42,8 @@ int base64_decode(int b64_len, uint8_t * buf)
   {
     if (buf[i] == '=') break; 
     if (j ==0) decoded = 0;
-
-    uint32_t partial =  (buf[i++] -'A') & 0x3f;  
+    //no validation... 
+    uint32_t partial =  (char2val(buf[i++])) & 0x3f;  
 
     decoded |= (partial << (6*(3-j))); 
     j++; 
@@ -49,13 +74,69 @@ int base64_print(int d, int len,  const uint8_t * buf)
     if (j == 3 || i == len) 
     {
       char output[4]; 
-      output[0] = (encoded >> 18) + 'A' ;
-      output[1] = ((encoded >> 12) & 0x3f) + 'A' ;
-      output[2] = j ==1 ? '=' : ((encoded >> 6) & 0x3f) + 'A' ;
-      output[3] = j ==2 ? '=' : (encoded & 0x3f) + 'A' ;
+      output[0] = val2char(encoded >> 18);
+      output[1] = val2char((encoded >> 12) & 0x3f) ;
+      output[2] = j ==1 ? '=' : val2char(((encoded >> 6) & 0x3f));
+      output[3] = j <=2 ? '=' : val2char(encoded & 0x3f);
+#ifdef _TEST_ 
+      (void) d; 
+      ret += printf("%c%c%c%c", output[0], output[1], output[2], output[3]); 
+#else
       ret += dprintf(d, "%c%c%c%c", output[0], output[1], output[2], output[3]); 
+#endif
       j=0; 
     }
   }
   return ret; 
 }
+
+#ifdef _TEST_ 
+
+int main(int nargs, char ** args) 
+{
+  int decode = 0; 
+  for (int i= 1 ; i < nargs; i++) 
+  {
+    if (!strcmp(args[i],"-d"))
+    {
+      printf("Decoding binary!\n"); 
+      decode = 1 ; 
+    }
+    else if (!strcmp(args[i],"-c"))
+    {
+      printf("Decoding char!\n"); 
+      decode = 2 ; 
+    }
+    else
+    {
+      FILE * f = fopen(args[i],"r"); 
+
+      printf("%s:\n", args[i]); 
+      char buf[48]; 
+      while (!feof(f))
+      {
+        int N = fread(buf,1,sizeof(buf), f); 
+        if (decode) 
+        {
+          int nb = base64_decode(N, buf); 
+          for (int i = 0; i < nb; i++) 
+          {
+            printf(decode == 1 ? "[%x]": "%c", buf[i]); 
+          }
+        }
+        else
+        {
+          base64_print(1,N, buf); 
+        }
+    //    printf("\n"); 
+      }
+      printf("\n"); 
+      fclose(f); 
+    }
+  }
+
+  return 0; 
+}
+
+
+#endif

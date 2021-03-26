@@ -40,7 +40,7 @@ APP_SHARED_OBJS=$(addprefix $(BUILD_DIR)/shared/, $(SHARED_OBJS))
 BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 
 APP_OBJS=$(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
-APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o monitors.o)
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o monitors.o power.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o )
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
@@ -141,6 +141,8 @@ $(BUILD_DIR)/%.o: %.S
 	@echo Finished building: $<
 
 
+$(BUILD_DIR)/test_base64: shared/base64.c shared/base64.h | $(BUILD_DIR) 
+	gcc -o $@ -Os -D_TEST_ $<  -I./
 
 $(MKDIRS):
 	mkdir -p "$@"

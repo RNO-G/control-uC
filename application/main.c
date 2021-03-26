@@ -155,7 +155,7 @@ int main(void)
       //our time isn't valid, let's request it
       if (nticks >= time_check ) 
       {
-       int have_time = (RTC->MODE0.COUNT.reg > 1000000000); 
+       int have_time = _calendar_get_counter(&CALENDAR.device) > 1000000000; 
        lorawan_request_datetime() ;
        int delay_in_secs = have_time ? 3600*4 : 15; 
        time_check+= (delay_in_secs*1000 / DELAY_MS) ;
