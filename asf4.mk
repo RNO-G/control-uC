@@ -112,40 +112,6 @@ hal/utils/src/utils_event.o \
 hal/src/hal_sleep.o \
 hal/src/hal_atomic.o \
 
-ASF4_DB_OBJS =  \
-hal/src/hal_io.o \
-hpl/systick/hpl_systick.o \
-hal/src/hal_calendar.o \
-hpl/wdt/hpl_wdt.o \
-samd21a/gcc/gcc/startup_samd21.o \
-hal/utils/src/utils_syscalls.o \
-samd21a/gcc/system_samd21.o \
-hpl/nvmctrl/hpl_nvmctrl.o \
-hal/src/hal_spi_m_sync.o \
-hal/src/hal_timer.o \
-hal/src/hal_flash.o \
-hal/src/hal_delay.o \
-hpl/eic/hpl_eic.o \
-hal/src/hal_ext_irq.o \
-hpl/sysctrl/hpl_sysctrl.o \
-hpl/core/hpl_init.o \
-hal/src/hal_wdt.o \
-hpl/core/hpl_core_m0plus_base.o \
-hal/utils/src/utils_assert.o \
-hpl/dmac/hpl_dmac.o \
-hpl/pm/hpl_pm.o \
-hal/src/hal_usart_async.o \
-hpl/gclk/hpl_gclk.o \
-hal/utils/src/utils_list.o \
-hpl/rtc/hpl_rtc.o \
-hpl/tc/hpl_tc.o \
-hpl/sercom/hpl_sercom.o \
-hal/utils/src/utils_ringbuffer.o \
-hal/src/hal_gpio.o \
-hal/utils/src/utils_event.o \
-hal/src/hal_sleep.o \
-hal/src/hal_atomic.o \
-
 
 ##todo, cull 
 ASF4_RAW_BL_OBJS =  \
@@ -173,6 +139,8 @@ hal/utils/src/utils_event.o \
 hal/src/hal_sleep.o \
 hpl/tc/hpl_tc.o \
 hal/src/hal_atomic.o \
+hal/src/hal_delay.o \
+hpl/systick/hpl_systick.o 
 
 ifeq ($(DEVBOARD),1) 
 ASF4_OBJS := $(foreach obj, $(ASF4_DB_OBJS), $(addprefix $(BUILD_DIR)/$(ASF4_PREFIX)/, $(obj)))
