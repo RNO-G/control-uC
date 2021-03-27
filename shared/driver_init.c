@@ -424,12 +424,12 @@ static void FLASH_init(void)
 
 
 
-#ifndef _BOOTLOADER_
 static void delay_driver_init(void)
 {
 	delay_init(SysTick);
 }
 
+#ifndef _BOOTLOADER_
 
 static void CALENDAR_CLOCK_init(void)
 {
@@ -592,11 +592,11 @@ void system_init(void)
 	SBC_UART_init();
 	SPI_FLASH_init();
 
+	delay_driver_init();
 
 #ifndef _BOOTLOADER_
 	LORA_SPI_init();
 
-	delay_driver_init();
 
 	CALENDAR_init();
 

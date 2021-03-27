@@ -26,9 +26,9 @@
 #include <hal_i2c_m_async.h>
 #include <hal_i2c_m_sync.h>
 #include <hal_adc_sync.h>
+#include <hal_delay.h>
 
 #ifndef _BOOTLOADER_
-#include <hal_delay.h>
 #include <hal_calendar.h>
 #include <hal_timer.h>
 #include <hpl_tc_base.h>
