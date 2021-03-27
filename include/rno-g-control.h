@@ -49,6 +49,28 @@ typedef struct rno_g_monitor
   int16_t i_5v[2]; 
 } rno_g_monitor_t;
 
+typedef struct power_system_monitor
+{
+  uint32_t when_power;
+
+  uint16_t PVv_cV; 
+  uint16_t PVi_mA; 
+
+  uint16_t BATv_cV; 
+  uint16_t BATi_mA;  //
+
+  uint32_t when_temp;
+
+  int8_t local_T_C; //deci-celsius
+  int8_t remote1_T_C; //deci-celsius
+  int8_t remote2_T_C; //deci-celsius
+
+  uint8_t local_T_sixteenth_C : 4; 
+  uint8_t remote1_T_sixteenth_C : 4; 
+  uint8_t remote2_T_sixteenth_C : 4; 
+
+} power_system_monitor_t;
+
 
 typedef enum lte_state
 {

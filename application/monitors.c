@@ -129,7 +129,7 @@ int monitor_fill(rno_g_monitor_t * m, int navg)
 {
   int i;
   m->when = _calendar_get_counter(&CALENDAR.device); 
-  m->temp_cc = monitor(MON_TEMPERATURE,navg); 
+  m->temp_cC = monitor(MON_TEMPERATURE,navg); 
   for (i = 0; i < 6; i++) 
   {
     m->i_surf3v[i] = monitor(MON_SURF3V_1+i, navg); 
