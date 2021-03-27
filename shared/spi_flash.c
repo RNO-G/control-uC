@@ -456,12 +456,12 @@ static uint32_t application_get_address(int slot, uint32_t offset)
   return application_start + (slot-1) * application_size + offset; 
 }
 
-int spi_flash_application_erase_sync(int slot, int nblk) 
+int spi_flash_application_erase_sync(int slot, int offset,  int nblk) 
 {
 
   if (nblk < 0 || nblk > application_blocks) nblk = application_blocks; 
   if (slot > N_applications || slot < 1) return -1; 
-  uint32_t start_addr = application_get_address(slot,0); 
+  uint32_t start_addr = application_get_address(slot,offset); 
   uint32_t size = nblk << 12; 
 
    _spi_flash_change_protection(0, start_addr, start_addr+size);
@@ -473,7 +473,7 @@ int spi_flash_application_erase_sync(int slot, int nblk)
 static struct erase_context ectx[4] = {0};
 static uint8_t erasing = 0; 
 
-int spi_flash_application_erase_async(int slot, int nblk) 
+int spi_flash_application_erase_async(int slot, int offset, int nblk) 
 {
   if (nblk < 0 || nblk > application_blocks) nblk = application_blocks; 
   if (slot > N_applications || slot < 1) return -1; 
@@ -488,11 +488,12 @@ int spi_flash_application_erase_async(int slot, int nblk)
       application_offsets[slot-1] = 0; 
       return 0; 
     }
+    return 1+ectx[(slot-1)].last_block - ectx[slot].iblock; 
   }
 
   else
   {
-    uint32_t start_addr = application_get_address(slot,0); 
+    uint32_t start_addr = application_get_address(slot,offset); 
     uint32_t size = nblk << 12; 
      _spi_flash_change_protection(0, start_addr, start_addr+size); 
 

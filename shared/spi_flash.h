@@ -37,10 +37,10 @@ int spi_flash_application_write(int slot, uint16_t len, const uint8_t* data) ;
 int spi_flash_application_read(int slot, uint16_t len, uint8_t * data) ; 
 
 /* Can take a long time! Only call in bootloader */ 
-int spi_flash_application_erase_sync(int slot, int nblk); 
+int spi_flash_application_erase_sync(int slot, int offset,  int nblk); 
 
 /* Returns immediately, but must be called until returns 0. Otherwise returns number of 4k blocks to be erased. */ 
-int spi_flash_application_erase_async(int slot, int nblk);
+int spi_flash_application_erase_async(int slot,  int offset, int nblk);
 
 
 
