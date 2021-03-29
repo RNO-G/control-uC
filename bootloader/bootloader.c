@@ -24,7 +24,6 @@ void relenquish()
   get_shared_memory()->nboots++; 
   get_shared_memory()->nresets++; 
 
-
   system_deinit(); 
 
   uint32_t sp = *((uint32_t*)&__rom_start__); 
@@ -104,6 +103,7 @@ int main(void)
     {
       copy_application = shm->boot_option; 
     }
+    shm->boot_option = 0; //reset to ROM after 
   }
   //otherwise check if we are in a bad state and need to try to recover
   // This is either because we've reflashed too many times our application is gone. 
@@ -156,24 +156,14 @@ int main(void)
     int programmer_entered = 0; 
     while(1) 
     {
-      if (programmer_entered)
-      {
-        if (!programmer_process()) 
-        {
-          programmer_entered = 0;
-        }
-        continue; 
-      }
+      programmer_process(); 
 
-      //check for line returns
 
       while (async_tokenized_buffer_ready(&sbc) )
       {
         if (programmer_check_command(sbc.buf))
         {
-          programmer_enter(sbc.buf,SBC_UART_DESC);
-          programmer_entered = 1;
-          break;
+          programmer_cmd(sbc.buf,sbc.len);
         }
         else if (!strcmp(sbc.buf,"#RESET"))
         {
@@ -183,11 +173,10 @@ int main(void)
         {
           break;
         }
-        else
-        {
-          async_tokenized_buffer_discard(&sbc); 
-        }
+
+        async_tokenized_buffer_discard(&sbc); 
       }
+      delay_ms(20); 
     }
   }
 

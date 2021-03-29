@@ -2,7 +2,7 @@
 #define _RNO_G_PROGRAMMER_H
 
 
-/*Check if this is a programmer command. 
+/*Check if this is a programmer command. (This just searches for a #PRG prefix )
  * Returns 1 if it is, 0 if not */ 
 int programmer_check_command(const char * cmd); 
 
@@ -11,7 +11,8 @@ int programmer_check_command(const char * cmd);
  * This should only happen in the bootloader. 
  **/ 
 struct io_descriptor; 
-int programmer_enter(const char * cmd, int fd); 
+/** note that the programmer is allowed to overwrite parts of the command (so that we can decode base64 buffers in-place without copying)*/ 
+int programmer_cmd(char * cmd, int len); 
 
 /* Continues the programmer process, returns 0 if we are done with the programming, -1 if there was an error, or 1 if in progress. */ 
 int programmer_process(); 

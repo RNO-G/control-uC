@@ -5,76 +5,60 @@
 #include <string.h>
 #include "driver_init.h"
 #include "linker/map.h" 
-
-
+#include "shared/base64.h" 
 #include "shared/io.h" 
 #include "shared/printf.h" 
 
 
 
-enum commands
-{
-  PGM_NO_CMD = 0,
-  PGM_WRITE_CMD=1,
-  PGM_READ_CMD=2,
-  PGM_ERASE_CMD =3
-}; 
-
-
-static int which_command(const char * cmd, int * slot) 
-{
-  if (cmd [0] != '#') return PGM_NO_CMD; 
-
-  int ret = 0; 
-  if ( !memcmp(cmd+1, "PRG@", 4)) ret = PGM_WRITE_CMD; 
-  else if ( !memcmp(cmd+1, "DEL@", 4)) ret = PGM_ERASE_CMD; 
-  else if ( !memcmp(cmd+1, "REA@", 4)) ret = PGM_READ_CMD; 
-
-  if (ret!=0 && slot) 
-  {
-    *slot = cmd[5] - '0'; 
-  }
-  return ret; 
-}
-
+#ifdef _BOOTLOADER_
+#define MIN_WRITE_SLOT 0 
+#else
+#define MIN_WRITE_SLOT 1 
+#endif
 
 int programmer_check_command(const char * cmd) 
 {
-  return !!which_command(cmd,0); 
+  return prefix_matches(cmd,"#PROG"); 
 }
+
+
+static int spi_flash_awake =0; 
+#ifdef _BOOTLOADER_
+static int last_slot =-1; 
+#endif
+
+static void wakeup_spi_flash()
+{
+  if (!spi_flash_awake) spi_flash_wakeup(); 
+  spi_flash_awake = 0; 
+}
+
+static void put_down_spi_flash() 
+{
+
+    spi_flash_deep_sleep(); 
+    spi_flash_awake = 0; 
+}
+
+static void maybe_put_down_spi_flash()
+{
+  if (!spi_flash_awake) return; 
+  if (spi_flash_awake ++> 100) 
+  {
+    put_down_spi_flash(); 
+  }
+}
+
 
 static enum
 {
   PROGRAM_IDLE, 
-  PROGRAM_WRITE_INIT, 
-  PROGRAM_WRITE_CONFIRM, 
-  PROGRAM_WRITE_NBLOCKS, 
-  PROGRAM_WRITE_WAITING,
-  PROGRAM_WRITE_WRITING,
-  PROGRAM_READ_INIT, 
-  PROGRAM_READ_NBLOCKS, 
-  PROGRAM_READ_READING,
-  PROGRAM_ERASE_INIT, 
-  PROGRAM_ERASE_CONFIRM, 
-  PROGRAM_ERASE_NBLOCKS,
-  PROGRAM_ERASE_ERASING, 
   PROGRAM_ERROR,
+  PROGRAM_COPYING_TO_FLASH,
   PROGRAM_DONE
 } program_state = PROGRAM_IDLE; 
 
-
-static int slot; 
-
-// The byte or block counter 
-static int i; 
-
-// The byte or block number
-static int N; 
-
-
-static int fd; 
-static uint8_t programmer_buf[260]; 
-static async_tokenized_buffer_t b = { .buf=programmer_buf, .capacity = sizeof(programmer_buf), .token = "\r\n"}; 
 
 static volatile enum 
 {
@@ -84,6 +68,10 @@ static volatile enum
 }flash_status ; 
 
 
+
+
+
+#ifdef _BOOTLOADER_
 static void flash_ready_callback(struct flash_descriptor * const d) 
 {
   (void) d;
@@ -95,277 +83,222 @@ static void flash_error_callback(struct flash_descriptor * const d)
   (void) d; 
   flash_status = FLASH_ERROR; 
 }
+#endif 
 
 
-int programmer_enter(const char * cmd, int dev) 
+
+
+
+int programmer_cmd(char * in, int in_len) 
 {
-  if (program_state) return 1; 
-  int check_slot; 
-  int which = which_command(cmd,&check_slot); 
 
+
+      if (prefix_matches(in,"#PROG-COPY-FLASH-TO-SLOT"))
+      {
+        int slot =-1; 
+        const char * nxt = 0; 
+        if (!parse_int(in + sizeof("#PROG-COPY-FLASH-TO-SLOT"), &nxt, &slot) && slot >= 1 && slot <=4)
+        {
+          printf("#PROG-COPY-FLASH-TO-SLOT %d  STARTED\r\n", slot);
+          int ret = programmer_copy_flash_to_application(slot); 
+          printf("#PROG-COPY-FLASH-TO-SLOT %d  DONE: %d\r\n", slot, ret);
+        }
+        else
+        {
+          printf("#ERR: Bad slot: %d\r\n",slot); 
+          return 1; 
+        }
+      }
+      if (prefix_matches(in,"#PROG-COPY-FLASH-TO-SLOT"))
+      {
 #ifndef _BOOTLOADER_
-  if (!check_slot)
-  {
-    d_put(fd,"#ERR\r\n"); 
-  }
+
+          printf("#ERR: #PROG-COPY-FLASH-TO-SLOT only available on bootlader\r\n");
+#else
+        int slot =-1; 
+        const char * nxt = 0; 
+        if (!parse_int(in + sizeof("#PROG-COPY-FLASH-TO-SLOT"), &nxt, &slot) && slot >= 1 && slot <=4)
+        {
+          int ret = programmer_copy_application_to_flash(slot); 
+          last_slot = slot; 
+          printf("#PROG-COPY-SLOT-TO-FLASH %d  STARTED: %d\r\n", slot, ret);
+          program_state = PROGRAM_COPYING_TO_FLASH; 
+        }
+        else
+        {
+          printf("#ERR: Bad slot: %d\r\n",slot); 
+          return 1; 
+        }
 #endif
-
-  if (!which || check_slot < 0 || check_slot > 4)
-  {
-    d_put(fd,"#ERR\r\n"); 
-    return 1; 
-  }
-  
-  i = 0; 
-  fd = dev; 
-  b.desc = fd; 
-
-
-  slot = check_slot; 
-
-  if (slot == 0) 
-  {
-    flash_register_callback(&FLASH, FLASH_CB_READY, flash_ready_callback); 
-    flash_register_callback(&FLASH, FLASH_CB_ERROR, flash_error_callback); 
-  }
-  else
-  {
-    spi_flash_wakeup(); 
-  }
-
-
-
-  switch (which) 
-  {
-    case PGM_WRITE_CMD: 
-      program_state = PROGRAM_WRITE_INIT; 
-      break; 
-    case PGM_READ_CMD: 
-      program_state = PROGRAM_READ_INIT;
-      break;
-    case PGM_ERASE_CMD:
-      program_state = PROGRAM_ERASE_INIT; 
-      break; 
-    default: 
-      program_state = PROGRAM_IDLE; 
-  }
-
-  return 0; 
-}
-
-
-
-static void write_confirm() 
-{
-  dprintf(fd,"?CONFIRM@%d\r\n",slot); 
-}
-
-
-
-static int check_confirm_slot(int success_state) 
-{
-  if (!async_tokenized_buffer_ready(&b)) return 0; 
-  if (b.len == 1 && b.buf[0] == slot + '0' )
-  {
-      program_state = success_state; 
-      async_tokenized_buffer_discard(&b); 
-      return 1; 
-  }
-  program_state = PROGRAM_ERROR; 
-  return 0; 
-}
-
-
-static int read_nblocks() 
-{
-
-  int total = 0; 
-  int mult = 1; 
-  int buf_len = b.len; 
-  for (int idig = 0; idig < buf_len; idig++) 
-  {
-    char c = b.buf[buf_len-1-idig]; 
-    if (c < '0' || c > '9') return 0; 
-    total += mult*(c-'0'); 
-    mult*=10; 
-  }
-
-  async_tokenized_buffer_discard(&b); 
-
-  N = total; 
-  return total; 
-}
-
-
-
-static int accumulate_flash_buffer() 
-{
-  if  (b.len < 256) 
-  {
-    b.len+= d_read(fd, 256-b.len, (uint8_t*) b.buf+ b.len); 
-  }
-
-  if (b.len >= 256) return 1; 
-  return 0; 
-}
-
-
-static void process_write() 
-{
-
-
-  static int transfer_was_started = 0; 
-  static int sent_query = -1; 
-
-  //Check if write operation is still in progress
-  if ((slot == 0 && flash_status == FLASH_BUSY) || spi_flash_busy() ) 
-  {
-    return; 
-  }
-  if (flash_status == FLASH_ERROR) //TODO: can check spi flash status for error
-  {
-    program_state = PROGRAM_ERROR; 
-  }
-
-  
-
-  //this means we are done with the transfer, so we can ask for a new buffer
-  if (transfer_was_started)
-  {
-    transfer_was_started = 0; 
-    i++; //move on to the next block
-
-    if (i == N) 
-    {
-      dprintf(fd,"#DONE_PROG@%d:%d\r\n", slot,N); 
-      program_state = PROGRAM_DONE; 
-      return; 
-    }
-    b.len = 0; 
-  }
-
-  if (sent_query < i)
-  {
-    dprintf(fd,"BLOCK_%03d\r\n",i); 
-    sent_query = i; 
-  }
-
-  //accumulate more bytes, if we have 256, then let's pass to flash
-  if (accumulate_flash_buffer())
-  {
-
-    //otherwise, let's write 256 bytes
-    if (slot==0) 
-    {
-      flash_append(&FLASH, 8*1024 + 256*i, (uint8_t*) b.buf,256); 
-      flash_status = FLASH_BUSY; 
-    }
-    else
-    {
-      if (i == 0) spi_flash_application_seek(slot,0); 
-      spi_flash_application_write(slot,256, (uint8_t*) b.buf); 
-    }
-
-    transfer_was_started = 1;
-  }
-  return;  
-
-}
-
-//read, 256 bytes at a time I guess? 
-static void process_read() 
-{
-  uint8_t flash_buffer[256]; 
-  int nb = N-i >= 256 ? 256 : N-i; 
-  if (slot == 0 ) 
-  {
-    flash_read(&FLASH,8*1024+i,  flash_buffer, nb); 
-    i+=nb;
-  }
-  else 
-  {
-    if (i == 0) 
-    {
-      spi_flash_application_seek(slot,0); 
-    }
-    i+=spi_flash_application_read(slot,nb,  flash_buffer); 
-  }
-
-  d_write(fd, nb, flash_buffer); 
-
-  if ( i >=N) 
-  {
-    dprintf(fd,"#DONE_READ@%d:%d\r\n", slot,N);
-    program_state = PROGRAM_DONE; 
-  }
-}
-
-static void erase_done() 
-{
-
-  dprintf(fd,"#DONE_ERASE@%d:%d",slot,N);
-  program_state = PROGRAM_DONE; 
-}
-
-static void process_erase() 
-{
-
-  if (slot == 0) 
-  {
-    static int erase_started = 0; 
-
-    if (flash_status == FLASH_BUSY) return; 
-    if (flash_status == FLASH_ERROR) 
-    {
-      program_state = PROGRAM_ERROR; 
-    }
-
-    if (erase_started) 
-    {
-      flash_status = FLASH_READY; 
-      erase_done(); 
-      erase_started = 0; 
-      return; 
-    }
-
-    flash_erase(&FLASH, 8*1024, N); 
-    erase_started = 1; 
-  }
-  else
-  {
-    int ret = spi_flash_application_erase_async(slot, N);
-
-    if (ret == 0)
-    {
-      erase_done(); 
-    }
-    else if (ret < 0)
-    {
-      program_state = PROGRAM_ERROR; 
-    }
-  }
-}
-
-int check_nblocks(int success_state)
-{
-  if (!async_tokenized_buffer_ready(&b)) return 0; 
-
-  if (!read_nblocks())
-  {
-     i = 0; 
-     b.token_matched =0; 
-     b.len = 0; 
-     program_state = success_state; 
-     return 0; 
-  }
-  else 
-  {
-     program_state = PROGRAM_ERROR;
-     return 1;
-  }
+      }
  
+      else if (prefix_matches(in,"#PROG-HEXDUMP")) 
+      {
+        const char * nxt = 0; 
+        int slot; 
+        int offset; 
+        int len; 
+        if (!parse_int(in + sizeof("#PROG-HEXDUMP"), &nxt, &slot)
+            && !parse_int(nxt,&nxt,&offset)
+            && !parse_int(nxt,&nxt,&len))
+        {
+          printf("#PROG-HEXDUMP(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
+          if (slot > 0) 
+          {
+            wakeup_spi_flash(); 
+            spi_flash_application_seek(slot, offset); 
+          }
+          uint8_t buf[32]; 
 
+          for (int i = 0; i < len; i+=32) 
+          {
+            int howmany = i + 32  > len ? len-i : 32; 
+            if (slot > 0) spi_flash_application_read(slot, howmany, buf); 
+            else flash_read(&FLASH, (uint32_t) &__rom_start__+i,  buf, howmany); 
+            printf("# %04x ", offset + i); 
+            for (int j = 0; j < howmany; j++) 
+            {
+              printf(" %02x", buf[j]); 
+            }
+            printf("\r\n"); 
+          }
+          if (slot > 0) 
+            maybe_put_down_spi_flash(); 
+        }
+      }
+      else if (prefix_matches(in,"#PROG-WRITE"))
+      {
+        const char * nxt = 0; 
+        int slot , offset, len; 
+        if (!parse_int(in + sizeof("#PROG-WRITE"), &nxt,&slot)
+            && !parse_int(nxt,&nxt,&offset)
+            && !parse_int(nxt,&nxt,&len)
+            )
+        {
+          printf("#PROG-WRITE(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
+          while(*nxt==' ') nxt++; 
+          int left =  in_len - (nxt -in); 
+          if (slot < MIN_WRITE_SLOT || slot > 4) 
+          {
+            printf("#ERR: Bad slot %d\r\n",slot); 
+            return 1;
+          }
+
+          uint8_t *decoded = (uint8_t*) nxt; 
+          int converted = base64_decode(left, decoded);
+          if (converted!=len) 
+          {
+            printf("#ERR: expected length %d!= decoded length %d" , len, converted); 
+            return -1; 
+          }
+
+#ifdef _BOOTLOADER_ 
+          if (slot == 0) 
+          {
+            flash_append(&FLASH, &__rom_start__ + offset, decoded, converted); 
+          }
+#endif
+          if (slot > 0 && slot <=4) 
+          {
+            wakeup_spi_flash(); 
+            spi_flash_application_seek(slot, offset); 
+            spi_flash_application_write(slot, converted, decoded); 
+            maybe_put_down_spi_flash(); 
+          }
+        }
+      }
+      else if (prefix_matches(in,"#PROG-ERASE"))
+      {
+        const char * nxt = 0; 
+        int slot , offset, len; 
+        if (!parse_int(in + sizeof("#PROG-ERASE"), &nxt,&slot)
+            && !parse_int(nxt,&nxt,&offset)
+            && !parse_int(nxt,&nxt,&len)
+            )
+        {
+          printf("#PROG-ERASE(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
+          if (slot < MIN_WRITE_SLOT || slot > 4) 
+          {
+            printf("#ERR: Bad slot %d\r\n",slot); 
+            return 1;
+          }
+
+          if (offset & 0xfff || len & 0xfff)
+          {
+             printf("#ERR: Offset and length must be page aligned\r\n"); 
+             return 1; 
+          }
+ 
+#ifdef _BOOTLOADER_ 
+          if (slot == 0) 
+          {
+           if (flash_status == FLASH_BUSY) 
+            {
+              printf("#ERR: Flash Busy\r\n"); 
+              return 1; 
+            }
+            //ok that this is synchronous
+            int ret = flash_erase(&FLASH, &__rom_start__ + offset, len >> 12); 
+            printf("#PROG-ERASE RET: %d\r\n",ret); 
+            return 0; 
+          }
+#endif
+          else if (slot > 0 && slot <=4) 
+          {
+            wakeup_spi_flash(); 
+
+            //do synchronous, for now. Can make asynchronous later if necessary
+            int ret = spi_flash_application_erase_sync(slot,offset,len >> 12); 
+            printf("#PROG-ERASE RET: %d\r\n",ret); 
+
+
+            maybe_put_down_spi_flash(); 
+          }
+        }
+      }
+      else if (prefix_matches(in,"#PROG-READ"))
+      {
+        const char * nxt = 0; 
+        int slot , offset, len; 
+        if (!parse_int(in + sizeof("#PROG-READ"), &nxt,&slot)
+            && !parse_int(nxt,&nxt,&offset)
+            && !parse_int(nxt,&nxt,&len)
+            )
+        {
+          printf("#PROG-READ(slot=%d,offset=%d,len=%d): ", slot, offset, len); 
+          if (slot < 0 || slot > 4) 
+          {
+            printf("#ERR: Bad slot %d\r\n",slot); 
+            return 1;
+          }
+
+          if (slot > 0) 
+          {
+            wakeup_spi_flash(); 
+            spi_flash_application_seek(slot, offset); 
+          }
+          uint8_t buf[48]; 
+
+          for (int i = 0; i < len; i+=48) 
+          {
+            int howmany = i + 48  > len ? len-i : 48; 
+            if (slot > 0) spi_flash_application_read(slot, howmany, buf); 
+            else flash_read(&FLASH, (uint32_t) &__rom_start__+i,  buf, howmany); 
+            base64_print(SBC_UART_DESC, howmany, buf); 
+          }
+          if (slot > 0) 
+            maybe_put_down_spi_flash(); 
+ 
+          printf("\r\n"); 
+        }
+      }
+  return 0; 
 }
+
+
+
+
+
 
 
 int programmer_process() 
@@ -374,54 +307,22 @@ int programmer_process()
   {
     case PROGRAM_IDLE: 
     case PROGRAM_DONE: 
-      if (slot) spi_flash_deep_sleep();  //put the flash back to sleep 
+      maybe_put_down_spi_flash(); 
       program_state = PROGRAM_IDLE; 
       return 0; 
     case PROGRAM_ERROR: 
-      d_put(fd,"#ERR\n"); 
+      printf("#PROG ERR\n"); 
       program_state = PROGRAM_IDLE; 
       return -1;
-    case PROGRAM_WRITE_INIT: 
-      write_confirm(); 
-      program_state = PROGRAM_WRITE_CONFIRM; 
-      break; 
-    case PROGRAM_WRITE_CONFIRM:  
-      if (check_confirm_slot(PROGRAM_WRITE_NBLOCKS))
+#ifdef _BOOTLOADER_
+    case PROGRAM_COPYING_TO_FLASH: 
+      if (!programmer_copy_application_to_flash(last_slot)) 
       {
-        (d_put(fd,"?N_256B_BLOCKS\n")); 
+        last_slot=-1; 
+        program_state = PROGRAM_DONE; 
       }
-      else break;
-    case PROGRAM_WRITE_NBLOCKS: 
-      check_nblocks(PROGRAM_WRITE_WRITING);
-      break; 
-   case PROGRAM_WRITE_WRITING:
-      process_write() ;
-      break; 
-    case PROGRAM_READ_INIT: 
-      d_put(fd,"?NBYTES"); 
-      program_state = PROGRAM_READ_NBLOCKS; 
-      break; 
-    case PROGRAM_READ_NBLOCKS: 
-      if (check_nblocks(PROGRAM_READ_READING)) break; 
-    case PROGRAM_READ_READING: 
-       process_read(); 
-       break; 
-    case PROGRAM_ERASE_INIT: 
-      write_confirm(); 
-      program_state = PROGRAM_ERASE_CONFIRM; 
-      break;
-    case PROGRAM_ERASE_CONFIRM: 
-      if(check_confirm_slot(PROGRAM_ERASE_NBLOCKS))
-      {
-        d_put(fd,"?N_4KB_BLOCKS\n"); 
-      }
-      else break; 
-    case PROGRAM_ERASE_NBLOCKS: 
-      if (check_nblocks(PROGRAM_ERASE_ERASING)) break; 
-     case PROGRAM_ERASE_ERASING: 
-        process_erase(); 
-        break; 
-    default: 
+#endif 
+   default: 
       break; 
   }
 
@@ -433,6 +334,7 @@ int programmer_copy_flash_to_application(int slot)
 {
 
   static int copy_started = 0; 
+  static int i, N; 
 
   if (program_state != PROGRAM_IDLE) 
   {
@@ -445,7 +347,7 @@ int programmer_copy_flash_to_application(int slot)
   {
     i = 0;
     N = (int) &__rom_size__; 
-    spi_flash_wakeup();
+    wakeup_spi_flash(); 
     spi_flash_application_seek(slot,0); 
     copy_started = 1; 
   }
@@ -462,7 +364,7 @@ int programmer_copy_flash_to_application(int slot)
   }
   
   copy_started = 0; 
-  spi_flash_deep_sleep(); 
+  put_down_spi_flash(); 
   return 0; 
 }
 
@@ -474,6 +376,8 @@ int programmer_copy_application_to_flash(int slot)
   return -1; 
 #else
   static int copy_started = 0; 
+  static int i; 
+  static int N; 
 
   if (program_state != PROGRAM_IDLE) 
   {
@@ -488,7 +392,7 @@ int programmer_copy_application_to_flash(int slot)
     i = 0;
     N = (int) &__rom_size__; 
     spi_flash_application_seek(slot,0); 
-    spi_flash_wakeup();
+    wakeup_spi_flash();
     copy_started = 1; 
   }
 
@@ -509,7 +413,8 @@ int programmer_copy_application_to_flash(int slot)
   }
   
   copy_started = 0; 
-  spi_flash_deep_sleep(); 
+  put_down_spi_flash(); 
+  printf("#PROG-COPY-SLOT-TO-FLASH %d  DONE!\r\n", slot);
   return 0; 
 #endif 
 }
