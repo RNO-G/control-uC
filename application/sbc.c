@@ -109,9 +109,17 @@ int sbc_io_process()
     while(async_tokenized_buffer_ready(&sbc)) 
     {
       int valid = 0; 
+
+
       char * in = (char*) sbc.buf+1; 
       //we don't start with a #. Skip to end
-      if (sbc.buf[0] !='#')
+      if (programmer_check_command(sbc.buf))
+      {
+        // don't echo out negative return values, since those might have corrupted sbc.buf 
+         valid = programmer_cmd(sbc.buf, sbc.len) <=0; 
+      }
+
+      else if (sbc.buf[0] !='#')
       {
 
       }
@@ -198,6 +206,11 @@ int sbc_io_process()
           valid=3; //only do one of these tasks per process, since they can take a while 
         }
       }
+      else if (!strcmp(in,"I2C-DETECT"))
+      {
+        i2c_detect(0,127,0); 
+        valid=3; 
+      }
 
       else if (prefix_matches(in,"SET-STATION"))
       {
@@ -243,72 +256,6 @@ int sbc_io_process()
         printf("#FLUSH: ACK\r\n"); 
         valid = 1; 
       }
-
-      /*
-      else if (prefix_matched(in,"PGM"))
-      {
-        programmer_command(sbc.buf); 
-      }
-      */ 
-
-
-      else if (prefix_matches(in,"COPY-FLASH-TO-SLOT"))
-      {
-        int slot =-1; 
-        const char * nxt = 0; 
-        if (!parse_int(in + sizeof("COPY-FLASH-TO-SLOT"), &nxt, &slot) && slot >= 1 && slot <=4)
-        {
-          printf("#COPY-FLASH-TO-SLOT %d  STARTED\r\n", slot);
-          int ret = programmer_copy_flash_to_application(slot); 
-          printf("#COPY-FLASH-TO-SLOT %d  DONE: %d\r\n", slot, ret);
-          valid = 1; 
-        }
-        else
-        {
-          printf("#ERR: Bad slot: %d\r\n",slot); 
-
-        }
-        valid = 1; 
-      }
-
-      else if (prefix_matches(in,"DUMP-SLOT")) 
-      {
-        const char * nxt = 0; 
-        int slot; 
-        int offset; 
-        int len; 
-        if (!parse_int(in + sizeof("DUMP-SLOT"), &nxt, &slot)
-            && !parse_int(nxt,&nxt,&offset)
-            && !parse_int(nxt,&nxt,&len))
-        {
-          printf("#DUMP-SLOT(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
-          if (slot > 0) 
-          {
-            spi_flash_wakeup();
-            spi_flash_application_seek(slot, offset); 
-          }
-          uint8_t buf[32]; 
-
-          for (int i = 0; i < len; i+=32) 
-          {
-            int howmany = i + 32  > len ? len-i : 32; 
-            if (slot > 0) spi_flash_application_read(slot, howmany, buf); 
-            else flash_read(&FLASH, (uint32_t) &__rom_start__+i,  buf, howmany); 
-            printf("# %04x ", offset + i); 
-            for (int j = 0; j < howmany; j++) 
-            {
-              printf(" %02x", buf[j]); 
-            }
-            printf("\r\n"); 
-          }
-          valid = 1; 
-          if (slot > 0) 
-            spi_flash_deep_sleep(); 
-        }
-
-      }
-
-
 
       else if (!strcmp(in,"NOW"))
       {

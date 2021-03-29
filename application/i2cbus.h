@@ -46,6 +46,12 @@ int i2c_queue_size();
 int i2c_enqueue( i2c_task_t * task); 
 
 
+/** Probe i2c bus, starting at start_addr and ending at end_addr. bitset should be a a 16-element uint8_t array. 
+ * Note that 0-0x07 and 0x78-0x7f are reserved so never probed.
+ * if NULL is passed to bitset, found addresses will be printed to sbc_uart. 
+ *
+ * */ 
+int i2c_detect(uint8_t start_addr, uint8_t end_addr, uint8_t * bitset); 
 
 
 

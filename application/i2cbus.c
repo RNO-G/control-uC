@@ -2,7 +2,8 @@
 #include "shared/driver_init.h" 
 #include "hal_i2c_m_async.h" 
 #include "application/gpio_expander.h" 
-
+#include "shared/printf.h" 
+#include <string.h>
 #include "hal_atomic.h" 
 
 
@@ -199,4 +200,31 @@ void i2c_queue_flush()
 #endif
 
 
+int i2c_detect(uint8_t start_addr, uint8_t end_addr, uint8_t *bitset) 
+{
+
+  uint8_t start = start_addr < 0x08 ? 0x08 : start_addr; 
+  uint8_t end = end_addr >= 0x78 ? 0x77 : end_addr; 
+
+  if (bitset) memset(bitset,0,16); 
+
+  uint8_t dummy = 0; 
+  for (uint8_t addr = start ; addr <= end; addr++) 
+  {
+    i2c_m_sync_set_slaveaddr(&I2C, addr, I2C_M_SEVEN); 
+    int ret = i2c_m_sync_cmd_read(&I2C,0,&dummy,1); 
+    if (!ret) 
+    { 
+      if (bitset) 
+      {
+        bitset[addr >> 3] |= (1 << (addr &0x7)); 
+      }
+      else 
+      {
+        printf("#I2C-DETECT %x  (val(0)=%x)\n", addr, dummy); 
+      }
+    }
+  }
+  return 0; 
+}
 
