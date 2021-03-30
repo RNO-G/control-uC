@@ -3,7 +3,7 @@
 #include "hpl_calendar.h" 
 #include "driver_init.h" 
 
-#define LTC2992_ADDR 0x6c
+#define LTC2992_ADDR 0x6f
 
 #define LTC2992_REG_CTRL_A 0x00  //control  register 1
 #define LTC2992_REG_CTRL_B 0x01  // control regiser 2
@@ -65,7 +65,7 @@ static uint16_t get_adc(uint8_t reg_lsb, uint8_t reg_msb)
 
 
 
-int power_system_schedule() 
+int power_monitor_schedule() 
 {
   last_scheduled = _calendar_get_counter(&CALENDAR.device); 
   // schedule a read of the power system 
@@ -77,6 +77,7 @@ int power_system_schedule()
   //schedule a read of the temperatures 
   i2c_task_t tmp432_task = {.addr = TMP432_ADDRESS, .write=1, .reg = TMP432_REG_ONESHOT }; 
   i2c_enqueue(&tmp432_task); 
+  return 0; 
 }
 
 
@@ -89,9 +90,7 @@ int power_monitor_init()
   i2c_enqueue(&tmp432_task); 
 
   //this will have a side effect of seetting up the LTC correctly 
-  power_system_schedule(); 
-
-
+  return power_monitor_schedule(); 
 
 
 }
@@ -141,7 +140,8 @@ void update_temps_if_ready()
   i2c_task_t check = {.addr=TMP432_ADDRESS, .reg=TMP432_REG_STATUS }; 
   i2c_enqueue(&check); 
   while (!check.done); 
-  if (check.data & TMP432_BUSY_MASK == 0) 
+  if (check.done < 0) return; 
+  if ((check.data & TMP432_BUSY_MASK) == 0) 
   {
     get_temp(TMP432_REG_LOCAL_TEMP_HIGH, TMP432_REG_LOCAL_TEMP_LOW, last_local_t);
     get_temp(TMP432_REG_REMOTE1_TEMP_HIGH, TMP432_REG_REMOTE1_TEMP_LOW, last_remote1_t);
@@ -150,7 +150,7 @@ void update_temps_if_ready()
   }
 }
 
-int power_system_fill(power_system_monitor_t * state) 
+int power_monitor_fill(power_system_monitor_t * state) 
 {
   //check to make sure we're not busy 
   update_ltc_if_ready();

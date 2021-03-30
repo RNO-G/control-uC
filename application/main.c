@@ -16,6 +16,7 @@
 #include "hal_i2c_m_sync.h" 
 #include "application/lte.h" 
 #include "application/i2cbus.h" 
+#include "application/power.h" 
 
 /** This is still mostly a placeholder right now while testing!!! 
  *
@@ -31,6 +32,7 @@ static volatile int n_nmi;
 
 
 static rno_g_monitor_t last_mon; 
+static power_system_monitor_t last_power; 
 
 
 void NMI_Handler(void) 
@@ -95,6 +97,8 @@ int main(void)
 
   monitor_init(); 
    
+  /** Initialize power system monitors */ 
+  power_monitor_init(); 
 
 
   /** Reset reset counter */ 
@@ -144,7 +148,15 @@ int main(void)
 
 
     /// See if we need to do anything
-    if ((nticks & 0x3ff) == 0) monitor_fill(&last_mon,10); 
+    if ((nticks & 0xff) == 0)
+    {
+      monitor_fill(&last_mon,10); 
+      if (nticks > 0)
+      {
+        power_monitor_fill(&last_power); 
+        power_monitor_schedule(); 
+      }
+    }
 
 
     /// See if we need to send anything 
