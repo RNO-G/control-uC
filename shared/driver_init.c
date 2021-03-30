@@ -378,6 +378,13 @@ static void I2C_PORT_init(void)
 	gpio_set_pin_function(I2C_SCL, PINMUX_PB31D_SERCOM5_PAD1);
 }
 
+static void I2C_PORT_deinit(void)
+{
+
+	gpio_set_pin_function(I2C_SDA, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(I2C_SCL, GPIO_PIN_FUNCTION_OFF);
+}
+
 static void I2C_CLOCK_init(void)
 {
 	_pm_enable_bus_clock(PM_BUS_APBC, SERCOM5);
@@ -385,12 +392,30 @@ static void I2C_CLOCK_init(void)
 	_gclk_enable_channel(SERCOM5_GCLK_ID_SLOW, CONF_GCLK_SERCOM5_SLOW_SRC);
 }
 
-static void I2C_init(void)
+void I2C_init(void)
 {
 	I2C_CLOCK_init();
+#ifdef USE_SYNCHRONOUS_I2C
 	i2c_m_sync_init(&I2C, SERCOM5);
+#else
+	i2c_m_async_init(&I2C, SERCOM5);
+#endif
 	I2C_PORT_init();
 }
+
+
+void I2C_deinit(void) 
+{
+#ifdef USE_SYNCHRONOUS_I2C
+	i2c_m_sync_deinit(&I2C);
+#else
+	i2c_m_async_deinit(&I2C);
+#endif
+	
+	I2C_PORT_deinit();
+
+}
+
 
 static void SHARED_TIMER_init(void)
 {
@@ -571,7 +596,6 @@ void system_init(void)
 	ANALOGIN_init();
 	SBC_UART_CONSOLE_init();
 	LTE_UART_init();
-	I2C_init();
   SHARED_TIMER_init(); 
 #endif  // bootloader
 

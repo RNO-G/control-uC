@@ -19,10 +19,15 @@ static void init_i2c_devices()
 
 void i2c_bus_init()
 {
+	I2C_init();
   i2c_m_sync_enable(&I2C); 
   init_i2c_devices(); 
 }
  
+static void i2c_bus_deinit()
+{
+  i2c_m_sync_disable(&I2C); 
+}
 
 int i2c_queue_size() { return 0; } 
 
@@ -113,6 +118,12 @@ void i2c_bus_init()
  
   init_i2c_devices(); 
 }
+
+static void i2c_bus_deinit()
+{
+  i2c_m_async_disable(&I2C); 
+}
+
 
 
 static int sched_next_task(int check_busy)
@@ -226,5 +237,30 @@ int i2c_detect(uint8_t start_addr, uint8_t end_addr, uint8_t *bitset)
     }
   }
   return 0; 
+}
+
+
+int i2c_unstick(int ncycles) 
+{
+  i2c_bus_deinit(); 
+
+  int nones = 0; 
+	gpio_set_pin_direction(I2C_SDA, GPIO_DIRECTION_IN);
+	gpio_set_pin_direction(I2C_SCL, GPIO_DIRECTION_OUT);
+	gpio_set_pin_level(I2C_SCL, 0);
+
+  for (int i = 0; i < ncycles; i++) 
+  {
+    delay_us(10); 
+    gpio_set_pin_level(I2C_SCL, 1);
+    delay_us(5); 
+    nones += gpio_get_pin_level(I2C_SDA); 
+    delay_us(5); 
+    gpio_set_pin_level(I2C_SCL, 0);
+  }
+
+
+  i2c_bus_init(); 
+  return nones; 
 }
 

@@ -212,6 +212,17 @@ int sbc_io_process()
         valid=3; 
       }
 
+      else if (prefix_matches(in,"I2C-UNSTICK"))
+      {
+        const char *nxt = 0; 
+        int howmany = 9;
+        if (parse_int(in + sizeof("I2C-UNSTICK"), &nxt, &howmany)) howmany=9 ;
+        int nones = i2c_unstick(howmany); 
+        valid=3; 
+        printf("#I2C-UNSTICK(%d): %d\r\n", howmany, nones); 
+      }
+
+
       else if (prefix_matches(in,"SET-STATION"))
       {
         const char * nxt = 0; 
