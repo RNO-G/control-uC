@@ -271,8 +271,9 @@ int parse_int(const char * start, const char **end, int * num)
   const char * ptr = start; 
   int sign = 1; 
   while (*ptr==' ' || *ptr=='\t') ptr++; 
+  if (!*ptr) return 1; 
 
-  *num = 0; 
+  int got_char = 0; 
   char first = *ptr; 
   if (first=='-') 
   {
@@ -281,10 +282,13 @@ int parse_int(const char * start, const char **end, int * num)
   
   while(*ptr >= '0' && *ptr <='9')
   {
+    if (!got_char) *num =0;
+    got_char++; 
     *num *= 10; 
     *num += (*ptr-'0'); 
     ptr++; 
   }
+  if (!got_char) return 1; 
 
 
    if (end) *end = ptr; 
