@@ -424,8 +424,6 @@ static void SHARED_TIMER_init(void)
 
 	timer_init(&SHARED_TIMER, TC4, _tc_get_timer());
 
-  // 1 ms per tick (prescaler of 8, 32.768 kHz) 
-  timer_set_clock_cycles_per_tick(&SHARED_TIMER,4); 
   //go ahead and start the timer
   timer_start(&SHARED_TIMER); 
 }

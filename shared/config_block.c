@@ -18,7 +18,7 @@ void default_init_app_cfg(application_cfg_t * ac)
    {
      .wanted_state = { .sbc_power= 1 } ,  
      .station_number = 999, 
-     .gps_offset = 19
+     .gps_offset = 18
    }; 
 
   *ac = dflt; 
