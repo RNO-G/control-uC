@@ -3,6 +3,9 @@
 
 #include "rno-g-control.h" 
 
+/** These are the analog monitors! 
+ *
+ **/ 
 
 typedef enum e_monitor
 {
@@ -23,14 +26,15 @@ typedef enum e_monitor
 
 
 
+/** For values read through the I2C switch, this must be called first. You may also need a delay due to capacitance */ 
+void monitor_select(monitor_t what); 
 
 /** reads the given voltage. This is synchronous (because getting the switches right otherwise be a huge pain) 
- * This means this might take a little while, but hopefuly that's ok. 
- *
- *   Units are mA for currents, cC (centiCelsius) for for temperatures. 
  **/ 
 
 int16_t monitor(monitor_t what, int navg); 
+
+/** Fill all monitor values */ 
 int monitor_fill(rno_g_monitor_t * m, int navg); 
 
 int monitor_init(); 
