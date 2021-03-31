@@ -3,6 +3,8 @@
 #include "application/lte.h" 
 #include "shared/driver_init.h" 
 #include "shared/io.h" 
+#include "application/time.h" 
+#include "application/reset.h" 
 #include "shared/spi_flash.h" 
 #include "hal_calendar.h" 
 #include "shared/printf.h" 
@@ -222,6 +224,17 @@ int sbc_io_process()
         printf("#I2C-UNSTICK(%d): %d\r\n", howmany, nones); 
       }
 
+      else if (prefix_matches(in,"SYS-RESET"))
+      {
+        const char *nxt = 0; 
+        int opt = 0;
+        if (parse_int(in + sizeof("SYS-RESET"), &nxt, &opt)) opt=0 ;
+        valid=3; 
+        printf("#SYS-RESET(%d)!!\r\n", opt); 
+        delay_ms(10); 
+        reset((boot_option_t) opt); 
+      }
+
 
       else if (prefix_matches(in,"SET-STATION"))
       {
@@ -245,8 +258,13 @@ int sbc_io_process()
         int offset; 
         if (!parse_int(in+sizeof("SET-GPS-OFFSET"), &nxt, &offset))
         {
-          config_block()->app_cfg.gps_offset= offset;
-          need_sync = 1; 
+          int old_offset = config_block()->app_cfg.gps_offset; 
+          if (offset != old_offset) 
+          {
+            if (get_time() > 150000000) set_time_with_delta(old_offset-offset); 
+            config_block()->app_cfg.gps_offset= offset;
+            need_sync = 1; 
+          }
           printf("#SET-GPS-OFFSET: %d\r\n", offset); 
           valid = 1; 
         }
@@ -273,7 +291,7 @@ int sbc_io_process()
         struct calendar_date_time now; 
         calendar_get_date_time(&CALENDAR,&now); 
         valid = 1; 
-        printf("#NOW: %d-%02d-%02d %02d:%02d:%02d LORA: ", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec);  
+        printf("#NOW: %d-%02d-%02d %02d:%02d:%02d, UPTIME: %u,  LORA: ", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec, uptime());  
         int ntx, nrx, ntx_dropped, nrx_dropped; 
         if (lorawan_state()  ==LORAWAN_READY) 
         {

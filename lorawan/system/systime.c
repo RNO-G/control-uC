@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include "rtc-board.h"
 #include "systime.h"
-#include "hal_calendar.h" 
+#include "application/time.h" 
 #include "shared/driver_init.h"
 #include "shared/spi_flash.h"
 
@@ -119,9 +119,12 @@ void SysTimeSet( SysTime_t sysTime )
 
     //Now set it for the calendar instance 
 
+    set_time(sysTime.Seconds - config_block()->app_cfg.gps_offset); 
+
+    /*
     struct calendar_date d; 
     struct calendar_time t; 
-    struct tm localtime; 
+   // struct tm localtime; 
     SysTimeLocalTime(sysTime.Seconds - config_block()->app_cfg.gps_offset, &localtime); 
     d.year = 1900 + localtime.tm_year; 
     d.month= localtime.tm_mon+1; 
@@ -132,6 +135,7 @@ void SysTimeSet( SysTime_t sysTime )
     t.min = localtime.tm_min; 
     t.sec = localtime.tm_sec; 
     calendar_set_time(&CALENDAR, &t); 
+    */
 }
 
 SysTime_t SysTimeGet( void )

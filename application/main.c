@@ -5,14 +5,13 @@
 #include "application/sbc.h" 
 #include "hal_ext_irq.h" 
 #include "hal_gpio.h" 
-#include "hal_calendar.h" 
 #include "application/debug.h" 
 #include "application/monitors.h" 
 #include "shared/spi_flash.h" 
 #include "shared/shared_memory.h" 
 #include "application/gpio_expander.h" 
 #include "config/config.h" 
-
+#include "application/time.h" 
 #include "hal_i2c_m_sync.h" 
 #include "application/lte.h" 
 #include "application/i2cbus.h" 
@@ -172,7 +171,7 @@ int main(void)
       //our time isn't valid, let's request it
       if (nticks >= time_check ) 
       {
-       int have_time = _calendar_get_counter(&CALENDAR.device) > 1000000000; 
+       int have_time = get_time() > 1000000000; 
        lorawan_request_datetime() ;
        int delay_in_secs = have_time ? 3600*4 : 15; 
        time_check+= (delay_in_secs*1000 / DELAY_MS) ;
