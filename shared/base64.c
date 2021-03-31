@@ -1,9 +1,8 @@
 
 #include "shared/base64.h" 
-#ifndef _TEST_
+#ifndef _HOST_
 #include "shared/printf.h" 
 #else 
-#include <stdio.h> 
 #include <string.h> 
 #endif 
 
@@ -60,7 +59,11 @@ int base64_decode(int b64_len, uint8_t * buf)
   return k; 
 }
 
+#ifdef _HOST_ 
+int base64_fprintf(FILE *f, int len,  const uint8_t * buf)
+#else
 int base64_print(int d, int len,  const uint8_t * buf)
+#endif
 {
   int i = 0; 
   int j = 0; 
@@ -78,9 +81,8 @@ int base64_print(int d, int len,  const uint8_t * buf)
       output[1] = val2char((encoded >> 12) & 0x3f) ;
       output[2] = j ==1 ? '=' : val2char(((encoded >> 6) & 0x3f));
       output[3] = j <=2 ? '=' : val2char(encoded & 0x3f);
-#ifdef _TEST_ 
-      (void) d; 
-      ret += printf("%c%c%c%c", output[0], output[1], output[2], output[3]); 
+#ifdef _HOST_ 
+      ret += fprintf(f,"%c%c%c%c", output[0], output[1], output[2], output[3]); 
 #else
       ret += dprintf(d, "%c%c%c%c", output[0], output[1], output[2], output[3]); 
 #endif
@@ -126,7 +128,7 @@ int main(int nargs, char ** args)
         }
         else
         {
-          base64_print(1,N, buf); 
+          base64_fprintf(stdout,N, buf); 
         }
     //    printf("\n"); 
       }

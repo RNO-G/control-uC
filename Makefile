@@ -141,8 +141,9 @@ $(BUILD_DIR)/%.o: %.S
 	@echo Finished building: $<
 
 
-$(BUILD_DIR)/test_base64: shared/base64.c shared/base64.h | $(BUILD_DIR) 
-	gcc -o $@ -Os -D_TEST_ $<  -I./
+$(BUILD_DIR)/test_base64: shared/base64.c | $(BUILD_DIR) 
+	gcc -o $@ -Os -D_TEST_ -D_HOST_ $<  -I./
+
 
 $(MKDIRS):
 	mkdir -p "$@"
