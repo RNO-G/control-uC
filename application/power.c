@@ -51,7 +51,7 @@ static inline uint16_t read12bitADC(uint16_t msb, uint16_t lsb)
 
 static uint32_t last_scheduled; 
 
-static uint16_t get_adc(uint8_t reg_lsb, uint8_t reg_msb) 
+static uint16_t get_adc(uint8_t reg_msb, uint8_t reg_lsb) 
 {
   i2c_task_t msb = { .addr = LTC2992_ADDR, .write = 0, .reg = reg_msb } ; 
   i2c_task_t lsb = { .addr = LTC2992_ADDR, .write = 0, .reg = reg_lsb }; ; 
@@ -160,7 +160,7 @@ int power_monitor_fill(power_system_monitor_t * state)
   state->PVv_cV = (last_sense1 *5) >> 1 ;  //25 mV / adc
   state->PVi_mA = (last_delta_sense1 *5) >> 1;   // 12.5 uV / adc, 5 mOhms
   state->BATv_cV = (last_sense2 *5) >> 1 ;  //25 mV / adc
-  state->BATi_mA = (last_delta_sense2) *5;   // 12.5 uV / adc, 10 mOhms
+  state->BATi_mA = ((last_delta_sense2) *5 ) >> 2;   // 12.5 uV / adc, 10 mOhms
   state->when_power = last_ltc_read; 
 
   state->local_T_C = last_local_t[1]; 
