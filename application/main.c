@@ -148,14 +148,19 @@ int main(void)
 
 
     /// See if we need to do anything
-    if ((nticks & 0xff) == 0)
+    switch (nticks & 0x3ff)
     {
-      monitor_fill(&last_mon,10); 
-      if (nticks > 0)
-      {
+      case 0: 
+        monitor_fill(&last_mon,10); 
+        if (nticks > 0)
+        {
+          power_monitor_schedule(); 
+        }
+        break; 
+      case 200: 
         power_monitor_fill(&last_power); 
-        power_monitor_schedule(); 
-      }
+      default: 
+        break; 
     }
 
 
