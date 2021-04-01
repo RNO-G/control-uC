@@ -1,7 +1,7 @@
 #include "power.h" 
 #include "i2cbus.h" 
-#include "hpl_calendar.h" 
 #include "driver_init.h" 
+#include "application/time.h" 
 
 #define LTC2992_ADDR 0x6f
 
@@ -30,8 +30,8 @@
 
 #define TMP432_ADDRESS 0x4d 
 #define TMP432_REG_CFG1 0x09  // write-only  
-#define TMP432_REG_STATUS 0x02  // ready only
-#define TMP432_REG_ONESHOT 0x0f  // ready only
+#define TMP432_REG_STATUS 0x02  // read only
+#define TMP432_REG_ONESHOT 0x0f  // write only
 #define TMP432_REG_LOCAL_TEMP_HIGH 0x0
 #define TMP432_REG_REMOTE1_TEMP_HIGH 0x1
 #define TMP432_REG_REMOTE2_TEMP_HIGH 0x23
@@ -67,7 +67,7 @@ static uint16_t get_adc(uint8_t reg_msb, uint8_t reg_lsb)
 
 int power_monitor_schedule() 
 {
-  last_scheduled = _calendar_get_counter(&CALENDAR.device); 
+  last_scheduled = get_time(); 
   // schedule a read of the power system 
   
   uint8_t ctrl_a_data = LTC2992_MASK_LTC_MODE_SNAPSHOT | LTC2992_MASK_LTC_SNAPSHOT_MEASURE_S12; 
@@ -86,7 +86,7 @@ int power_monitor_init()
 {
 
   //set temperature range, shutdown mode
-  i2c_task_t tmp432_task = {.addr = TMP432_ADDRESS, .reg=TMP432_REG_STATUS, .write=1, .data = TMP432_EXTENDED_TEMPERATURE_MASK | TMP432_SD_MASK }; 
+  i2c_task_t tmp432_task = {.addr = TMP432_ADDRESS, .reg=TMP432_REG_CFG1, .write=1, .data = TMP432_EXTENDED_TEMPERATURE_MASK | TMP432_SD_MASK }; 
   i2c_enqueue(&tmp432_task); 
 
   //this will have a side effect of seetting up the LTC correctly 
@@ -163,13 +163,13 @@ int power_monitor_fill(power_system_monitor_t * state)
   state->BATi_mA = ((last_delta_sense2) *5 ) >> 2;   // 12.5 uV / adc, 10 mOhms
   state->when_power = last_ltc_read; 
 
-  state->local_T_C = last_local_t[1]; 
-  state->remote1_T_C = last_remote1_t[1]; 
-  state->remote2_T_C = last_remote2_t[1]; 
+  state->local_T_C = ((int)last_local_t[1])-64; 
+  state->remote1_T_C = ((int)last_remote1_t[1])-64; 
+  state->remote2_T_C = ((int)last_remote2_t[1])-64; 
 
-  state->local_T_sixteenth_C = last_local_t[0]; 
-  state->remote1_T_sixteenth_C = last_remote1_t[0]; 
-  state->remote2_T_sixteenth_C = last_remote2_t[0]; 
+  state->local_T_sixteenth_C = last_local_t[0]>>4; 
+  state->remote1_T_sixteenth_C = last_remote1_t[0]>>4; 
+  state->remote2_T_sixteenth_C = last_remote2_t[0]>>4; 
 
   state->when_temp = last_temp_read; 
 
