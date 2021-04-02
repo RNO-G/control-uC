@@ -15,10 +15,10 @@ int doitlive = 0;
 
 void usage() 
 {
-  printf("Usage: rno-g-controller-loader [-h] [-s SLOT=1] [-d DEVICE=/dev/ttyO1] [-r] [-l] image.bin\n"); 
+  printf("Usage: rno-g-controller-loader [-h] [-s SLOT=1] [-d DEVICE=/dev/ttyO1] [-r] [-L] image.bin\n"); 
   printf("   -h  Display this message\n");
   printf("   -s  SLOT  Pick the slot to write to (default 1). Note that slot 0 can only be used while in bootloader mode. \n");
-  printf("   -r  Reset to slot after write. If slot is zero and not currently in bootloader, will reset into bootloader.  \n");
+  printf("   -r  Reset to slot after write. If slot is zero and not currently in bootloader, will reset into bootloader.  (if bootloader detected, will always reset)\n");
   printf("   -d  DEVICE The tty device (default /dev/ttyO1). Note that the device must already be configured appropriately, including converting \\n to \\r\\n on output. \n"); 
   printf("   -L  DO IT LIVE (don't verify)\n"); 
 }
@@ -57,6 +57,7 @@ int parse_opts(int nargs, char ** args)
     }
     else image = args[iarg]; 
   }
+  return 0; 
 }
 
 char line[512]; 
@@ -91,10 +92,10 @@ const char* send_acked_command_with_attempts_and_b64bytes(const char * cmd, cons
   }
   return 0; 
 }
+
 const char* send_acked_command_with_attempts(const char * cmd, const char * args, int max_attempts_for_ack) 
 {
-  send_acked_command_with_attempts_and_b64bytes(cmd,args,max_attempts_for_ack,0,NULL); 
-
+  return send_acked_command_with_attempts_and_b64bytes(cmd,args,max_attempts_for_ack,0,NULL); 
 }
 
 const char * send_acked_command(const char * cmd, const char * args)
@@ -119,13 +120,13 @@ int do_write(FILE * fimage, int start, int size)
 {
   fseek(fimage, start, SEEK_SET); 
 
-  char cmdargs[64]; 
+  char cmdargs[48]; 
   uint8_t buf[48]; 
   for (unsigned i = 0; i < size; i+=sizeof(buf)) 
   {
     int rd = fread(buf,1,sizeof(buf), fimage); 
-    snprintf(cmdargs, sizeof(cmdargs)," %d %d %d ", slot, i*sizeof(buf), rd); 
-    if (!send_acked_command_with_attempts_and_b64bytes("#PROG-WRITE",cmdargs,3, rd, buf)); 
+    snprintf(cmdargs, sizeof(cmdargs)," %d %d %d ", slot, (int) (i*sizeof(buf)), rd); 
+    if (!send_acked_command_with_attempts_and_b64bytes("#PROG-WRITE",cmdargs,3, rd, buf)) 
     {
       fprintf(stderr, "Failed to write!!! %s\n", cmdargs); 
       return 1; 
@@ -133,8 +134,6 @@ int do_write(FILE * fimage, int start, int size)
   }
 
   return 0; 
-
-
 }
 
 
@@ -229,20 +228,20 @@ int main(int nargs, char ** args)
         const char * response = send_acked_command("#PROG-READ", cmdargs); 
         if (!response) 
         {
-          fprintf(stderr,"verify attempt failed %d\n", cmdargs); 
+          fprintf(stderr,"verify attempt failed %s\n", cmdargs); 
           return 1; 
         }
 
         int slot_check, offset_check, len_check; 
-        char base64buf[256]; 
-        sscanf(response,"#PROG-READ(slot=%d,offset=%d,len=%d): %s", &slot_check, &offset_check, &len_check, base64buf) ; 
-        if(slot!=slot_check || offset!=offset_check || ncheck!=len_check)
+        uint8_t base64buf[256]; 
+        sscanf(response,"#PROG-READ(slot=%d,offset=%d,len=%d): %s", &slot_check, &offset_check, &len_check, (char*) base64buf) ; 
+        if(slot!=slot_check || offset+icheck*128!=offset_check || ncheck!=len_check)
         {
           fprintf(stderr, "verify arg mismatch %s vs. %s\n", cmdargs, response); 
           ok = 0; 
         }
 
-        int nb = base64_decode(strlen(base64buf), base64buf); 
+        int nb = base64_decode(strlen((char*)base64buf), base64buf); 
         if (nb != ncheck || memcmp(base64buf, imgbuf+icheck*128, ncheck))
         {
           ok =0;
@@ -264,7 +263,7 @@ int main(int nargs, char ** args)
 
   //reset if necessary 
 
-  if (reset) 
+  if (reset || in_bootloader) 
   {
     snprintf(cmdargs,sizeof(cmdargs)," %d", slot); 
     if (!send_acked_command("#SYS-RESET",cmdargs))
