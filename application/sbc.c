@@ -273,7 +273,11 @@ int sbc_io_process()
           printf("#ERR: trouble parsing int"); 
         }
       }
- 
+      else if (!strcmp(in,"#AM-I-BOOTLOADER"))
+      {
+        printf("#AM-I-BOOTLOADER: 0\r\n"); 
+        valid = 1; 
+      }
       else if (!strcmp(in,"GET-STATION"))
       {
         printf("#GET-STATION: %d\r\n", config_block()->app_cfg.station_number); 

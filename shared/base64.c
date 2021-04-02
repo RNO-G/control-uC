@@ -130,9 +130,8 @@ int main(int nargs, char ** args)
         {
           base64_fprintf(stdout,N, buf); 
         }
-    //    printf("\n"); 
       }
-      printf("\n"); 
+      printf("\r\n"); 
       fclose(f); 
     }
   }

@@ -175,7 +175,6 @@ int programmer_cmd(char * in, int in_len)
             && !parse_int(nxt,&nxt,&len)
             )
         {
-          printf("#PROG-WRITE(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
           while(*nxt==' ') nxt++; 
           int left =  in_len - (nxt -in); 
           if (slot < MIN_WRITE_SLOT || slot > 4) 
@@ -205,6 +204,7 @@ int programmer_cmd(char * in, int in_len)
             spi_flash_application_write(slot, converted, decoded); 
             maybe_put_down_spi_flash(); 
           }
+          printf("#PROG-WRITE(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
         }
       }
       else if (prefix_matches(in,"#PROG-ERASE"))
@@ -216,18 +216,26 @@ int programmer_cmd(char * in, int in_len)
             && !parse_int(nxt,&nxt,&len)
             )
         {
-          printf("#PROG-ERASE(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
+
+          if (len > &__rom_size__  || len < 0) len = &__rom_size__; 
+
           if (slot < MIN_WRITE_SLOT || slot > 4) 
           {
             printf("#ERR: Bad slot %d\r\n",slot); 
             return 1;
           }
 
+          if (len == 0) return 0; 
+
+
+
           if (offset & 0xfff || len & 0xfff)
           {
              printf("#ERR: Offset and length must be page aligned\r\n"); 
              return 1; 
           }
+
+
  
 #ifdef _BOOTLOADER_ 
           if (slot == 0) 
@@ -254,6 +262,8 @@ int programmer_cmd(char * in, int in_len)
 
             maybe_put_down_spi_flash(); 
           }
+
+          printf("#PROG-ERASE(slot=%d,offset=%d,len=%d)\r\n", slot, offset, len); 
         }
       }
       else if (prefix_matches(in,"#PROG-READ"))

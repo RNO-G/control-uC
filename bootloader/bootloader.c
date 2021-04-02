@@ -151,9 +151,8 @@ int main(void)
   if (must_run_bootloader) 
   {
     io_init(); 
-    sbc_uart_put("BOOTLOADER!\r\n"); 
+    sbc_uart_put("#BOOTLOADER!\r\n"); 
 
-    int programmer_entered = 0; 
     while(1) 
     {
       programmer_process(); 
@@ -165,15 +164,24 @@ int main(void)
         {
           programmer_cmd(sbc.buf,sbc.len);
         }
-        else if (!strcmp(sbc.buf,"#RESET"))
+        else if (prefix_matches(sbc.buf,"#SYS-RESET"))
         {
+          int opt = 0; 
+          const char * nxt=0; 
+          if (parse_int(sbc.buf + sizeof("#SYS-RESET"), &nxt, &opt)) opt=0 ;
+          printf("#SYS-RESET(%d)!!\r\n", opt); 
+          shm->boot_option = opt; 
           _reset_mcu();
         }
         else if (!strcmp(sbc.buf,"#EXIT"))
         {
           break;
         }
-
+        else if (!strcmp(sbc.buf,"#AM-I-BOOTLOADER"))
+        {
+          printf("#AM-I-BOOTLOADER: 1\r\n"); 
+        }
+   
         async_tokenized_buffer_discard(&sbc); 
       }
       delay_ms(20); 
