@@ -1,4 +1,4 @@
-CFLAGS=-Wall -O3
+CFLAGS=-Wall -O3 -g
 
 
 PROGS=rno-g-controller-loader rno-g-controller-extract
