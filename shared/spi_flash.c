@@ -34,6 +34,7 @@ const uint8_t  DEVICE_ID= 0x9f;
 #define CS_OFF gpio_set_pin_level(SPI_FLASH_CS, true) 
 
 static struct io_descriptor * io = 0; 
+static int awake = 0; 
 
 void spi_flash_init()
 {
@@ -126,12 +127,15 @@ static int _spi_flash_write(uint32_t addr, uint16_t len, const uint8_t * data)
 
   //we need to divide our write into the page size
   uint32_t first_page = addr & 0xffffff00; 
-  uint32_t last_page= (addr+len) & 0xffffff00; 
+  uint32_t last_page= (addr+len-1) & 0xffffff00; 
   int npage = 1 + ((last_page - first_page) >> 8); 
   int ipage = 0; 
   int written = 0;
   for (ipage = 0; ipage < npage; ipage++)
   {
+    _spi_flash_wait_until_ready(); 
+    _spi_flash_write_enable(); 
+ 
     int offset = ipage==0 ? addr & 0xff : 0; 
     int size   = npage ==1 ? len : 
                  ipage == npage -1 ? addr+len - last_page 
@@ -139,8 +143,6 @@ static int _spi_flash_write(uint32_t addr, uint16_t len, const uint8_t * data)
     uint32_t start_addr = first_page + ipage*page_size + offset; 
     int data_offset = start_addr - addr; 
     uint8_t write_buf[4] = { PROGRAM, (start_addr & 0x00ff0000) >> 16, (start_addr & 0x0000ff00) >> 8, start_addr & 0xff}; 
-    _spi_flash_wait_until_ready(); 
-    _spi_flash_write_enable(); 
     CS_ON; 
     io_write(io,write_buf,4); 
     written+=io_write(io,data+data_offset, size); 
@@ -295,13 +297,18 @@ void spi_flash_deep_sleep()
   CS_ON; 
   io_write(io,&DEEPSLEEP,1); 
   CS_OFF; 
+  awake = 0; 
 }
 
 void spi_flash_wakeup()
 {
-  CS_ON; 
-  io_write(io,&WAKEUP,1); 
-  CS_OFF; 
+  if (!awake) 
+  {
+    CS_ON; 
+    io_write(io,&WAKEUP,1); 
+    CS_OFF; 
+  }
+  awake=1; 
   _spi_flash_wait_until_ready(); 
 }
 
@@ -530,14 +537,14 @@ int spi_flash_application_write(int slot, uint16_t len, const uint8_t * data)
   }
 
   uint32_t start_addr =application_get_address(slot, application_offsets[slot-1]);
-  _spi_flash_change_protection(0, start_addr, start_addr+len);
+//  _spi_flash_change_protection(0, start_addr, start_addr+len);
   int total = 0; 
   while (total < len) 
   {
     int written = _spi_flash_write(start_addr+total, len-total, data+total); 
     total += written; 
   }
-  _spi_flash_change_protection(1, start_addr, start_addr+len);
+//  _spi_flash_change_protection(1, start_addr, start_addr+len);
   application_offsets[slot-1] += total; 
   return total; 
 }
