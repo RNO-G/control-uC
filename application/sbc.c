@@ -273,7 +273,7 @@ int sbc_io_process()
           printf("#ERR: trouble parsing int"); 
         }
       }
-      else if (!strcmp(in,"#AM-I-BOOTLOADER"))
+      else if (!strcmp(in,"AM-I-BOOTLOADER"))
       {
         printf("#AM-I-BOOTLOADER: 0\r\n"); 
         valid = 1; 
