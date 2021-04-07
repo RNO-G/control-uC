@@ -40,20 +40,27 @@ int base64_decode(int b64_len, uint8_t * buf)
 
   while (i < b64_len) 
   {
-    if (buf[i] == '=') break; 
     if (j ==0) decoded = 0;
     //no validation... 
-    uint32_t partial =  (char2val(buf[i++])) & 0x3f;  
-
-    decoded |= (partial << (6*(3-j))); 
-    j++; 
-    if (j == 4) 
+    
+    int end = 1; 
+    if (buf[i] != '=')
+    {
+      uint32_t partial =  (char2val(buf[i++])) & 0x3f;  
+      decoded |= (partial << (6*(3-j))); 
+      j++; 
+      end=0;
+    }
+    if (j == 4 || end) 
     {
       buf[k++] = decoded >> 16; 
-      buf[k++] = (decoded >> 8) & 0xff; 
-      buf[k++] = (decoded ) & 0xff; 
+      if (j > 2) 
+        buf[k++] = (decoded >> 8) & 0xff; 
+      if (j > 3) 
+        buf[k++] = (decoded ) & 0xff; 
       j=0;
     }
+    if (end) break; 
 
   }
 
