@@ -2,6 +2,7 @@
 #include "shared/base64.h" 
 #ifndef _HOST_
 #include "shared/printf.h" 
+#include "shared/io.h" 
 #else 
 #include <string.h> 
 #endif 
@@ -91,7 +92,7 @@ int base64_print(int d, int len,  const uint8_t * buf)
 #ifdef _HOST_ 
       ret += fprintf(f,"%c%c%c%c", output[0], output[1], output[2], output[3]); 
 #else
-      ret += dprintf(d, "%c%c%c%c", output[0], output[1], output[2], output[3]); 
+      ret += d_write(d, 4, output); 
 #endif
       j=0; 
     }
@@ -138,7 +139,7 @@ int main(int nargs, char ** args)
           base64_fprintf(stdout,N, buf); 
         }
       }
-      printf("\r\n"); 
+      printf("\n"); 
       fclose(f); 
     }
   }

@@ -37,6 +37,7 @@ int check_application(int slot)
 {
 
   uint32_t check_buf[2];
+  spi_flash_wakeup(); 
 
   if (slot == 0) 
   {
@@ -83,7 +84,6 @@ int main(void)
   int copy_application = 0; 
 
   volatile int have_application = check_application(0); 
-
   //are we supposed to boot from not ROM? 
   if (get_shared_memory()->boot_option == BOOT_BOOTLOADER)
   {
@@ -127,16 +127,16 @@ int main(void)
 
   if (copy_application) 
   {
+    io_init(); 
+    if (!have_application) 
+    {
+      printf("#BOOTLOADER: NO VALID APPLICATION IN FLASH!\n");  
+    }
+
     printf("#INFO: COPYING FROM SLOT %d to FLASH\n", copy_application); 
     
 
-    int val; 
-    while ((val = programmer_copy_application_to_flash(copy_application))) 
-    {
-      printf(val == 1 ? "." : " !"); 
-    }
-    printf("done!\n"); 
-
+    programmer_copy_application_to_flash(copy_application); 
     shm->nresets = 0; 
     shm->booted_from = copy_application; 
     have_application = 1; 
@@ -151,7 +151,7 @@ int main(void)
   if (must_run_bootloader) 
   {
     io_init(); 
-    sbc_uart_put("#BOOTLOADER!\r\n"); 
+    sbc_uart_put("#IN BOOTLOADER!\r\n"); 
 
     while(1) 
     {

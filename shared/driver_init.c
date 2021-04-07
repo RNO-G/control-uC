@@ -203,6 +203,7 @@ static void LTE_UART_PORT_init()
 static void LTE_UART_init(void)
 {
 	LTE_UART_CLOCK_init();
+  NVIC_SetPriority( SERCOM1_IRQn, 3); 
 	usart_async_init(&LTE_UART, SERCOM1, LTE_UART_buffer, LTE_UART_BUFFER_SIZE, (void *)NULL);
 	LTE_UART_PORT_init();
 }
@@ -296,6 +297,7 @@ static void SBC_UART_CONSOLE_PORT_init()
 static void SBC_UART_CONSOLE_init(void)
 {
 	SBC_UART_CONSOLE_CLOCK_init();
+  NVIC_SetPriority( SERCOM3_IRQn, 3); 
 	usart_async_init(&SBC_UART_CONSOLE, SERCOM3, SBC_UART_CONSOLE_buffer, SBC_UART_CONSOLE_BUFFER_SIZE, (void *)NULL);
 	SBC_UART_CONSOLE_PORT_init();
 }
@@ -421,7 +423,7 @@ static void SHARED_TIMER_init(void)
 {
 	_pm_enable_bus_clock(PM_BUS_APBC, TC4);
 	_gclk_enable_channel(TC4_GCLK_ID, CONF_GCLK_TC4_SRC);
-
+  NVIC_SetPriority( TC4_IRQn, 3); 
 	timer_init(&SHARED_TIMER, TC4, _tc_get_timer());
 
   //go ahead and start the timer

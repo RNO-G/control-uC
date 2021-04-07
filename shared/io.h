@@ -21,6 +21,7 @@
 
 void io_init(); 
 
+// be careful using this. if n < 4, it is buffered, otherwise data must live until it's written out
 int d_write(int d, int n, const uint8_t * data); 
 
 /** This will collect (via callbacks) characters from the UART 
