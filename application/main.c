@@ -58,6 +58,10 @@ int main(void)
   /* Initialize LTE UART */ 
   i2c_bus_init(); 
 
+  /** Initial state: SBC on (for now...) */ 
+  i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
+  set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
+
   sbc_init(); 
 
 
@@ -78,11 +82,7 @@ int main(void)
   config_block_t * cfg = config_block(); 
 
 
-  /** Initial state: SBC on (for now...) */ 
-  i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
-  set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
-
-  printf("#INFO: BOOTED! Station: %d \r\n", cfg->app_cfg.station_number); 
+  printf("#INFO: BOOTED! Station: %d, version: %s\r\n", cfg->app_cfg.station_number, APP_VERSION); 
 
   //enable the calendar
   calendar_enable(&CALENDAR); 
@@ -150,7 +150,7 @@ int main(void)
 
 
     /// See if we need to do anything
-    switch (nticks & 0x3ff)
+    switch (nticks & 0x1fff)
     {
       case 0: 
         monitor_fill(&last_mon,10); 
@@ -181,7 +181,7 @@ int main(void)
       }
 
       //Let's testing sending something 
-      if ((nticks & 0x7ff) == 0 && lorawan_state() == LORAWAN_READY) 
+      if ((nticks & 0x2fff) == 0 && lorawan_state() == LORAWAN_READY) 
       {
         lorawan_tx_copy(sizeof(nticks), 2, (uint8_t*) &nticks,0); 
       }

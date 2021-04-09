@@ -16,6 +16,7 @@ static struct usart_async_descriptor * desc[4];  //enough for UARTs
 static volatile uint64_t cb_called[4];  
 static volatile uint64_t err_called[4];  
 static volatile uint64_t last_err_called[4];  
+static volatile uint64_t last_reset[4];  
 static volatile uint8_t tx_in_progress[4];  
 
 static const char * get_name(int d) 
@@ -105,6 +106,7 @@ static void cb_sbc_tx(const struct usart_async_descriptor * dev)
 {
   (void) dev;
   tx_in_progress[SBC_UART_DESC]=0; 
+  d_write(SBC_UART_DESC,0,0);
 }
 
 
@@ -118,6 +120,7 @@ static void cb_sbc_console_tx(const struct usart_async_descriptor * dev)
 {
   (void) dev;
   tx_in_progress[SBC_UART_CONSOLE_DESC]=0; 
+  d_write(SBC_UART_CONSOLE_DESC,0,0);
 }
 
 
@@ -131,6 +134,7 @@ static void cb_lte_tx(const struct usart_async_descriptor * dev)
 {
   (void) dev;
   tx_in_progress[LTE_UART_DESC]=0; 
+  d_write(LTE_UART_DESC,0,0);
 }
 
 
@@ -158,9 +162,11 @@ void io_init()
 {
   usart_async_enable(&SBC_UART); 
   desc[SBC_UART_DESC] = &SBC_UART; 
+
   usart_async_register_callback(&SBC_UART, USART_ASYNC_RXC_CB, cb_sbc); 
   usart_async_register_callback(&SBC_UART, USART_ASYNC_TXC_CB, cb_sbc_tx); 
   usart_async_register_callback(&SBC_UART, USART_ASYNC_ERROR_CB, cb_sbc_err); 
+
 #ifndef _BOOTLOADER_
   usart_async_enable(&SBC_UART_CONSOLE); 
   desc[SBC_UART_CONSOLE_DESC] = &SBC_UART_CONSOLE; 
@@ -179,19 +185,19 @@ void io_init()
 int d_check(int d, int thresh) 
 {
   int nerr = err_called[d] - last_err_called[d]; 
-  if ( nerr > thresh) 
+  int nsince_check = err_called[d] - last_reset[d]; 
+  if ( nsince_check > thresh) 
   {
      usart_async_disable(desc[d]); 
      usart_async_flush_rx_buffer(desc[d]); 
      usart_async_enable(desc[d]); 
-     last_err_called[d]=err_called[d]; 
+     last_reset[d] = err_called[d]; 
      tx_in_progress[d] = 0; 
      printf("#INFO: %d errors detected on %s\n", nerr, get_name(d)); 
-     return 1; 
   }
-  return 0; 
+  last_err_called[d]=err_called[d]; 
+  return nerr; 
 }
-
 
 
 
@@ -200,16 +206,53 @@ int d_write_ready(int d)
   return !tx_in_progress[d]; 
 }
 
+static const uint8_t * write_buf[3][256]; 
+static uint16_t  write_buf_len[3][256]; 
+static uint8_t write_buf_start[3]; 
+static uint8_t write_buf_end[3]; 
+
+
 int d_write(int d, int n, const uint8_t * data) 
 {
-  volatile int ncycles = 0; 
-  while (!d_write_ready(d) && ncycles++ < 3600) //this should be enough
+
+  int i = d-1; 
+
+  while (n > 0 && tx_in_progress[d] && ((write_buf_end[i] + 1) & 0xff) == write_buf_start[i]); 
+
+  if (n > 4) 
   {
-    ; 
+    write_buf[i][write_buf_end[i]] = data; 
+    write_buf_len[i][write_buf_end[i]] = n; 
+    write_buf_end[i] = (write_buf_end[i]+1) & 0xff; 
+  }
+  else if (n > 0) 
+  {
+
+    write_buf_len[i][write_buf_end[i]] = n; 
+    for (int j = 0; j < n; j++) 
+    {
+      ( (uint8_t*) &(write_buf[i][write_buf_end[i]]))[j] = data[j]; 
+    }
+    write_buf_end[i] = (write_buf_end[i]+1) & 0xff; 
   }
 
-  tx_in_progress[d] = 1; 
-  int sent = io_write(&desc[d]->io, data, n); 
+
+  int sent = 0; 
+  if (!tx_in_progress[d] && write_buf_end[i] != write_buf_start[i])
+  {
+    tx_in_progress[d] = 1; 
+    if (write_buf_len[i][write_buf_start[i]]> 4)
+    {
+      sent = io_write(&desc[d]->io, write_buf[i][write_buf_start[i]], write_buf_len[i][write_buf_start[i]]); 
+    }
+    else
+    {
+      sent = io_write(&desc[d]->io, ((uint8_t*) &write_buf[i][write_buf_start[i]]), write_buf_len[i][write_buf_start[i]]); 
+
+    }
+    write_buf_start[i] = (write_buf_start[i]+1) & 0xff; 
+  }
+
   return sent; 
 }
 
@@ -226,13 +269,9 @@ int d_read(int d, int n, uint8_t * buf)
 
 
 // this buys us some time before the address is reused
-static char putcharbuf[128]; 
-static uint8_t putcharbuf_i = 0;
 void _putchar(int d, char c)
 {
-  putcharbuf[putcharbuf_i] = c; 
-  d_write(d, 1, (uint8_t*) putcharbuf+putcharbuf_i); 
-  putcharbuf_i = (putcharbuf_i+1) % sizeof(putcharbuf); 
+  d_write(d, 1, (uint8_t*) &c); 
 }
 
 
@@ -278,6 +317,7 @@ int parse_int(const char * start, const char **end, int * num)
   if (first=='-') 
   {
     sign = -1; 
+    ptr++; 
   }
   
   while(*ptr >= '0' && *ptr <='9')

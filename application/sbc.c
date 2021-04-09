@@ -115,7 +115,7 @@ int sbc_io_process()
 
       char * in = (char*) sbc.buf+1; 
       //we don't start with a #. Skip to end
-      if (programmer_check_command(sbc.buf))
+      if (programmer_check_command(sbc.buf) && !d_check (SBC_UART_DESC,5))
       {
         // don't echo out negative return values, since those might have corrupted sbc.buf 
          valid = programmer_cmd(sbc.buf, sbc.len) <=0; 
@@ -131,15 +131,29 @@ int sbc_io_process()
       else if (!strcmp(in, "LTE-ON"))
       {
         valid=1; 
-        lte_turn_on(); 
+        lte_turn_on(0); 
         printf("#LTE-ON: ACK \r\n"); 
       }
-      else if (!strcmp(in,"LTE-ON"))
+      else if (!strcmp(in, "LTE-ON!"))
+      {
+        valid=1; 
+        lte_turn_on(1); 
+        printf("#LTE-ON!: ACK \r\n"); 
+      }
+ 
+      else if (!strcmp(in,"LTE-OFF"))
       {
         valid =1; 
-        lte_turn_off(); 
+        lte_turn_off(0); 
         printf("#LTE-OFF: ACK\r\n"); 
       }
+      else if (!strcmp(in,"LTE-OFF!"))
+      {
+        valid =1; 
+        lte_turn_off(1); 
+        printf("#LTE-OFF!: ACK\r\n"); 
+      }
+ 
       else if (!strcmp(in,"RADIANT-ON"))
       {
         valid=1; 
@@ -273,7 +287,11 @@ int sbc_io_process()
           printf("#ERR: trouble parsing int"); 
         }
       }
- 
+      else if (!strcmp(in,"AM-I-BOOTLOADER"))
+      {
+        printf("#AM-I-BOOTLOADER: 0\r\n"); 
+        valid = 1; 
+      }
       else if (!strcmp(in,"GET-STATION"))
       {
         printf("#GET-STATION: %d\r\n", config_block()->app_cfg.station_number); 

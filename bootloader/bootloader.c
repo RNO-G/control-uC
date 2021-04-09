@@ -37,6 +37,7 @@ int check_application(int slot)
 {
 
   uint32_t check_buf[2];
+  spi_flash_wakeup(); 
 
   if (slot == 0) 
   {
@@ -83,7 +84,6 @@ int main(void)
   int copy_application = 0; 
 
   volatile int have_application = check_application(0); 
-
   //are we supposed to boot from not ROM? 
   if (get_shared_memory()->boot_option == BOOT_BOOTLOADER)
   {
@@ -127,16 +127,16 @@ int main(void)
 
   if (copy_application) 
   {
+    io_init(); 
+    if (!have_application) 
+    {
+      printf("#BOOTLOADER: NO VALID APPLICATION IN FLASH!\n");  
+    }
+
     printf("#INFO: COPYING FROM SLOT %d to FLASH\n", copy_application); 
     
 
-    int val; 
-    while ((val = programmer_copy_application_to_flash(copy_application))) 
-    {
-      printf(val == 1 ? "." : " !"); 
-    }
-    printf("done!\n"); 
-
+    programmer_copy_application_to_flash(copy_application); 
     shm->nresets = 0; 
     shm->booted_from = copy_application; 
     have_application = 1; 
@@ -151,9 +151,8 @@ int main(void)
   if (must_run_bootloader) 
   {
     io_init(); 
-    sbc_uart_put("BOOTLOADER!\r\n"); 
+    sbc_uart_put("#IN BOOTLOADER!\r\n"); 
 
-    int programmer_entered = 0; 
     while(1) 
     {
       programmer_process(); 
@@ -165,15 +164,24 @@ int main(void)
         {
           programmer_cmd(sbc.buf,sbc.len);
         }
-        else if (!strcmp(sbc.buf,"#RESET"))
+        else if (prefix_matches(sbc.buf,"#SYS-RESET"))
         {
+          int opt = 0; 
+          const char * nxt=0; 
+          if (parse_int(sbc.buf + sizeof("#SYS-RESET"), &nxt, &opt)) opt=0 ;
+          printf("#SYS-RESET(%d)!!\r\n", opt); 
+          shm->boot_option = opt; 
           _reset_mcu();
         }
         else if (!strcmp(sbc.buf,"#EXIT"))
         {
           break;
         }
-
+        else if (!strcmp(sbc.buf,"#AM-I-BOOTLOADER"))
+        {
+          printf("#AM-I-BOOTLOADER: 1\r\n"); 
+        }
+   
         async_tokenized_buffer_discard(&sbc); 
       }
       delay_ms(20); 

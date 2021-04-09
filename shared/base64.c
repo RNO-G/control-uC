@@ -2,6 +2,7 @@
 #include "shared/base64.h" 
 #ifndef _HOST_
 #include "shared/printf.h" 
+#include "shared/io.h" 
 #else 
 #include <string.h> 
 #endif 
@@ -39,20 +40,27 @@ int base64_decode(int b64_len, uint8_t * buf)
 
   while (i < b64_len) 
   {
-    if (buf[i] == '=') break; 
     if (j ==0) decoded = 0;
     //no validation... 
-    uint32_t partial =  (char2val(buf[i++])) & 0x3f;  
-
-    decoded |= (partial << (6*(3-j))); 
-    j++; 
-    if (j == 4) 
+    
+    int end = 1; 
+    if (buf[i] != '=')
+    {
+      uint32_t partial =  (char2val(buf[i++])) & 0x3f;  
+      decoded |= (partial << (6*(3-j))); 
+      j++; 
+      end=0;
+    }
+    if (j == 4 || end) 
     {
       buf[k++] = decoded >> 16; 
-      buf[k++] = (decoded >> 8) & 0xff; 
-      buf[k++] = (decoded ) & 0xff; 
+      if (j > 2) 
+        buf[k++] = (decoded >> 8) & 0xff; 
+      if (j > 3) 
+        buf[k++] = (decoded ) & 0xff; 
       j=0;
     }
+    if (end) break; 
 
   }
 
@@ -84,7 +92,7 @@ int base64_print(int d, int len,  const uint8_t * buf)
 #ifdef _HOST_ 
       ret += fprintf(f,"%c%c%c%c", output[0], output[1], output[2], output[3]); 
 #else
-      ret += dprintf(d, "%c%c%c%c", output[0], output[1], output[2], output[3]); 
+      ret += d_write(d, 4, output); 
 #endif
       j=0; 
     }
@@ -130,7 +138,6 @@ int main(int nargs, char ** args)
         {
           base64_fprintf(stdout,N, buf); 
         }
-    //    printf("\n"); 
       }
       printf("\n"); 
       fclose(f); 
