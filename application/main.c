@@ -191,7 +191,7 @@ int main(void)
    
    if (LTE_TURNON_NTICKS > 0  && nticks == LTE_TURNON_NTICKS) 
    {
-     lte_turn_on(); 
+     lte_turn_on(1); 
    }
 
 
