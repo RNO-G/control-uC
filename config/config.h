@@ -6,4 +6,7 @@
 // the loop delay time, when not in low power mode
 #define DELAY_MS 10 
 
+//temporary 
+#define LTE_TURNON_NTICKS 1000
+
 #endif
