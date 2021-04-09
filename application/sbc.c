@@ -131,15 +131,29 @@ int sbc_io_process()
       else if (!strcmp(in, "LTE-ON"))
       {
         valid=1; 
-        lte_turn_on(); 
+        lte_turn_on(0); 
         printf("#LTE-ON: ACK \r\n"); 
       }
-      else if (!strcmp(in,"LTE-ON"))
+      else if (!strcmp(in, "LTE-ON!"))
+      {
+        valid=1; 
+        lte_turn_on(1); 
+        printf("#LTE-ON!: ACK \r\n"); 
+      }
+ 
+      else if (!strcmp(in,"LTE-OFF"))
       {
         valid =1; 
-        lte_turn_off(); 
+        lte_turn_off(0); 
         printf("#LTE-OFF: ACK\r\n"); 
       }
+      else if (!strcmp(in,"LTE-OFF!"))
+      {
+        valid =1; 
+        lte_turn_off(1); 
+        printf("#LTE-OFF!: ACK\r\n"); 
+      }
+ 
       else if (!strcmp(in,"RADIANT-ON"))
       {
         valid=1; 
