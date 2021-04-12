@@ -30,8 +30,8 @@ static volatile int n_interrupts;
 static volatile int n_nmi; 
 
 
-static rno_g_monitor_t last_mon; 
-static power_system_monitor_t last_power; 
+rno_g_monitor_t last_mon = {0}; 
+power_system_monitor_t last_power = {0}; 
 
 
 void NMI_Handler(void) 
