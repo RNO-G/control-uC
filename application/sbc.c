@@ -13,6 +13,8 @@
 #include "application/i2cbus.h" 
 #include "shared/programmer.h" 
 #include "linker/map.h"
+#include "application/power.h" 
+#include "application/monitors.h" 
 #include "lorawan/lorawan.h" 
 
 //these define the maximum line length! 
@@ -39,6 +41,12 @@ void sbc_init()
 #endif
 }
 
+
+static inline int abs(int v) 
+{
+  return v < 0 ? -v : v; 
+
+}
 
 static void do_release_boot(const struct timer_task * const task)
 {
@@ -115,10 +123,10 @@ int sbc_io_process()
 
       char * in = (char*) sbc.buf+1; 
       //we don't start with a #. Skip to end
-      if (programmer_check_command(sbc.buf) && !d_check (SBC_UART_DESC,5))
+      if (programmer_check_command((char*) sbc.buf) && !d_check (SBC_UART_DESC,5))
       {
         // don't echo out negative return values, since those might have corrupted sbc.buf 
-         valid = programmer_cmd(sbc.buf, sbc.len) <=0; 
+         valid = programmer_cmd((char*) sbc.buf, sbc.len) <=0; 
       }
 
       else if (sbc.buf[0] !='#')
@@ -169,6 +177,65 @@ int sbc_io_process()
         i2c_gpio_expander_t turn_off_radiant_mask = {.radiant = 1}; 
         set_gpio_expander_state(turn_off_radiant, turn_off_radiant_mask); 
         printf("#RADIANT-OFF: ACK\r\n"); 
+      }
+      else if (prefix_matches(in,"AMPS-SET"))
+      {
+        uint8_t surf, dh; 
+        const char * nxt=0;
+        valid =1; 
+        if (parse_hex(in+sizeof("AMPS-SET"),&nxt, &surf) ||
+            parse_hex(nxt,&nxt,&dh) || (surf >> 6) || (dh >> 3) )
+        {
+          printf("#ERR: Failed to interpret #%s\r\n",in); 
+        }
+        else
+        {
+          i2c_gpio_expander_t set = {.surface_amps = surf, .dh_amps = dh};
+          i2c_gpio_expander_t mask = {.surface_amps = 0x3f, .dh_amps = 0x7};
+          set_gpio_expander_state(set,mask); 
+          printf("#AMPS-SET: %x %x\r\n", surf, dh); 
+        }
+      }
+      else if (!strcmp(in,"EXPANDER-STATE"))
+      {
+        int force  = 0; 
+        parse_int(in + sizeof("EXPANDER-STATE"),0,&force); 
+        valid =1; 
+        i2c_gpio_expander_t exp_state; 
+        get_gpio_expander_state(&exp_state,!force); 
+        printf("#EXPANDER-STATE: surf: %x, dh: %x, radiant: %x, lt: %x, sbc: %x\r\n", exp_state.surface_amps, exp_state.dh_amps, 
+            exp_state.radiant, exp_state.lt, exp_state.sbc); 
+      }
+      else if (!strcmp(in,"MONITOR"))
+      {
+        rno_g_monitor_t mon = last_mon;
+        power_system_monitor_t pwr = last_power;
+        printf("#MONITOR: analog: { when: %u, temp: %d.%02u C, i_surf3V: [%hu,%hu,%hu,%hu,%hu,%hu] mA, i_down3v: [%hu,%hu,%hu] mA, i_sbc5v: %hu, i_radiant: %hu mA, i_lt: %hu mA\r\n", 
+            mon.when, mon.temp_cC/100, abs(mon.temp_cC) % 100, mon.i_surf3v[0],  mon.i_surf3v[1],  mon.i_surf3v[2], mon.i_surf3v[3],  mon.i_surf3v[4],  mon.i_surf3v[5], 
+            mon.i_down3v[0], mon.i_down3v[1], mon.i_down3v[2], mon.i_sbc5v, mon.i_5v[0], mon.i_5v[1]); 
+        printf("#MONITOR: power :{ when: %u, BAT_V: %d.%02u V, BAT_I: %d mA, PV_V: %d.%02d V, PV_I: %d mA} \r\n", 
+                pwr.when_power,
+                pwr.PVv_cV/100, pwr.PVv_cV % 100, pwr.PVi_mA, 
+                pwr.BATv_cV/100, pwr.BATv_cV % 100, pwr.BATi_mA) ;
+
+        const char* sixteenths[] = {"0", "0625","125","1875","25","3125","375","4375","5","5625","625","6875","75","8125","875","9375"}; 
+
+         printf("#MONITOR: temp :{ when: %u, local: %d.%s C, remote1: %d.%s C, remote2: %d.%s} \r\n", 
+                pwr.when_temp, 
+                pwr.local_T_C, sixteenths[pwr.local_T_sixteenth_C], 
+                pwr.remote1_T_C, sixteenths[pwr.remote1_T_sixteenth_C], 
+                pwr.remote2_T_C, sixteenths[pwr.remote2_T_sixteenth_C]);  
+
+         valid=1; 
+      }
+      else if (prefix_matches(in,"MONITOR-SCHED"))
+      {
+        int navg = 10; 
+        parse_int(in + sizeof("MONITOR-SCHED"),0,&navg); 
+        power_monitor_schedule(); 
+        printf("#MONITOR-SCHED %d\r\n",navg); 
+        monitor_fill(&last_mon,navg); 
+        valid=1; 
       }
       else if (prefix_matches(in,"I2C-WRITE"))
       {
