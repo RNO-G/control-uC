@@ -5,7 +5,7 @@
 #include "rno-g-control.h" 
 
 #define CONFIG_BLOCK_BOOT_VERSION 1
-#define CONFIG_BLOCK_APP_VERSION 1
+#define CONFIG_BLOCK_APP_VERSION 2
 
 /** Shared configuration block in SPI flash between application and bootloader. 
  *
@@ -53,9 +53,9 @@ typedef struct bootloader_cfg
 
 typedef struct application_cfg
 {
-  rno_g_state_t wanted_state; 
   uint16_t station_number; 
-  uint8_t gps_offset; 
+  int8_t gps_offset; 
+  rno_g_mode_t wanted_state; 
 } application_cfg_t; 
 
 typedef struct config_block

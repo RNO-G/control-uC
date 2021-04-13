@@ -1,6 +1,15 @@
 #include "shared/config_block.h" 
 
 
+#ifndef INITIAL_STATION_NUMBER
+#define INITIAL_STATION_NUMBER 999 
+#endif 
+
+#define XSTR(X) STR(X) 
+#define STR(X) #X 
+#pragma message ("Initial Station Number is " XSTR(INITIAL_STATION_NUMBER)) 
+
+
 void default_init_boot_cfg(bootloader_cfg_t * bc) 
 {
 
@@ -16,8 +25,8 @@ void default_init_app_cfg(application_cfg_t * ac)
 {
    application_cfg_t dflt = 
    {
-     .wanted_state = { .sbc_power= 1 } ,  
-     .station_number = 999, 
+     .wanted_state = RNO_G_NORMAL_MODE, 
+     .station_number = INITIAL_STATION_NUMBER, 
      .gps_offset = 18
    }; 
 
