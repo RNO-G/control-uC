@@ -7,6 +7,6 @@
 #define DELAY_MS 1 
 
 
-#define APP_VERSION "Chicago" 
+#define APP_VERSION "Chicago.041321.1" 
 
 #endif
