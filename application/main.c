@@ -103,6 +103,9 @@ int main(void)
   /** Reset reset counter */ 
   get_shared_memory()->nresets = 0; 
 
+
+  // turn on LTE
+
   // TODO: setup watchdog
 
   // TODO: initial measurements
@@ -186,6 +189,10 @@ int main(void)
     }
 
    
+   if (LTE_TURNON_NTICKS > 0  && nticks == LTE_TURNON_NTICKS) 
+   {
+     lte_turn_on(1); 
+   }
 
 
     delay_ms(DELAY_MS); 

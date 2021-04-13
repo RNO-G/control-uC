@@ -13,18 +13,37 @@ lte_state_t lte_get_state() { return lte_state; }
 
 
 
+
+
+static void lte_setup_gpio() 
+{
+  dprintf(LTE_UART_DESC,"AT+GPIO=1,0,2,1\r\n"); 
+}
+
+static void lte_delayed_setup_led(const struct timer_task * const task) 
+{
+  (void) task; 
+  dprintf(LTE_UART_DESC,"AT+SLED=2\r\n"); 
+}
+
+static struct timer_task lte_delayed_setup_led_task = {.cb = lte_delayed_setup_led, .interval=20, .mode = TIMER_TASK_ONE_SHOT}; 
+
+
 static void lte_turn_on_cb(const struct timer_task * const task)
 {
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_IN);
   gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_UART_ENABLE,0); 
   lte_state = LTE_ON;
+  lte_setup_gpio(); 
+  timer_add_task(&SHARED_TIMER, &lte_delayed_setup_led_task);
 }
 
 static struct timer_task lte_turn_on_task = { .cb  = lte_turn_on_cb, .interval = 550, .mode = TIMER_TASK_ONE_SHOT }; 
 
 static void lte_turn_off_cb(const struct timer_task * const task)
 {
+  (void) task; 
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_IN);
   gpio_set_pin_level(LTE_REG_EN,0);
   lte_state = LTE_OFF; 
