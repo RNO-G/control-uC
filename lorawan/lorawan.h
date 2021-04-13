@@ -20,7 +20,7 @@ typedef enum e_lwan_msg_flags
  *
  * This might take some arguments in the future
  * */ 
-int lorawan_init(); 
+int lorawan_init(int initial); 
 
 
 typedef enum e_lwan_state

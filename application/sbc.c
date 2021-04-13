@@ -325,6 +325,7 @@ int sbc_io_process()
         {
           config_block()->app_cfg.station_number= station;
           need_sync = 1; 
+          lorawan_init(0);  // reinit lorawan with new id 
           printf("#SET-STATION: %d\r\n", station); 
           valid = 1; 
         }

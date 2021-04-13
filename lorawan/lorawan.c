@@ -1043,34 +1043,37 @@ lwan_state_t lorawan_state(void)
 
 
 
-int lorawan_init() 
+int lorawan_init(int initial) 
 {
 
-  //Do the equivalent of BoardInit
+  if (initial) 
+  {
+    //Do the equivalent of BoardInit
 
-  SX1272IoInit( );
-  RtcInit(); 
-
-
-  // Set up callbacks 
-
-  macPrimitives.MacMcpsConfirm = McpsConfirm;
-  macPrimitives.MacMcpsIndication = McpsIndication;
-  macPrimitives.MacMlmeConfirm = MlmeConfirm;
-  macPrimitives.MacMlmeIndication = MlmeIndication;
-  macCallbacks.GetBatteryLevel = GetBatteryLevel;
-  macCallbacks.GetTemperatureLevel = NULL;
-  macCallbacks.NvmContextChange = NULL;
-  macCallbacks.MacProcessNotify = OnMacProcessNotify;
+    SX1272IoInit( );
+    RtcInit(); 
 
 
-  LoRaMacStatus_t status;
-  status = LoRaMacInitialization( &macPrimitives, &macCallbacks, ACTIVE_REGION );
-  if( status != LORAMAC_STATUS_OK ) {
+    // Set up callbacks 
+
+    macPrimitives.MacMcpsConfirm = McpsConfirm;
+    macPrimitives.MacMcpsIndication = McpsIndication;
+    macPrimitives.MacMlmeConfirm = MlmeConfirm;
+    macPrimitives.MacMlmeIndication = MlmeIndication;
+    macCallbacks.GetBatteryLevel = GetBatteryLevel;
+    macCallbacks.GetTemperatureLevel = NULL;
+    macCallbacks.NvmContextChange = NULL;
+    macCallbacks.MacProcessNotify = OnMacProcessNotify;
+
+
+    LoRaMacStatus_t status;
+    status = LoRaMacInitialization( &macPrimitives, &macCallbacks, ACTIVE_REGION );
+    if( status != LORAMAC_STATUS_OK ) {
 #if LORAWAN_PRINT_DEBUG
-   printf( "LoRaMac wasn't properly initialized, error: %s", MacStatusStrings[status] );
+     printf( "LoRaMac wasn't properly initialized, error: %s", MacStatusStrings[status] );
 #endif
-   return status; 
+     return status; 
+    }
   }
 
   DeviceState = DEVICE_STATE_RESTORE;

@@ -89,7 +89,7 @@ int main(void)
   uint64_t time_check = 0; 
 
   /** Initialize LoRaWAN */ 
-  lorawan_init(); 
+  lorawan_init(1); 
 
 
   /** Initialize ADC monitors */ 
