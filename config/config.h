@@ -12,4 +12,6 @@
 //temporary 
 #define LTE_TURNON_NTICKS 1000
 
+#define ENABLE_WATCHDOG 0 
+
 #endif
