@@ -288,7 +288,7 @@ void flush_buffers()
 int prefix_matches(const char * haystack, const char * prefix) 
 {
   int i = 0; 
-  while(prefix[i] && haystack[i]) 
+  while(prefix[i]) 
   {
     if (haystack[i] != prefix[i]) return 0; 
     i++; 
