@@ -10,6 +10,6 @@
 #define APP_VERSION "Chicago" 
 
 //temporary 
-#define LTE_TURNON_NTICKS 1000
+#define LTE_TURNON_NTICKS 10000
 
 #endif
