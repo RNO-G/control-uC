@@ -6,6 +6,7 @@
 #include <errno.h> 
 #include <unistd.h> 
 #include <fcntl.h> 
+#include <sys/file.h>
 
 int slot = 1; 
 const char * device = "/dev/ttyO1" ;
@@ -194,10 +195,22 @@ int main(int nargs, char ** args)
   }
 
   int fd = fileno(fserial); 
+
+  //lock the descriptor 
+  if (flock(fd, LOCK_EX)) 
+  {
+    fprintf(stderr, "Could not get exclusive access\n"); 
+    return 3; 
+  }
+
+
   int flags = fcntl(fd, F_GETFL,0); 
   flags |=O_NONBLOCK; 
-  fcntl(fd, F_SETFL,flags); 
-
+  if (fcntl(fd, F_SETFL,flags)) 
+  {
+    fprintf(stderr, "Could not set nonblock\n"); 
+    return 4; 
+  }
 
   FILE * fimage = fopen(image,"r"); 
   if (!fimage) 
