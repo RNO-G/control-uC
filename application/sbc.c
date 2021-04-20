@@ -227,17 +227,17 @@ int sbc_io_process()
       {
         rno_g_monitor_t mon = last_mon;
         power_system_monitor_t pwr = last_power;
-        printf("#MONITOR: analog: { when: %u, temp: %d.%02u C, i_surf3V: [%hu,%hu,%hu,%hu,%hu,%hu] mA, i_down3v: [%hu,%hu,%hu] mA, i_sbc5v: %hu, i_radiant: %hu mA, i_lt: %hu mA\r\n", 
+        printf("#MONITOR: analog: { when: %u, temp: %d.%02u C, i_surf3V: [%hu,%hu,%hu,%hu,%hu,%hu] mA, i_down3v: [%hu,%hu,%hu] mA, i_sbc5v: %hu, i_radiant: %hu mA, i_lt: %hu mA}\r\n", 
             mon.when, mon.temp_cC/100, abs(mon.temp_cC) % 100, mon.i_surf3v[0],  mon.i_surf3v[1],  mon.i_surf3v[2], mon.i_surf3v[3],  mon.i_surf3v[4],  mon.i_surf3v[5], 
             mon.i_down3v[0], mon.i_down3v[1], mon.i_down3v[2], mon.i_sbc5v, mon.i_5v[0], mon.i_5v[1]); 
-        printf("#MONITOR: power :{ when: %u, BAT_V: %d.%02u V, BAT_I: %d mA, PV_V: %d.%02d V, PV_I: %d mA} \r\n", 
+        printf("#MONITOR: power: { when: %u, BAT_V: %d.%02u V, BAT_I: %d mA, PV_V: %d.%02d V, PV_I: %d mA}\r\n", 
                 pwr.when_power,
                 pwr.PVv_cV/100, pwr.PVv_cV % 100, pwr.PVi_mA, 
                 pwr.BATv_cV/100, pwr.BATv_cV % 100, pwr.BATi_mA) ;
 
         const char* sixteenths[] = {"0", "0625","125","1875","25","3125","375","4375","5","5625","625","6875","75","8125","875","9375"}; 
 
-         printf("#MONITOR: temp :{ when: %u, local: %d.%s C, remote1: %d.%s C, remote2: %d.%s} \r\n", 
+         printf("#MONITOR: temp: { when: %u, local: %d.%s C, remote1: %d.%s C, remote2: %d.%s} \r\n",
                 pwr.when_temp, 
                 pwr.local_T_C, sixteenths[pwr.local_T_sixteenth_C], 
                 pwr.remote1_T_C, sixteenths[pwr.remote1_T_sixteenth_C], 
