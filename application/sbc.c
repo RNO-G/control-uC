@@ -123,15 +123,15 @@ int sbc_io_process()
 
       char * in = (char*) sbc.buf+1; 
       //we don't start with a #. Skip to end
-      if (programmer_check_command((char*) sbc.buf) && !d_check (SBC_UART_DESC,5))
+      if (sbc.buf[0] !='#')
+      {
+
+      }
+      //check if it's a programmer command
+      else if (programmer_check_command((char*) sbc.buf) && !d_check (SBC_UART_DESC,5))
       {
         // don't echo out negative return values, since those might have corrupted sbc.buf 
          valid = programmer_cmd((char*) sbc.buf, sbc.len) <=0; 
-      }
-
-      else if (sbc.buf[0] !='#')
-      {
-
       }
 
       //now let's try to match commands 
