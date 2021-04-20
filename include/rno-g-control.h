@@ -87,6 +87,7 @@ typedef struct power_system_monitor
 
 typedef enum lte_state
 {
+  LTE_INIT, 
   LTE_OFF, 
   LTE_TURNING_ON,
   LTE_ON,
