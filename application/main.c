@@ -70,10 +70,11 @@ int main(void)
 
 
   /* Set up an interrupt from the SBC*/ 
-
 #ifndef USE_RADIO_DEBUG
   ext_irq_register(GPIO1, interrupt); 
 #endif
+
+
 
   /* Set up LTE */ 
   lte_init(); 
@@ -100,15 +101,14 @@ int main(void)
   power_monitor_init(); 
 
 
-  /** Reset reset counter */ 
-  get_shared_memory()->nresets = 0; 
 
-
-  // turn on LTE
 
   // TODO: setup watchdog
 
-  // TODO: initial measurements
+  if (ENABLE_WATCHDOG) 
+  {
+    wdt_enable(&INTERNAL_WATCHDOG); 
+  } 
 
 
 
@@ -189,13 +189,25 @@ int main(void)
     }
 
    
-   if (LTE_TURNON_NTICKS > 0  && nticks == LTE_TURNON_NTICKS) 
-   {
-     lte_turn_on(1); 
-   }
+    if (LTE_TURNON_NTICKS > 0  && nticks == LTE_TURNON_NTICKS) 
+    {
+      lte_turn_on(0); 
+    }
+
+    if (ENABLE_WATCHDOG) 
+    {
+      wdt_feed(&INTERNAL_WATCHDOG); 
+    }
+
+    if (nticks==30) 
+    {
+      /** Reset reset counter if we made it through the loop 30 times*/ 
+      get_shared_memory()->nresets = 0; 
+    }
 
 
     delay_ms(DELAY_MS); 
     nticks++; 
+
 	}
 }
