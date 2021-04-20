@@ -178,6 +178,23 @@ int sbc_io_process()
         set_gpio_expander_state(turn_off_radiant, turn_off_radiant_mask); 
         printf("#RADIANT-OFF: ACK\r\n"); 
       }
+      else if (!strcmp(in,"LOWTHRESH-ON"))
+      {
+        valid=1; 
+        i2c_gpio_expander_t turn_on_lt = {.lt = 1}; 
+        set_gpio_expander_state(turn_on_lt, turn_on_lt); 
+        printf("#LOWTHRESH-ON: ACK\r\n"); 
+      }
+
+      else if (!strcmp(in,"LOWTHRESH-OFF") )
+      {
+        valid=1;
+        i2c_gpio_expander_t turn_off_lt = {0}; 
+        i2c_gpio_expander_t turn_off_lt_mask = {.radiant = 1}; 
+        set_gpio_expander_state(turn_off_lt, turn_off_lt_mask); 
+        printf("#LOWTHRESH-OFF: ACK\r\n"); 
+      }
+ 
       else if (prefix_matches(in,"AMPS-SET"))
       {
         uint8_t surf, dh; 
