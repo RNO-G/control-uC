@@ -1,7 +1,7 @@
 include config.mk 
 
 
-CFLAGS= \
+CFLAGS+= \
 -x c -mthumb -Os -ffunction-sections -c -std=gnu99  \
 -D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3 -D_GNU_SOURCE 
 
