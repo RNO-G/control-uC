@@ -156,13 +156,13 @@ int main(void)
     switch (nticks & 0x1fff)
     {
       case 0: 
-        monitor_fill(&last_mon,10); 
         if (nticks > 0)
         {
           power_monitor_schedule(); 
         }
-        break; 
-      case 200: 
+        monitor_fill(&last_mon,20); 
+       break; 
+      case 300: 
         power_monitor_fill(&last_power); 
       default: 
         break; 
