@@ -4,6 +4,7 @@
 #include "hal_adc_sync.h" 
 #include "hpl_calendar.h" 
 #include "shared/printf.h" 
+#include "application/time.h" 
 
 
 
@@ -11,23 +12,26 @@
 
 typedef enum mon_a
 {
-  MON_A_SURF_3V_1 = 5, 
+  MON_A_SURF_3V_1 = 6, 
   MON_A_SURF_3V_2 = 3, 
-  MON_A_SURF_3V_3 = 7, 
-  MON_A_SURF_3V_4 = 6, 
-  MON_A_SURF_3V_5 = 4, 
+  MON_A_SURF_3V_3 = 4, 
+  MON_A_SURF_3V_4 = 5, 
+  MON_A_SURF_3V_5 = 7, 
   MON_A_SURF_3V_6 = 2 
 } mon_a_t; 
+
+uint8_t surf_map[6] = { MON_SURF3V_1, MON_SURF3V_2, MON_SURF3V_3, MON_SURF3V_4,  MON_SURF3V_5, MON_SURF3V_6 }; 
 
 
 typedef enum mon_b
 {
   MON_B_DWN_3V_1 = 4,  
-  MON_B_DWN_3V_2 = 5,  
-  MON_B_DWN_3V_3 = 6,  
+  MON_B_DWN_3V_2 = 6,  
+  MON_B_DWN_3V_3 = 5,  
   MON_B_SBC5 = 7
 } mon_b_t; 
 
+uint8_t dh_map[3] = { MON_DOWN_3V1, MON_DOWN_3V2, MON_DOWN_3V3 }; 
 
 enum ADC_CHANNELS
 {
@@ -128,19 +132,19 @@ static void mon_b_select(monitor_t what)
 int monitor_fill(rno_g_monitor_t * m, int navg)
 {
   int i;
-  m->when = _calendar_get_counter(&CALENDAR.device); 
+  m->when = get_time() ; 
 
   for (i = 0; i < 6; i++) 
   {
-    m->i_surf3v[i] = monitor(MON_SURF3V_1+i, navg); 
-    monitor_select((MON_SURF3V_1+i+1) % 6 ); 
-    delay_us(1000); 
+    m->i_surf3v[i] = monitor(surf_map[i], navg); 
+    monitor_select(surf_map[ (i+1) % 6] ); 
+    delay_us(3000); 
 
     //alternate between the two to avoid capacitance issues
     if (i < 3) 
     {
-      m->i_down3v[i] = monitor(MON_DOWN_3V1+i, navg); 
-      if (i < 2) monitor_select(MON_DOWN_3V1+i+1); 
+      m->i_down3v[i] = monitor(dh_map[i], navg); 
+      if (i < 2) monitor_select(dh_map[i+1]); 
       else monitor_select(MON_SBC_5V); 
     }
     else if (i==3) 
@@ -157,7 +161,8 @@ int monitor_fill(rno_g_monitor_t * m, int navg)
       m->i_sbc5v = monitor(MON_SBC_5V, navg); 
       monitor_select(MON_DOWN_3V1); 
     }
-    delay_us(2000); 
+    if ( i < 5) 
+      delay_us(3000); 
   }
   return 0; 
 }
