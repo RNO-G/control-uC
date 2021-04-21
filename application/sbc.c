@@ -190,7 +190,7 @@ int sbc_io_process()
       {
         valid=1;
         i2c_gpio_expander_t turn_off_lt = {0}; 
-        i2c_gpio_expander_t turn_off_lt_mask = {.radiant = 1}; 
+        i2c_gpio_expander_t turn_off_lt_mask = {.lt = 1}; 
         set_gpio_expander_state(turn_off_lt, turn_off_lt_mask); 
         printf("#LOWTHRESH-OFF: ACK\r\n"); 
       }
