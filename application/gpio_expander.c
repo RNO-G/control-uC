@@ -159,6 +159,8 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
 
     A_state.data = A_query.data; 
     B_state.data = B_query.data; 
+    A_dir.data = ~A_query.data; 
+    B_dir.data = ~B_query.data; 
   }
 
   if (!value) 

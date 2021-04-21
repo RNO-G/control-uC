@@ -58,6 +58,9 @@ int main(void)
   /* Initialize LTE UART */ 
   i2c_bus_init(); 
 
+  //persist previous state
+  get_gpio_expander_state(0,0); 
+
   /** Initial state: SBC on (for now...) */ 
   i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
   set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
