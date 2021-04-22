@@ -1075,6 +1075,11 @@ int lorawan_init(int initial)
      return status; 
     }
   }
+  else
+  {
+    //reset the eui so we recreate it properly , skipping the IEE_OUI
+    for (unsigned i = 3; i < sizeof(devEui); i++) devEui[i] = 0; 
+  }
 
   DeviceState = DEVICE_STATE_RESTORE;
 
