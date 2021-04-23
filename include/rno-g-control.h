@@ -1,5 +1,5 @@
-#ifndef _RNO_G_H
-#define _RNO_G_H
+#ifndef _RNO_G_CONTROL_H
+#define _RNO_G_CONTROL_H
 
 /** Structs describing state, commands etc. 
  *
@@ -28,7 +28,7 @@ typedef enum sbc_boot_mode
 typedef enum rno_g_station_mode 
 {
   RNO_G_NORMAL_MODE = 0,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
-  RNO_G_SBC_ONLY_MODE = 1, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE) 
+  RNO_G_SBC_ONLY_MODE = 1, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC will probably turn it back on) 
   RNO_G_SBC_OFF_MODE = 2, // micro not in lower power mode, but SBC turned off. Can be used to forcibly cycle SBC. 
   RNO_G_LOW_POWER_MODE=3, //Low power mode. Everything but micro is off. 
 } rno_g_mode_t; 
