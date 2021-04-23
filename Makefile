@@ -1,3 +1,8 @@
+#TLDR:  make mcu for micro, otherwise make install to install rno-g-control.h header  (optionally with PREFIX=dest) 
+
+
+
+
 include config.mk 
 
 
@@ -55,8 +60,38 @@ MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application 
 OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-main
 BL_OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-bootloader
 
-# All Target
-all: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin
+.PHONY: help install mcu clean 
+
+help: 
+	@echo "Targets: " 
+	@echo "  help:  print this message"
+	@echo "  mcu:  build mcu firwmware (requires cross-compiler)"
+	@echo "  loader-build:  build uart loader"
+	@echo "  loader-install: install uart loader (PREFIX is influential, defaults to /rno-g/)"
+	@echo "  loader-uninstall: uninstall uart loader (PREFIX is influential, defaults to /rno-g/)"
+	@echo "  install: install header file (PREFIX is influential, defaults to /rno-g/"
+	@echo "  uninstall: uninstall header file (PREFIX is influential, defaults to /rno-g/"
+	@echo "  clean: Clean everything"
+
+
+# MCU 
+mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin
+
+PREFIX=/rno-g/
+
+install: 
+	install include/rno-g-control.h $(PREFIX)/include
+
+loader-build: 
+	$(MAKE) -C loader
+
+loader-install: 
+	$(MAKE) -C loader install
+
+loader-uninstall: 
+	$(MAKE) -C loader uninstall
+
+
 
 # Detect changes in the dependent files and recompile the respective object files.
 ifneq ($(MAKECMDGOALS),clean)
@@ -150,3 +185,7 @@ $(MKDIRS):
 
 clean:
 	rm -rf $(BUILD_DIR) 
+	make -C loader clean 
+
+uninstall: 
+	rm -f $(PREFIX)/include/rno-g-control.h

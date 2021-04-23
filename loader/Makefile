@@ -1,7 +1,8 @@
-CFLAGS=-Wall -O3 -g
+CFLAGS=-Wall -O3 -g -Wextra
 
 
 PROGS=rno-g-controller-loader rno-g-controller-extract
+PREFIX=/rno-g/
 
 all: $(PROGS) 
 
@@ -13,3 +14,12 @@ rno-g-controller-loader: rno-g-controller-loader.c ../shared/base64.c
 
 rno-g-controller-extract: rno-g-controller-extract.c ../shared/base64.c 
 	$(CC) -o $@  $(CFLAGS) -D_HOST_ $^ -I../
+
+install: 
+	install rno-g-controller-loader $(PREFIX)/bin
+	install rno-g-controller-extract $(PREFIX)/bin
+
+uninstall: 
+	rm -f $(PREFIX)/bin/rno-g-controller-loader
+	rm -f $(PREFIX)/bin/rno-g-controller-extract
+	
