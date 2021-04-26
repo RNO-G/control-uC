@@ -18,6 +18,7 @@
 #include "application/power.h" 
 #include "application/lowpower.h" 
 #include "application/commands.h" 
+#include "application/mode.h" 
 
 /** This is still mostly a placeholder right now while testing!!! 
  *
@@ -116,6 +117,8 @@ int main(void)
     wdt_enable(&INTERNAL_WATCHDOG); 
   } 
 
+  //figure out current mode
+  mode_init(); 
 
 
   /** The main control loop */ 
