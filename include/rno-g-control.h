@@ -27,10 +27,11 @@ typedef enum sbc_boot_mode
 /** The overarching mode of the station */ 
 typedef enum rno_g_station_mode 
 {
-  RNO_G_NORMAL_MODE = 0,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
-  RNO_G_SBC_ONLY_MODE = 1, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC will probably turn it back on) 
-  RNO_G_SBC_OFF_MODE = 2, // micro not in lower power mode, but SBC turned off. Can be used to forcibly cycle SBC. 
-  RNO_G_LOW_POWER_MODE=3, //Low power mode. Everything but micro is off. 
+  RNO_G_INIT = 0,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
+  RNO_G_NORMAL_MODE = 1,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
+  RNO_G_SBC_ONLY_MODE = 2, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC will probably turn it back on) 
+  RNO_G_SBC_OFF_MODE = 3, // micro not in lower power mode, but SBC turned off. Can be used to forcibly cycle SBC. 
+  RNO_G_LOW_POWER_MODE=4, //Low power mode. Everything but micro is off. 
 } rno_g_mode_t; 
 
 
@@ -45,8 +46,8 @@ typedef struct rno_g_power_state
   uint8_t lte_power : 1; 
   uint8_t radiant_power : 1; 
   uint8_t lowthresh_power : 1; 
-  uint8_t surf_amp_power : 6; 
   uint8_t dh_amp_power : 3; 
+  uint8_t surf_amp_power : 6; 
 } rno_g_power_state_t; 
 
 
@@ -82,7 +83,7 @@ typedef struct power_system_monitor
   uint8_t remote1_T_sixteenth_C : 4; 
   uint8_t remote2_T_sixteenth_C : 4; 
 
-} power_system_monitor_t;
+} rno_g_power_system_monitor_t;
 
 
 typedef enum lte_state
@@ -117,13 +118,13 @@ enum rno_g_msg_type
 typedef struct rno_g_msg_report
 {
   uint32_t when; 
-  rno_g_mode_t mode; 
-  rno_g_power_state_t power_state; 
+  uint8_t mode; 
+  uint8_t lte_state; 
+  uint8_t sbc_State; 
+  uint8_t sbc_boot_state; 
   rno_g_monitor_t analog_monitor; 
-  rno_g_power_state_t power_monitor; 
-  lte_state_t lte; 
-  sbc_state_t sbc; 
-  sbc_boot_mode_t sbc_boot; 
+  rno_g_power_system_monitor_t power_monitor; 
+  rno_g_power_state_t power_state; 
 }rno_g_msg_report_t; 
 
 typedef struct rno_g_msg_lte_stats

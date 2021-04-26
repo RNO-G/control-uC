@@ -226,7 +226,7 @@ int sbc_io_process()
       else if (!strcmp(in,"MONITOR"))
       {
         rno_g_monitor_t mon = last_mon;
-        power_system_monitor_t pwr = last_power;
+        rno_g_power_system_monitor_t pwr = last_power;
         printf("#MONITOR: analog: { when: %u, temp: %d.%02u C, i_surf3V: [%hu,%hu,%hu,%hu,%hu,%hu] mA, i_down3v: [%hu,%hu,%hu] mA, i_sbc5v: %hu, i_radiant: %hu mA, i_lt: %hu mA}\r\n", 
             mon.when, mon.temp_cC/100, abs(mon.temp_cC) % 100, mon.i_surf3v[0],  mon.i_surf3v[1],  mon.i_surf3v[2], mon.i_surf3v[3],  mon.i_surf3v[4],  mon.i_surf3v[5], 
             mon.i_down3v[0], mon.i_down3v[1], mon.i_down3v[2], mon.i_sbc5v, mon.i_5v[0], mon.i_5v[1]); 

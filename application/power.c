@@ -150,7 +150,7 @@ void update_temps_if_ready()
   }
 }
 
-int power_monitor_fill(power_system_monitor_t * state) 
+int power_monitor_fill(rno_g_power_system_monitor_t * state) 
 {
   //check to make sure we're not busy 
   update_ltc_if_ready();
