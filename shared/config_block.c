@@ -27,7 +27,8 @@ void default_init_app_cfg(application_cfg_t * ac)
    {
      .wanted_state = RNO_G_NORMAL_MODE, 
      .station_number = INITIAL_STATION_NUMBER, 
-     .gps_offset = 18
+     .gps_offset = 18,
+     .sbc_boot_mode = SBC_BOOT_INTERNAL 
    }; 
 
   *ac = dflt; 

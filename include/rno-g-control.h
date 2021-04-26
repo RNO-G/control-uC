@@ -32,6 +32,7 @@ typedef enum rno_g_station_mode
   RNO_G_SBC_ONLY_MODE = 2, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC will probably turn it back on) 
   RNO_G_SBC_OFF_MODE = 3, // micro not in lower power mode, but SBC turned off. Can be used to forcibly cycle SBC. 
   RNO_G_LOW_POWER_MODE=4, //Low power mode. Everything but micro is off. 
+  RNO_G_NOT_A_MODE = 5 // used for range check
 } rno_g_mode_t; 
 
 
@@ -165,12 +166,14 @@ typedef uint8_t rno_g_cmd_type_t;   // note that 0 and 224-255 are reserved for 
 
 enum rno_g_cmd_type
 {
+  RNO_G_CMD_TOO_SMALL = 0, // 
   RNO_G_CMD_SET_MODE = 1, 
   RNO_G_CMD_REPORT=2, 
   RNO_G_CMD_LTE_STATS=3,
   RNO_G_CMD_LORA_STATS=4,
   RNO_G_CMD_LORA_TIMESYNC=5,
-  RNO_G_CMD_SET_GPS_SECS_OFFSET=6
+  RNO_G_CMD_SET_GPS_SECS_OFFSET=6, 
+  RNO_G_CMD_TOO_LARGE = 7
 } ; 
 
 /* Sets the running mode */ 

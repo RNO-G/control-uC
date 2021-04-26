@@ -56,6 +56,7 @@ typedef struct application_cfg
   uint16_t station_number; 
   int8_t gps_offset; 
   rno_g_mode_t wanted_state; 
+  sbc_boot_mode_t sbc_boot_mode; 
 } application_cfg_t; 
 
 typedef struct config_block

@@ -31,14 +31,9 @@ static sbc_state_t state;
 
 void sbc_init()
 {
-#ifndef _DEVBOARD_
-  //figure out if we're on or not 
   i2c_gpio_expander_t i2c_gpio; 
   get_gpio_expander_state(&i2c_gpio,1); //this must be called after i2cbus_init, so we'll have a value; 
   state = i2c_gpio.sbc ? SBC_ON : SBC_OFF; 
-#else
-  state = SBC_ON; 
-#endif
 }
 
 
