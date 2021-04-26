@@ -1,49 +1,7 @@
 /////////////////////////////////////////////////////////
-///  Commands   
+/// RNO-G Microcontroller Commands  Interface
 //
 ////////////////////////////////////////////////////////
-
-
-
-The uC can get commands from a few different sources:
-
- - LoRaWAN packets (most common) 
- - Over SBC UART
- - Over LTE (maybe eventually) 
-
-A command consists of an opcode, flags, counter,  and a payload. 
-
-The opcode, flags, and counter are each one byte, and the payload is a
-variable number of bytes, depending on the opcode. The opcodes are summarized 
-here: 
-
-
-Table 1:  Brief description of opcodes
-
-Opcode          |  Byte     |   Payload Bytes  |  Brief Description
--------------------------------------------------------------------------------
-REPORT          |  0xca     |   4              |  Send status report, asap
-SET_PWR_STATE   |  0x0f     |   4              |  Set the board power state
-SBC_BOOT        |  0xb0     |   1              |  Change SBC Boot options
-SBC_CMD         |  0xbc     |   200            |  Send Command to SBC
-
-
-The flags byte is (from LSB to MSB): 
-
-0,1  :  Message source (01 = LoraWan, 10 = SBC, 11 = LTE) 
-2    : 
-3    : 
-
-
-opcode REPORT: 0xca 
-  
-    Instructs 
-
-
-
-
-  
- 
 
 
 
