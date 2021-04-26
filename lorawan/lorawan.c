@@ -400,6 +400,7 @@ static void JoinNetwork( void )
 #if LORAWAN_PRINT_DEBUG
       printf( "#LORA: ###### ===== JOINING ==== ######\r\n" );
 #endif 
+      printf("#LORA: Joining...\r\n"); 
       DeviceState = DEVICE_STATE_SLEEP;
   } else 
   {  
@@ -929,6 +930,8 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
         {
             if( mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
             {
+              printf("#LORA: Joined!\r\n"); 
+
 #if LORAWAN_PRINT_DEBUG
                 MibRequestConfirm_t mibGet;
                 printf( "###### ===== JOINED ==== ######\r\n" );
@@ -1080,6 +1083,11 @@ int lorawan_init(int initial)
 #endif
      return status; 
     }
+  }
+  else
+  {
+    //reset the eui so we recreate it properly , skipping the IEE_OUI
+    for (unsigned i = 3; i < sizeof(devEui); i++) devEui[i] = 0; 
   }
 
   DeviceState = DEVICE_STATE_RESTORE;

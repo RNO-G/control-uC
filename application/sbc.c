@@ -31,14 +31,9 @@ static sbc_state_t state;
 
 void sbc_init()
 {
-#ifndef _DEVBOARD_
-  //figure out if we're on or not 
   i2c_gpio_expander_t i2c_gpio; 
   get_gpio_expander_state(&i2c_gpio,1); //this must be called after i2cbus_init, so we'll have a value; 
   state = i2c_gpio.sbc ? SBC_ON : SBC_OFF; 
-#else
-  state = SBC_ON; 
-#endif
 }
 
 
@@ -226,11 +221,11 @@ int sbc_io_process()
       else if (!strcmp(in,"MONITOR"))
       {
         rno_g_monitor_t mon = last_mon;
-        power_system_monitor_t pwr = last_power;
+        rno_g_power_system_monitor_t pwr = last_power;
         printf("#MONITOR: analog: { when: %u, temp: %d.%02u C, i_surf3V: [%hu,%hu,%hu,%hu,%hu,%hu] mA, i_down3v: [%hu,%hu,%hu] mA, i_sbc5v: %hu, i_radiant: %hu mA, i_lt: %hu mA}\r\n", 
             mon.when, mon.temp_cC/100, abs(mon.temp_cC) % 100, mon.i_surf3v[0],  mon.i_surf3v[1],  mon.i_surf3v[2], mon.i_surf3v[3],  mon.i_surf3v[4],  mon.i_surf3v[5], 
             mon.i_down3v[0], mon.i_down3v[1], mon.i_down3v[2], mon.i_sbc5v, mon.i_5v[0], mon.i_5v[1]); 
-        printf("#MONITOR: power: { when: %u, BAT_V: %d.%02u V, BAT_I: %d mA, PV_V: %d.%02d V, PV_I: %d mA}\r\n", 
+        printf("#MONITOR: power: { when: %u, PV_V: %d.%02u V, PV_I: %d mA, BAT_V: %d.%02d V, BAT_I: %d mA}\r\n", 
                 pwr.when_power,
                 pwr.PVv_cV/100, pwr.PVv_cV % 100, pwr.PVi_mA, 
                 pwr.BATv_cV/100, pwr.BATv_cV % 100, pwr.BATi_mA) ;

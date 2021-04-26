@@ -6,7 +6,7 @@
 
 int power_monitor_init(); 
 
-int power_monitor_fill(power_system_monitor_t * state); 
+int power_monitor_fill(rno_g_power_system_monitor_t * state); 
 
 
 /** schedules a read of the power system  */ 

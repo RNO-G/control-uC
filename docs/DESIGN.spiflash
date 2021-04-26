@@ -5,12 +5,12 @@ These alternate versions can be configured to be written to the main ROM and
 can also be configured to automatically be done so (with a specified priority
 order) in the event of too many early resets. 
 
-Our flash chip is 1024 kB. The ROM is 256 kB, with 8 kB to be used by the
-bootloader.  This implies that the maximum application size is 248 kB. This
-leaves 32 kB at the beginning that can be used by the config block. 
+Our flash chip is 1024 kB. The ROM is 256 kB, with 16 kB to be used by the
+bootloader (bloated because implemented with ASF4).  This implies that the maximum application size is 240 kB. This
+leaves 64 kB at the beginning that can be used by the config block. 
 
 The config block doesn't need all that space, so wear leveling is implemented
-on the first 32 kB where there are 8 "slots" for the config block to be and the
+on the first 64 kB where there are 16 "slots" for the config block to be and the
 rest will be empty. This slot size is driven by the 4 kB minimum sector erase
 size. 
 
