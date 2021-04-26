@@ -400,6 +400,7 @@ static void JoinNetwork( void )
 #if LORAWAN_PRINT_DEBUG
       printf( "#LORA: ###### ===== JOINING ==== ######\r\n" );
 #endif 
+      printf("#LORA: Joining...\r\n"); 
       DeviceState = DEVICE_STATE_SLEEP;
   } else 
   {  
@@ -923,6 +924,8 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
         {
             if( mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
             {
+              printf("#LORA: Joined!\r\n"); 
+
 #if LORAWAN_PRINT_DEBUG
                 MibRequestConfirm_t mibGet;
                 printf( "###### ===== JOINED ==== ######\r\n" );
