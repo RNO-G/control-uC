@@ -222,9 +222,6 @@ int lte_process()
           }
           else if (i==3) 
           {
-            start = comma+1; 
-            comma = strchr(start,','); 
-            *comma =0; 
             if (comma == start) 
             {
               lte_stats.neg_rsrq_x10=255; 
@@ -239,11 +236,11 @@ int lte_process()
           }
         }
       }
+      async_tokenized_buffer_discard(&lte_io); 
     }
   }
 
   //check for rfstats 
-
 
 
   icall++; 
