@@ -17,6 +17,7 @@
 #include "application/i2cbus.h" 
 #include "application/power.h" 
 #include "application/lowpower.h" 
+#include "application/report.h" 
 #include "application/commands.h" 
 #include "application/mode.h" 
 #include "application/reset.h" 
@@ -156,21 +157,7 @@ int main(void)
         lte_turn_on(0); 
       }
 
-      /// See if we need to do anything
-      switch (nticks & 0x1fff)
-      {
-        case 0: 
-          if (nticks > 0)
-          {
-            power_monitor_schedule(); 
-          }
-          monitor_fill(&last_mon,20); 
-         break; 
-        case 300: 
-          power_monitor_fill(&last_power); 
-        default: 
-          break; 
-      }
+      report_process(); 
     }
 
 
@@ -213,9 +200,14 @@ int main(void)
       }
 
       //Let's testing sending something 
-      if ((nticks & 0x2fff) == 0 && lorawan_state() == LORAWAN_READY) 
+      if ((nticks & ABOUT_A_MINUTE) == 0 && lorawan_state() == LORAWAN_READY) 
       {
-        lorawan_tx_copy(sizeof(nticks), 2, (uint8_t*) &nticks,0); 
+        lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
+      }
+
+      if ((nticks & ABOUT_A_MINUTE) == ABOUT_10_SECONDS && lorawan_state() == LORAWAN_READY) 
+      {
+        lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
       }
 
     }

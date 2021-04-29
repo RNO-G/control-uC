@@ -15,6 +15,7 @@
 #include "linker/map.h"
 #include "application/power.h" 
 #include "application/monitors.h" 
+#include "application/report.h" 
 #include "lorawan/lorawan.h" 
 
 //these define the maximum line length! 
@@ -220,8 +221,10 @@ int sbc_io_process()
       }
       else if (!strcmp(in,"MONITOR"))
       {
-        rno_g_monitor_t mon = last_mon;
-        rno_g_power_system_monitor_t pwr = last_power;
+        const rno_g_report_t *report = report_get(); 
+        rno_g_monitor_t mon = report->analog_monitor;
+        rno_g_power_system_monitor_t pwr = report->power_monitor;
+        rno_g_power_state_t st = report->power_state; 
         printf("#MONITOR: analog: { when: %u, temp: %d.%02u C, i_surf3V: [%hu,%hu,%hu,%hu,%hu,%hu] mA, i_down3v: [%hu,%hu,%hu] mA, i_sbc5v: %hu, i_radiant: %hu mA, i_lt: %hu mA}\r\n", 
             mon.when, mon.temp_cC/100, abs(mon.temp_cC) % 100, mon.i_surf3v[0],  mon.i_surf3v[1],  mon.i_surf3v[2], mon.i_surf3v[3],  mon.i_surf3v[4],  mon.i_surf3v[5], 
             mon.i_down3v[0], mon.i_down3v[1], mon.i_down3v[2], mon.i_sbc5v, mon.i_5v[0], mon.i_5v[1]); 
@@ -237,6 +240,8 @@ int sbc_io_process()
                 pwr.local_T_C, sixteenths[pwr.local_T_sixteenth_C], 
                 pwr.remote1_T_C, sixteenths[pwr.remote1_T_sixteenth_C], 
                 pwr.remote2_T_C, sixteenths[pwr.remote2_T_sixteenth_C]);  
+         printf("#MONITOR: power_state: { low_power: %d, sbc_power: %d, lte_power: %d, radiant_power: %d, lowthresh_power: %d, dh_amp_power: %x, surf_amp_power: %x}\r\n", 
+                 st.low_power_mode, st.sbc_power, st.lte_power, st.radiant_power, st.lowthresh_power, st.dh_amp_power, st.surf_amp_power); 
 
          valid=1; 
       }
@@ -244,9 +249,8 @@ int sbc_io_process()
       {
         int navg = 10; 
         parse_int(in + sizeof("MONITOR-SCHED"),0,&navg); 
-        power_monitor_schedule(); 
         printf("#MONITOR-SCHED %d\r\n",navg); 
-        monitor_fill(&last_mon,navg); 
+        report_schedule(navg); 
         valid=1; 
       }
       else if (prefix_matches(in,"I2C-WRITE"))
