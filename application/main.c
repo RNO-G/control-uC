@@ -38,7 +38,8 @@ static volatile int n_nmi;
 void HardFault_Handler() 
 {
   get_shared_memory()->crash_reason = CRASH_HARDFAULT; 
-  reset(10); 
+  while(1) {;}
+  reset(0); 
 }
 
 void NMI_Handler(void) 
