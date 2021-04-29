@@ -88,6 +88,7 @@ int main(void)
   if (get_shared_memory()->boot_option == BOOT_BOOTLOADER)
   {
     must_run_bootloader = 1; 
+    shm->boot_option = 0; 
   }
   //is the bootloader enable gpio on? 
 //  else if ( gpio_get_pin_level(GPIO0))//TODO pick correct pin
