@@ -300,6 +300,35 @@ static uint32_t TxDutyCycleTime;
 #define APP_TX_DUTYCYCLE                            5000
 //Defines a random delay for application data transmission duty cycle. 1s, value in [ms].
 #define APP_TX_DUTYCYCLE_RND                        1000
+// MAC status strings
+static const char* MacStatusStrings[] =
+{
+    "OK",                            // LORAMAC_STATUS_OK
+    "Busy",                          // LORAMAC_STATUS_BUSY
+    "Service unknown",               // LORAMAC_STATUS_SERVICE_UNKNOWN
+    "Parameter invalid",             // LORAMAC_STATUS_PARAMETER_INVALID
+    "Frequency invalid",             // LORAMAC_STATUS_FREQUENCY_INVALID
+    "Datarate invalid",              // LORAMAC_STATUS_DATARATE_INVALID
+    "Frequency or datarate invalid", // LORAMAC_STATUS_FREQ_AND_DR_INVALID
+    "No network joined",             // LORAMAC_STATUS_NO_NETWORK_JOINED
+    "Length error",                  // LORAMAC_STATUS_LENGTH_ERROR
+    "Region not supported",          // LORAMAC_STATUS_REGION_NOT_SUPPORTED
+    "Skipped APP data",              // LORAMAC_STATUS_SKIPPED_APP_DATA
+    "Duty-cycle restricted",         // LORAMAC_STATUS_DUTYCYCLE_RESTRICTED
+    "No channel found",              // LORAMAC_STATUS_NO_CHANNEL_FOUND
+    "No free channel found",         // LORAMAC_STATUS_NO_FREE_CHANNEL_FOUND
+    "Busy beacon reserved time",     // LORAMAC_STATUS_BUSY_BEACON_RESERVED_TIME
+    "Busy ping-slot window time",    // LORAMAC_STATUS_BUSY_PING_SLOT_WINDOW_TIME
+    "Busy uplink collision",         // LORAMAC_STATUS_BUSY_UPLINK_COLLISION
+    "Crypto error",                  // LORAMAC_STATUS_CRYPTO_ERROR
+    "FCnt handler error",            // LORAMAC_STATUS_FCNT_HANDLER_ERROR
+    "MAC command error",             // LORAMAC_STATUS_MAC_COMMAD_ERROR
+    "ClassB error",                  // LORAMAC_STATUS_CLASS_B_ERROR
+    "Confirm queue error",           // LORAMAC_STATUS_CONFIRM_QUEUE_ERROR
+    "Multicast group undefined",     // LORAMAC_STATUS_MC_GROUP_UNDEFINED
+    "Unknown error",                 // LORAMAC_STATUS_ERROR
+};
+
 
 #if LORAWAN_PRINT_DEBUG
 #include "lorawan_dbg.h"
@@ -442,10 +471,7 @@ static bool SendFrame( void ) {
 
   LoRaMacStatus_t cur_status = LoRaMacQueryTxPossible( buffer_length, &txInfo);
   if( cur_status != LORAMAC_STATUS_OK ) {
-      printf("#LORA: Sending empty Data, Loramac didn't return status ok. ");
-#if LORAWAN_PRINT_DEBUG
-      printf( "STATUS      : %s\r\n", MacStatusStrings[cur_status] );
-#endif 
+      printf("#LORA: Sending empty Data, Loramac returned status %s.\r\n ", MacStatusStrings[cur_status] );
       
       // Send empty frame in order to flush MAC commands
       mcpsReq.Type = MCPS_UNCONFIRMED;
