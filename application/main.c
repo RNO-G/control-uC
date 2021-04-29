@@ -17,8 +17,10 @@
 #include "application/i2cbus.h" 
 #include "application/power.h" 
 #include "application/lowpower.h" 
+#include "application/report.h" 
 #include "application/commands.h" 
 #include "application/mode.h" 
+#include "application/reset.h" 
 
 /** This is still mostly a placeholder right now while testing!!! 
  *
@@ -33,9 +35,11 @@ static volatile int n_interrupts;
 static volatile int n_nmi; 
 
 
-rno_g_monitor_t last_mon = {0}; 
-rno_g_power_system_monitor_t last_power = {0}; 
-
+void HardFault_Handler() 
+{
+  get_shared_memory()->crash_reason = CRASH_HARDFAULT; 
+  reset(10); 
+}
 
 void NMI_Handler(void) 
 {
@@ -66,14 +70,13 @@ int main(void)
   //persist previous state
   get_gpio_expander_state(0,0); 
 
-  /** Initial state: SBC on (for now...) */ 
-  i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
-  set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
-
-  sbc_init(); 
-
   /* Initialize SPI flash */ 
   spi_flash_init(); 
+
+  /** Initialize ADC monitors */ 
+  monitor_init(); 
+ 
+  sbc_init(); 
 
 
   /* Set up an interrupt from the SBC*/ 
@@ -91,6 +94,11 @@ int main(void)
 
 
   printf("#INFO: BOOTED! Station: %d, version: %s\r\n", cfg->app_cfg.station_number, APP_VERSION); 
+  if (get_shared_memory()->crash_reason)
+  {
+    printf("#WARNING: crash-%d\r\n", get_shared_memory()->crash_reason); 
+    get_shared_memory()->crash_reason = CRASH_UNSET; 
+  }
 
   //enable the calendar
   calendar_enable(&CALENDAR); 
@@ -100,10 +108,7 @@ int main(void)
   lorawan_init(1); 
 
 
-  /** Initialize ADC monitors */ 
-
-  monitor_init(); 
-   
+  
   /** Initialize power system monitors */ 
   power_monitor_init(); 
 
@@ -143,26 +148,12 @@ int main(void)
       // Service LTE (this does nothing for now) 
       lte_process(); 
      
-      if (LTE_TURNON_NTICKS > 0  && nticks == LTE_TURNON_NTICKS) 
+      if (nticks >= MODE_CHANGE_MINTICKS) 
       {
-        lte_turn_on(0); 
+        (mode_set(config_block()->app_cfg.wanted_state)); 
       }
 
-      /// See if we need to do anything
-      switch (nticks & 0x1fff)
-      {
-        case 0: 
-          if (nticks > 0)
-          {
-            power_monitor_schedule(); 
-          }
-          monitor_fill(&last_mon,20); 
-         break; 
-        case 300: 
-          power_monitor_fill(&last_power); 
-        default: 
-          break; 
-      }
+      report_process(); 
     }
 
 
@@ -205,9 +196,14 @@ int main(void)
       }
 
       //Let's testing sending something 
-      if ((nticks & 0x2fff) == 0 && lorawan_state() == LORAWAN_READY) 
+      if ((nticks & ABOUT_A_MINUTE) == ABOUT_10_SECONDS && lorawan_state() == LORAWAN_READY) 
       {
-        lorawan_tx_copy(sizeof(nticks), 2, (uint8_t*) &nticks,0); 
+        lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
+      }
+
+      if ((nticks & ABOUT_A_MINUTE) == 0 && lorawan_state() == LORAWAN_READY) 
+      {
+        lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
       }
 
     }

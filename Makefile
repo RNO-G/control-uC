@@ -47,7 +47,7 @@ BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 APP_OBJS=$(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o monitors.o power.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o time.o reset.o)
-APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, mode.o lowpower.o commands.o)
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, mode.o lowpower.o commands.o report.o)
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
 

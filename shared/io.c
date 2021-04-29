@@ -217,7 +217,11 @@ int d_write(int d, int n, const uint8_t * data)
 
   int i = d-1; 
 
-  while (n > 0 && tx_in_progress[d] && ((write_buf_end[i] + 1) & 0xff) == write_buf_start[i]); 
+  int iwait = 0;
+  while (n > 0 && tx_in_progress[d] && ((write_buf_end[i] + 1) & 0xff) == write_buf_start[i])
+  {
+     if (iwait++ > 1000) break; 
+  }
 
   if (n > 4) 
   {

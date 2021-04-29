@@ -3,8 +3,6 @@
 
 #include "include/rno-g-control.h" 
 
-extern rno_g_monitor_t last_mon; 
-extern rno_g_power_system_monitor_t last_power; 
 
 
 void sbc_init(); 

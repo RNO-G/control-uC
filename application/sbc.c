@@ -13,8 +13,10 @@
 #include "application/i2cbus.h" 
 #include "shared/programmer.h" 
 #include "linker/map.h"
+#include "application/mode.h" 
 #include "application/power.h" 
 #include "application/monitors.h" 
+#include "application/report.h" 
 #include "lorawan/lorawan.h" 
 
 //these define the maximum line length! 
@@ -27,12 +29,24 @@ ASYNC_TOKENIZED_BUFFER(SBC_BUF_LEN, sbc,"\r\n", SBC_UART_DESC);
 ASYNC_TOKENIZED_BUFFER(SBC_CONSOLE_BUF_LEN, sbc_console,"\r\n", SBC_UART_CONSOLE_DESC); 
 #endif
 
+#define SBC_CURRENT_THRESH 100 
+
 static sbc_state_t state; 
 
 void sbc_init()
 {
   i2c_gpio_expander_t i2c_gpio; 
   get_gpio_expander_state(&i2c_gpio,1); //this must be called after i2cbus_init, so we'll have a value; 
+  report_schedule(50); 
+
+  //current is off but power is on, so we're probably out of sync... 
+  if (report_get()->analog_monitor.i_sbc5v < SBC_CURRENT_THRESH && i2c_gpio.sbc)  
+  {
+    i2c_gpio.sbc=0;
+    i2c_gpio_expander_t i2c_mask = {.sbc = 1} ; 
+    set_gpio_expander_state(i2c_gpio,i2c_mask); 
+  }
+
   state = i2c_gpio.sbc ? SBC_ON : SBC_OFF; 
 }
 
@@ -134,27 +148,54 @@ int sbc_io_process()
       else if (!strcmp(in, "LTE-ON"))
       {
         valid=1; 
-        lte_turn_on(0); 
-        printf("#LTE-ON: ACK \r\n"); 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-ON: MODE IS OFF \r\n"); 
+        }
+        else
+        {
+          lte_turn_on(0); 
+          printf("#LTE-ON: ACK \r\n"); 
+        }
       }
       else if (!strcmp(in, "LTE-ON!"))
       {
         valid=1; 
-        lte_turn_on(1); 
-        printf("#LTE-ON!: ACK \r\n"); 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-ON!: MODE IS OFF \r\n"); 
+        }
+        else {
+          lte_turn_on(1); 
+          printf("#LTE-ON!: ACK \r\n"); 
+        }
       }
  
       else if (!strcmp(in,"LTE-OFF"))
       {
         valid =1; 
-        lte_turn_off(0); 
-        printf("#LTE-OFF: ACK\r\n"); 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-OFF: MODE IS OFF \r\n"); 
+        }
+        else {
+          lte_turn_off(0); 
+          printf("#LTE-OFF: ACK\r\n"); 
+        }
       }
       else if (!strcmp(in,"LTE-OFF!"))
       {
         valid =1; 
-        lte_turn_off(1); 
-        printf("#LTE-OFF!: ACK\r\n"); 
+
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-OFF!: MODE IS OFF \r\n"); 
+        }
+        else
+        {
+          lte_turn_off(1); 
+          printf("#LTE-OFF!: ACK\r\n"); 
+        }
       }
  
       else if (!strcmp(in,"RADIANT-ON"))
@@ -220,8 +261,10 @@ int sbc_io_process()
       }
       else if (!strcmp(in,"MONITOR"))
       {
-        rno_g_monitor_t mon = last_mon;
-        rno_g_power_system_monitor_t pwr = last_power;
+        const rno_g_report_t *report = report_get(); 
+        rno_g_monitor_t mon = report->analog_monitor;
+        rno_g_power_system_monitor_t pwr = report->power_monitor;
+        rno_g_power_state_t st = report->power_state; 
         printf("#MONITOR: analog: { when: %u, temp: %d.%02u C, i_surf3V: [%hu,%hu,%hu,%hu,%hu,%hu] mA, i_down3v: [%hu,%hu,%hu] mA, i_sbc5v: %hu, i_radiant: %hu mA, i_lt: %hu mA}\r\n", 
             mon.when, mon.temp_cC/100, abs(mon.temp_cC) % 100, mon.i_surf3v[0],  mon.i_surf3v[1],  mon.i_surf3v[2], mon.i_surf3v[3],  mon.i_surf3v[4],  mon.i_surf3v[5], 
             mon.i_down3v[0], mon.i_down3v[1], mon.i_down3v[2], mon.i_sbc5v, mon.i_5v[0], mon.i_5v[1]); 
@@ -237,6 +280,8 @@ int sbc_io_process()
                 pwr.local_T_C, sixteenths[pwr.local_T_sixteenth_C], 
                 pwr.remote1_T_C, sixteenths[pwr.remote1_T_sixteenth_C], 
                 pwr.remote2_T_C, sixteenths[pwr.remote2_T_sixteenth_C]);  
+         printf("#MONITOR: power_state: { low_power: %d, sbc_power: %d, lte_power: %d, radiant_power: %d, lowthresh_power: %d, dh_amp_power: %x, surf_amp_power: %x}\r\n", 
+                 st.low_power_mode, st.sbc_power, st.lte_power, st.radiant_power, st.lowthresh_power, st.dh_amp_power, st.surf_amp_power); 
 
          valid=1; 
       }
@@ -244,9 +289,8 @@ int sbc_io_process()
       {
         int navg = 10; 
         parse_int(in + sizeof("MONITOR-SCHED"),0,&navg); 
-        power_monitor_schedule(); 
         printf("#MONITOR-SCHED %d\r\n",navg); 
-        monitor_fill(&last_mon,navg); 
+        report_schedule(navg); 
         valid=1; 
       }
       else if (prefix_matches(in,"I2C-WRITE"))
@@ -429,22 +473,41 @@ int sbc_io_process()
 
 sbc_state_t sbc_get_state() { return state; } 
 
+static void do_off(const struct timer_task * const task)
+{
+  (void) task;
+  i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
+  i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
+  set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
+  state = SBC_OFF; 
+}
+static struct timer_task sbc_off_task = { .cb  = do_off, .interval = 1000, .mode = TIMER_TASK_ONE_SHOT }; 
+
+static void do_turn_off(const struct timer_task * const task)
+{
+  (void) task;
+  gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_IN); 
+  timer_add_task(&SHARED_TIMER, &sbc_off_task);
+}
+
+static struct timer_task sbc_turn_off_task = { .cb  = do_turn_off, .interval = 20, .mode = TIMER_TASK_ONE_SHOT }; 
+
 __attribute__((section (".keepme")))
 int sbc_turn_off() 
 {
 
   if (state != SBC_ON) return -1; 
 
-  //we must hit the power for a bit
-  //
-  //
-  //
+  state = SBC_TURNING_OFF; 
 
-  //kill the power
-  i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
-  i2c_gpio_expander_t turn_off_sbc_mask = {.sbc=1}; 
-  set_gpio_expander_state(turn_off_sbc,turn_off_sbc_mask); 
-  state = SBC_OFF; 
+  // ONLY HIT POWER BUTTON IF CURRENT IS HIGH ENOUGH WE THINK THE SBC IS ACTUALLY ON... otherwise we'll turn it off then back on 
+  report_schedule(50); 
+  if (report_get()->analog_monitor.i_sbc5v > SBC_CURRENT_THRESH) 
+  {
+    gpio_set_pin_level(SBC_SOFT_RESET,0); 
+    gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT); 
+  }
+  timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
 
   return 0; 
 

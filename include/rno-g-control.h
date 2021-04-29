@@ -27,9 +27,9 @@ typedef enum sbc_boot_mode
 /** The overarching mode of the station */ 
 typedef enum rno_g_station_mode 
 {
-  RNO_G_INIT = 0,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
+  RNO_G_INIT = 0,  
   RNO_G_NORMAL_MODE = 1,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
-  RNO_G_SBC_ONLY_MODE = 2, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC will probably turn it back on) 
+  RNO_G_SBC_ONLY_MODE = 2, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC won't be able to turn it back on though!)) 
   RNO_G_SBC_OFF_MODE = 3, // micro not in lower power mode, but SBC turned off. Can be used to forcibly cycle SBC. 
   RNO_G_LOW_POWER_MODE=4, //Low power mode. Everything but micro is off. 
   RNO_G_NOT_A_MODE = 5 // used for range check
@@ -116,46 +116,48 @@ enum rno_g_msg_type
   RNO_G_MSG_LORA_STATS = 3 
 }; 
 
-typedef struct rno_g_msg_report
+typedef struct rno_g_report
 {
   uint32_t when; 
   uint8_t mode; 
   uint8_t lte_state; 
-  uint8_t sbc_State; 
-  uint8_t sbc_boot_state; 
+  uint8_t sbc_state; 
+  uint8_t sbc_boot_mode; 
   rno_g_monitor_t analog_monitor; 
   rno_g_power_system_monitor_t power_monitor; 
   rno_g_power_state_t power_state; 
-}rno_g_msg_report_t; 
+}rno_g_report_t; 
 
-typedef struct rno_g_msg_lte_stats
+typedef struct rno_g_lte_stats
 {
   uint32_t when;
-  uint16_t mcc;
-  uint16_t mnc; 
+  int16_t mcc;
+  int16_t mnc; 
   uint16_t earfcn; 
-  uint8_t rsrp; 
-  uint8_t rssi; 
-  uint8_t rsrq; 
+  int8_t rsrp; 
+  int8_t rssi; 
+  uint8_t neg_rsrq_x10; 
   uint8_t tx_power; 
-}rno_g_msg_lte_stats_t; 
+  uint8_t band : 6; 
+  uint8_t service_domain : 2; 
+}rno_g_lte_stats_t; 
 
 
-typedef struct rno_g_msg_lora_stats
+typedef struct rno_g_lora_stats
 {
   uint32_t when;
   uint32_t rx; 
   uint32_t tx; 
   uint32_t tx_dropped;
   uint32_t rx_dropped;
-} rno_g_msg_lora_stats_t; 
+} rno_g_lora_stats_t; 
 
 
 enum rno_g_msg_size
 {
-  RNO_G_MSG_REPORT_SIZE = sizeof(rno_g_msg_report_t),
-  RNO_G_MSG_LTE_STATS_SIZE = sizeof(rno_g_msg_lte_stats_t),
-  RNO_G_MSG_LORA_STATS_SIZE = sizeof(rno_g_msg_lora_stats_t)
+  RNO_G_REPORT_SIZE = sizeof(rno_g_report_t),
+  RNO_G_LTE_STATS_SIZE = sizeof(rno_g_lte_stats_t),
+  RNO_G_LORA_STATS_SIZE = sizeof(rno_g_lora_stats_t)
 }; 
 
 
