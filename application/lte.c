@@ -176,10 +176,12 @@ int lte_process()
       if (prefix_matches((char*) lte_io.buf,"#RFSTS:"))
       {
 
+        memset(&lte_stats,0,sizeof(lte_stats)); 
         lte_stats.when = get_time(); 
         //RFSTS: <PLMN>,<EARFCN>,<RSRP>,<RSSI>,<RSRQ>,<TAC>,<RAC>,[<TXPWR>],<DRX> ,<MM >,<RRC>,<CID>,<IMSI>,[<NetNameAsc>],<SD>,<ABND>,<T3402>,<T3412>
         // find first comma, make it null 
         char * comma = strchr((char*) lte_io.buf,','); 
+        if(!comma) continue; 
         *comma = 0; 
         //see if there is a quote 
         const char * start = strchr((char*) lte_io.buf,'"'); 
@@ -197,6 +199,7 @@ int lte_process()
           parse_int(start, &start, &mnc);
           lte_stats.mcc = mcc; 
           lte_stats.mnc = mnc; 
+          lte_stats.parsed_ok++; 
         }
 
         //now loop over the number of commas
@@ -204,6 +207,7 @@ int lte_process()
         {
           start = comma+1; 
           comma = strchr(start,','); 
+          if (!comma) break; 
           *comma =0; 
           if (i ==0 || i == 1 || i == 2 || i==6||i==13||i==14)
           {
@@ -211,6 +215,7 @@ int lte_process()
             if (comma!=start) 
             {
               parse_int(start,0,&val); 
+              lte_stats.parsed_ok++; 
             }
 
             if (i ==0) lte_stats.earfcn = val;
@@ -228,6 +233,7 @@ int lte_process()
             }
             else
             {
+              lte_stats.parsed_ok++; 
               int integ=0, frac=0;
               parse_int(start,&start,&integ); 
               parse_int(start+1,0,&frac); 

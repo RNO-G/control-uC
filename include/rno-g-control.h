@@ -140,6 +140,7 @@ typedef struct rno_g_lte_stats
   uint8_t tx_power; 
   uint8_t band : 6; 
   uint8_t service_domain : 2; 
+  uint8_t parsed_ok; 
 }rno_g_lte_stats_t; 
 
 
