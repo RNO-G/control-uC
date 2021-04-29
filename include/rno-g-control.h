@@ -27,9 +27,9 @@ typedef enum sbc_boot_mode
 /** The overarching mode of the station */ 
 typedef enum rno_g_station_mode 
 {
-  RNO_G_INIT = 0,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
+  RNO_G_INIT = 0,  
   RNO_G_NORMAL_MODE = 1,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
-  RNO_G_SBC_ONLY_MODE = 2, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC will probably turn it back on) 
+  RNO_G_SBC_ONLY_MODE = 2, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC won't be able to turn it back on though!)) 
   RNO_G_SBC_OFF_MODE = 3, // micro not in lower power mode, but SBC turned off. Can be used to forcibly cycle SBC. 
   RNO_G_LOW_POWER_MODE=4, //Low power mode. Everything but micro is off. 
   RNO_G_NOT_A_MODE = 5 // used for range check

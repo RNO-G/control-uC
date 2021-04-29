@@ -17,8 +17,7 @@
 
 #define APP_VERSION "Chicago.042921.1" 
 
-//temporary 
-#define LTE_TURNON_NTICKS 10000
+#define MODE_CHANGE_MINTICKS 100
 
 //seconds
 #define LOW_POWER_SLEEP_AMOUNT 60 

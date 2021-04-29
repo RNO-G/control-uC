@@ -13,6 +13,7 @@
 #include "application/i2cbus.h" 
 #include "shared/programmer.h" 
 #include "linker/map.h"
+#include "application/mode.h" 
 #include "application/power.h" 
 #include "application/monitors.h" 
 #include "application/report.h" 
@@ -135,27 +136,54 @@ int sbc_io_process()
       else if (!strcmp(in, "LTE-ON"))
       {
         valid=1; 
-        lte_turn_on(0); 
-        printf("#LTE-ON: ACK \r\n"); 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-ON: MODE IS OFF \r\n"); 
+        }
+        else
+        {
+          lte_turn_on(0); 
+          printf("#LTE-ON: ACK \r\n"); 
+        }
       }
       else if (!strcmp(in, "LTE-ON!"))
       {
         valid=1; 
-        lte_turn_on(1); 
-        printf("#LTE-ON!: ACK \r\n"); 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-ON!: MODE IS OFF \r\n"); 
+        }
+        else {
+          lte_turn_on(1); 
+          printf("#LTE-ON!: ACK \r\n"); 
+        }
       }
  
       else if (!strcmp(in,"LTE-OFF"))
       {
         valid =1; 
-        lte_turn_off(0); 
-        printf("#LTE-OFF: ACK\r\n"); 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-OFF: MODE IS OFF \r\n"); 
+        }
+        else {
+          lte_turn_off(0); 
+          printf("#LTE-OFF: ACK\r\n"); 
+        }
       }
       else if (!strcmp(in,"LTE-OFF!"))
       {
         valid =1; 
-        lte_turn_off(1); 
-        printf("#LTE-OFF!: ACK\r\n"); 
+
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-OFF!: MODE IS OFF \r\n"); 
+        }
+        else
+        {
+          lte_turn_off(1); 
+          printf("#LTE-OFF!: ACK\r\n"); 
+        }
       }
  
       else if (!strcmp(in,"RADIANT-ON"))

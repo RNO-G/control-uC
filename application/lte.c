@@ -7,6 +7,7 @@
 #include "application/time.h" 
 #include "config/config.h" 
 #include "include/rno-g-control.h" 
+#include "application/mode.h" 
 
 ASYNC_TOKENIZED_BUFFER(128, lte_io,"\r\n", LTE_UART_DESC); 
 
@@ -129,9 +130,14 @@ int lte_init()
 
 int lte_turn_on(int force)
 {
-  if (!force && lte_state != LTE_OFF) 
+  if (force!=1 && lte_state != LTE_OFF) 
   {
     return -1; 
+  }
+
+  if (force!=2 && mode_query()!= RNO_G_NORMAL_MODE)
+  {
+    return -2; 
   }
 
   gpio_set_pin_direction(LTE_REG_EN,GPIO_DIRECTION_OUT);

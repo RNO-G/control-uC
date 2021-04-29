@@ -34,11 +34,11 @@ void mode_init()
 
       if (lte == LTE_ON || lte == LTE_TURNING_ON)
       {
-        the_mode = RNO_G_SBC_ONLY_MODE; 
+        the_mode = RNO_G_NORMAL_MODE; 
       }
       else
       {
-        the_mode = RNO_G_NORMAL_MODE; 
+        the_mode = RNO_G_SBC_ONLY_MODE; 
       }
     }
   }
@@ -56,7 +56,7 @@ int mode_set(rno_g_mode_t mode)
   // Enter low power mode
   if (mode == RNO_G_LOW_POWER_MODE) 
   {
-    lte_turn_off(); 
+    lte_turn_off(0); 
     sbc_turn_off(); 
     low_power_mode_enter(); 
   }
@@ -66,13 +66,13 @@ int mode_set(rno_g_mode_t mode)
     {
       low_power_mode_exit(); 
       if (mode != RNO_G_SBC_OFF_MODE) sbc_turn_on(config_block()->app_cfg.sbc_boot_mode); 
-      if (mode == RNO_G_NORMAL_MODE) lte_turn_on(1); 
+      if (mode == RNO_G_NORMAL_MODE) lte_turn_on(2); //this will only turn on if it's not on, and override the mode check 
     }
 
     else if (the_mode == RNO_G_SBC_OFF_MODE) 
     {
       sbc_turn_on(config_block()->app_cfg.sbc_boot_mode);  //since we've already handled low power mode all other modes want the SBC On 
-      if (mode == RNO_G_NORMAL_MODE) lte_turn_on(0); 
+      if (mode == RNO_G_NORMAL_MODE) lte_turn_off(0); 
     }
 
     else if (mode == RNO_G_SBC_OFF_MODE) 
@@ -87,6 +87,8 @@ int mode_set(rno_g_mode_t mode)
   }
 
 
+  config_block()->app_cfg.wanted_state = mode; 
+  config_block_sync(); 
   the_mode = mode; 
   return 0; 
 }

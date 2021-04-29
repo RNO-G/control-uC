@@ -152,9 +152,9 @@ int main(void)
       // Service LTE (this does nothing for now) 
       lte_process(); 
      
-      if (LTE_TURNON_NTICKS > 0  && nticks == LTE_TURNON_NTICKS) 
+      if (nticks >= MODE_CHANGE_MINTICKS) 
       {
-        lte_turn_on(0); 
+        (mode_set(config_block()->app_cfg.wanted_state)); 
       }
 
       report_process(); 
@@ -200,12 +200,12 @@ int main(void)
       }
 
       //Let's testing sending something 
-      if ((nticks & ABOUT_A_MINUTE) == 0 && lorawan_state() == LORAWAN_READY) 
+      if ((nticks & ABOUT_A_MINUTE) == ABOUT_10_SECONDS && lorawan_state() == LORAWAN_READY) 
       {
         lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
       }
 
-      if ((nticks & ABOUT_A_MINUTE) == ABOUT_10_SECONDS && lorawan_state() == LORAWAN_READY) 
+      if ((nticks & ABOUT_A_MINUTE) == 0 && lorawan_state() == LORAWAN_READY) 
       {
         lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
       }
