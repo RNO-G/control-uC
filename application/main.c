@@ -70,10 +70,13 @@ int main(void)
   //persist previous state
   get_gpio_expander_state(0,0); 
 
-  sbc_init(); 
-
   /* Initialize SPI flash */ 
   spi_flash_init(); 
+
+  /** Initialize ADC monitors */ 
+  monitor_init(); 
+ 
+  sbc_init(); 
 
 
   /* Set up an interrupt from the SBC*/ 
@@ -105,10 +108,7 @@ int main(void)
   lorawan_init(1); 
 
 
-  /** Initialize ADC monitors */ 
-
-  monitor_init(); 
-   
+  
   /** Initialize power system monitors */ 
   power_monitor_init(); 
 

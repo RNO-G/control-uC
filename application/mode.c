@@ -72,7 +72,7 @@ int mode_set(rno_g_mode_t mode)
     else if (the_mode == RNO_G_SBC_OFF_MODE) 
     {
       sbc_turn_on(config_block()->app_cfg.sbc_boot_mode);  //since we've already handled low power mode all other modes want the SBC On 
-      if (mode == RNO_G_NORMAL_MODE) lte_turn_off(0); 
+      if (mode == RNO_G_NORMAL_MODE) lte_turn_on(2); 
     }
 
     else if (mode == RNO_G_SBC_OFF_MODE) 
@@ -82,7 +82,7 @@ int mode_set(rno_g_mode_t mode)
     }
     else if (mode == RNO_G_SBC_ONLY_MODE) 
     {
-      lte_turn_off(0); //might already be off but that's ok. 
+      lte_turn_on(2); 
     }
   }
 

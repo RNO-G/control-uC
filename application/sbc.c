@@ -29,12 +29,24 @@ ASYNC_TOKENIZED_BUFFER(SBC_BUF_LEN, sbc,"\r\n", SBC_UART_DESC);
 ASYNC_TOKENIZED_BUFFER(SBC_CONSOLE_BUF_LEN, sbc_console,"\r\n", SBC_UART_CONSOLE_DESC); 
 #endif
 
+#define SBC_CURRENT_THRESH 100 
+
 static sbc_state_t state; 
 
 void sbc_init()
 {
   i2c_gpio_expander_t i2c_gpio; 
   get_gpio_expander_state(&i2c_gpio,1); //this must be called after i2cbus_init, so we'll have a value; 
+  report_schedule(50); 
+
+  //current is off but power is on, so we're probably out of sync... 
+  if (report_get()->analog_monitor.i_sbc5v < SBC_CURRENT_THRESH && i2c_gpio.sbc)  
+  {
+    i2c_gpio.sbc=0;
+    i2c_gpio_expander_t i2c_mask = {.sbc = 1} ; 
+    set_gpio_expander_state(i2c_gpio,i2c_mask); 
+  }
+
   state = i2c_gpio.sbc ? SBC_ON : SBC_OFF; 
 }
 
@@ -487,8 +499,14 @@ int sbc_turn_off()
   if (state != SBC_ON) return -1; 
 
   state = SBC_TURNING_OFF; 
-  gpio_set_pin_level(SBC_SOFT_RESET,0); 
-  gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT); 
+
+  // ONLY HIT POWER BUTTON IF CURRENT IS HIGH ENOUGH WE THINK THE SBC IS ACTUALLY ON... otherwise we'll turn it off then back on 
+  report_schedule(50); 
+  if (report_get()->analog_monitor.i_sbc5v > SBC_CURRENT_THRESH) 
+  {
+    gpio_set_pin_level(SBC_SOFT_RESET,0); 
+    gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT); 
+  }
   timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
 
   return 0; 
