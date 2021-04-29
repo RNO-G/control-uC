@@ -35,7 +35,8 @@ typedef struct shared_memory
   int bootloader_done;  
 
   // might be filled by an interrupt handler if we're lucky . Null terminated. 
-  char crash_data[192]; 
+  char crash_data[188]; 
+  int ncrash; 
   int magic_end; //used to detect if we've retained values
 
 } shared_memory_t; 

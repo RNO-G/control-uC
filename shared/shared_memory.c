@@ -20,6 +20,7 @@ void init_shared_memory()
 
     shm->nresets = 0; 
     shm->nboots = 1; 
+    shm->ncrash = 0; 
     shm->crash_reason = CRASH_UNSET; 
     shm->boot_option = BOOT_ROM; 
     shm->crash_data[0] = 0; //null terminated 
