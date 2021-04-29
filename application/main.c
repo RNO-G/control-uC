@@ -19,6 +19,7 @@
 #include "application/lowpower.h" 
 #include "application/commands.h" 
 #include "application/mode.h" 
+#include "application/reset.h" 
 
 /** This is still mostly a placeholder right now while testing!!! 
  *
@@ -33,9 +34,11 @@ static volatile int n_interrupts;
 static volatile int n_nmi; 
 
 
-rno_g_monitor_t last_mon = {0}; 
-rno_g_power_system_monitor_t last_power = {0}; 
-
+void HardFault_Handler() 
+{
+  get_shared_memory()->crash_reason = CRASH_HARDFAULT; 
+  reset(10); 
+}
 
 void NMI_Handler(void) 
 {
@@ -91,6 +94,11 @@ int main(void)
 
 
   printf("#INFO: BOOTED! Station: %d, version: %s\r\n", cfg->app_cfg.station_number, APP_VERSION); 
+  if (get_shared_memory()->crash_reason)
+  {
+    printf("#WARNING: crash-%d\r\n", get_shared_memory()->crash_reason); 
+    get_shared_memory()->crash_reason = CRASH_UNSET; 
+  }
 
   //enable the calendar
   calendar_enable(&CALENDAR); 

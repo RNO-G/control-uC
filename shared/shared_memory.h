@@ -17,7 +17,8 @@ typedef struct shared_memory
   enum 
   {
     CRASH_UNSET = 0, 
-    CRASH_WATCHDOG_EXPIRED = 1 //set by watchdog interrupt 
+    CRASH_WATCHDOG_EXPIRED = 1, //set by watchdog interrupt 
+    CRASH_HARDFAULT = 2
   } crash_reason; //surely we can think of more things!
 
   // If application sets this to non-ROM then reset
