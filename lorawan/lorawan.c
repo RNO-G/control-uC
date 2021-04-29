@@ -2,6 +2,7 @@
 #include "config/lorawan_config.h" 
 
 #include "shared/printf.h" 
+#include "application/time.h" 
 
 
 #include "lorawan.h" 
@@ -400,7 +401,7 @@ static void JoinNetwork( void )
 #if LORAWAN_PRINT_DEBUG
       printf( "#LORA: ###### ===== JOINING ==== ######\r\n" );
 #endif 
-      printf("#LORA: Joining...\r\n"); 
+      printf("#LORA: Joining... (uptime: %d)\r\n", uptime()); 
       DeviceState = DEVICE_STATE_SLEEP;
   } else 
   {  
@@ -930,7 +931,7 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
         {
             if( mlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
             {
-              printf("#LORA: Joined!\r\n"); 
+              printf("#LORA: Joined! (uptime: %u)\r\n", uptime()); 
 
 #if LORAWAN_PRINT_DEBUG
                 MibRequestConfirm_t mibGet;
