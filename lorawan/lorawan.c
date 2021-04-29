@@ -552,6 +552,12 @@ static void OnTxNextPacketTimerEvent( void* context )
         NextTx = true;
       }
     }
+    else
+    {
+      DeviceState = DEVICE_STATE_RESTORE; 
+
+      printf("#LORA: OnTxNextPacketTimerEvent returned %d\n, restoring", status); 
+    }
 }
 
 
