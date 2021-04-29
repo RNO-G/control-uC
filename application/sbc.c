@@ -429,22 +429,35 @@ int sbc_io_process()
 
 sbc_state_t sbc_get_state() { return state; } 
 
+static void do_off(const struct timer_task * const task)
+{
+  (void) task;
+  i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
+  i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
+  set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
+  state = SBC_OFF; 
+}
+static struct timer_task sbc_off_task = { .cb  = do_off, .interval = 1000, .mode = TIMER_TASK_ONE_SHOT }; 
+
+static void do_turn_off(const struct timer_task * const task)
+{
+  (void) task;
+  gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_IN); 
+  timer_add_task(&SHARED_TIMER, &sbc_off_task);
+}
+
+static struct timer_task sbc_turn_off_task = { .cb  = do_turn_off, .interval = 20, .mode = TIMER_TASK_ONE_SHOT }; 
+
 __attribute__((section (".keepme")))
 int sbc_turn_off() 
 {
 
   if (state != SBC_ON) return -1; 
 
-  //we must hit the power for a bit
-  //
-  //
-  //
-
-  //kill the power
-  i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
-  i2c_gpio_expander_t turn_off_sbc_mask = {.sbc=1}; 
-  set_gpio_expander_state(turn_off_sbc,turn_off_sbc_mask); 
-  state = SBC_OFF; 
+  state = SBC_TURNING_OFF; 
+  gpio_set_pin_level(SBC_SOFT_RESET,0); 
+  gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT); 
+  timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
 
   return 0; 
 
