@@ -50,6 +50,10 @@ rno_g_mode_t mode_query()  { return the_mode; }
 int mode_set(rno_g_mode_t mode) 
 {
   if (the_mode == RNO_G_INIT) mode_init(); 
+  if (mode == RNO_G_INIT) 
+  {
+    return 0; //don't do anything in this case... wasn't initialized properly 
+  }
 
   if (the_mode == mode) return 0; 
 
