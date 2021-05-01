@@ -1,6 +1,11 @@
 #ifndef _RNO_G_CONTROL_H
 #define _RNO_G_CONTROL_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /** Structs describing state, commands etc. 
  *
  * this will be used both on and off the MCU, so it needs to only depend on standard stuff.
@@ -225,6 +230,10 @@ enum rno_g_cmd_size
 
 
 
+
+#ifdef __cplusplus
+}
+#endif 
 
 #endif
 
