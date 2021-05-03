@@ -170,6 +170,7 @@ int32_t _calendar_enable(struct calendar_dev *const dev)
 
 	/* Enable rtc */
 	hri_rtcmode0_set_CTRL_ENABLE_bit(dev->hw);
+	hri_rtcmode0_set_READREQ_RCONT_bit(dev->hw);
 
 	return ERR_NONE;
 }
@@ -198,6 +199,7 @@ int32_t _calendar_set_counter(struct calendar_dev *const dev, const uint32_t cou
 
 	/* Set current counter. */
 	hri_rtcmode0_write_COUNT_COUNT_bf(dev->hw, counter);
+	hri_rtcmode0_set_READREQ_RCONT_bit(dev->hw);
 
 	return ERR_NONE;
 }
@@ -228,6 +230,7 @@ int32_t _calendar_set_comp(struct calendar_dev *const dev, const uint32_t comp)
 
 	/* Set value into alarm register. */
 	hri_rtcmode0_write_COMP_COMP_bf(dev->hw, 0, comp);
+	hri_rtcmode0_set_READREQ_RCONT_bit(dev->hw);
 
 	return ERR_NONE;
 }

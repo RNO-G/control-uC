@@ -2394,6 +2394,7 @@ static inline void hri_rtc_set_READREQ_RCONT_bit(const void *const hw)
 {
 	RTC_CRITICAL_SECTION_ENTER();
 	((Rtc *)hw)->MODE0.READREQ.reg |= RTC_READREQ_RCONT;
+	((Rtc *)hw)->MODE0.READREQ.reg |= RTC_READREQ_RREQ;
 	RTC_CRITICAL_SECTION_LEAVE();
 }
 
