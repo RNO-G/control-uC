@@ -44,7 +44,7 @@ int lorawan_request_datetime();
 /** run the lorawan state machine for a bit 
  *  Returns  1 if we should inhibit sleeping 
  * */ 
-int lorawan_process(); 
+int lorawan_process(int up); 
 
 
 

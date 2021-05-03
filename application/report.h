@@ -3,7 +3,7 @@
 
 #include "include/rno-g-control.h"
 
-void report_process() ; 
+void report_process(int up) ; 
 void report_schedule(int navg); 
 const rno_g_report_t * report_get(); 
 

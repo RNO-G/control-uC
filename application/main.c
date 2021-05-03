@@ -131,6 +131,7 @@ int main(void)
 
 	while (1)
   {
+    int up = uptime(); 
     if (!low_power_mode) 
     {
 
@@ -147,20 +148,20 @@ int main(void)
       sbc_io_process();
 
       // Service LTE (this does nothing for now) 
-      lte_process(); 
+      lte_process(up); 
      
       if (nticks >= MODE_CHANGE_MINTICKS) 
       {
         (mode_set(config_block()->app_cfg.wanted_state)); 
       }
 
-      report_process(); 
+      report_process(up); 
     }
 
 
 
     // Service LoRaWAN 
-    lorawan_process(); 
+    lorawan_process(up); 
 
     //
     uint8_t lora_len, lora_port, *lora_bytes, lora_flags; 
@@ -196,14 +197,19 @@ int main(void)
        time_check+= (delay_in_secs*1000 / DELAY_MS) ;
       }
 
+      static int next_report = 10 ; 
+      static int next_lte= 30; 
       //Let's testing sending something 
-      if ((nticks & ABOUT_A_MINUTE) == ABOUT_10_SECONDS && lorawan_state() == LORAWAN_READY) 
+      if (up > next_report && lorawan_state() == LORAWAN_READY) 
       {
+        next_report = up+60; 
+        next_lte = up+30; //delay by 30 seconds relative to us! 
         lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
       }
 
-      if ((nticks & ABOUT_A_MINUTE) == 0 && lorawan_state() == LORAWAN_READY) 
+      if (up > next_lte &&  lorawan_state() == LORAWAN_READY) 
       {
+        next_lte+=60; 
         lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
       }
 
@@ -212,7 +218,12 @@ int main(void)
    
     if (ENABLE_WATCHDOG) 
     {
-      wdt_feed(&INTERNAL_WATCHDOG); 
+      static int last_feed = 0; 
+      if (up > last_feed+5) 
+      {
+        wdt_feed(&INTERNAL_WATCHDOG); 
+        last_feed=up; 
+      }
     }
 
     if (nticks==30) 

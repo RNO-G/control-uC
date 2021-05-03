@@ -156,18 +156,20 @@ int lte_turn_on(int force)
 static rno_g_lte_stats_t lte_stats; 
 
 
-int lte_process()
+int lte_process(int up)
 {
 
   static int icall = 0; 
 
 
-  //periodically check RFSTS
+  //periodically check RFSTS 
   if(lte_state == LTE_ON) 
   {
-    if(!(icall & ABOUT_10_SECONDS))
+    static int next_rfsts = 20; 
+    if( up > next_rfsts)
     {
       lte_request(LTE_RFSTS); 
+      next_rfsts +=10; 
     }
 
     while (async_tokenized_buffer_ready(&lte_io))

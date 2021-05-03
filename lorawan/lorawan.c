@@ -53,6 +53,7 @@ static uint8_t rx_flags[LORAWAN_MAX_TX_MESSAGES];
 static uint8_t rx_ports[LORAWAN_MAX_TX_MESSAGES]; 
 
 static volatile int joined = 0; 
+static int last_cycle_or_join =0; 
 
 struct msg_buffer 
 {
@@ -356,7 +357,7 @@ static bool ShouldSendLinkCheck(void)
 
 
 static bool should_request_time = 0; 
-static bool RequestTime(void) 
+static void RequestTime(void) 
 {
   //This sends a time request packet 
 
@@ -373,20 +374,16 @@ static bool RequestTime(void)
 #endif
  DeviceState = DEVICE_STATE_SLEEP;
 
- should_request_time=0;
 
  if (status == LORAMAC_STATUS_OK) 
  {
-   return 0; 
+   should_request_time=0;
  }
- else return 1; 
-
-
 }
 
 
 /** Send a link check packet */
-static bool LinkCheck (void) 
+static void LinkCheck (void) 
 {
 
   LoRaMacStatus_t status; 
@@ -401,12 +398,11 @@ static bool LinkCheck (void)
   printf( "STATUS      : %s\r\n", MacStatusStrings[status] );
 #endif
 
- DeviceState = DEVICE_STATE_SLEEP;
- if (status == LORAMAC_STATUS_OK) 
- {
-   return 0; 
- }
- return 1; 
+  if (status != LORAMAC_STATUS_OK) 
+  {
+    //force retry 
+    link_check_counter = LORAWAN_LINK_CHECK_INTERVAL+1; 
+  }
 }
 
 
@@ -430,7 +426,9 @@ static void JoinNetwork( void )
 #if LORAWAN_PRINT_DEBUG
       printf( "#LORA: ###### ===== JOINING ==== ######\r\n" );
 #endif 
-      printf("#LORA: Joining... (uptime: %d)\r\n", uptime()); 
+      int up = uptime(); 
+      last_cycle_or_join = up; 
+      printf("#LORA: Joining... (uptime: %d)\r\n", up); 
       DeviceState = DEVICE_STATE_SLEEP;
   } else 
   {  
@@ -454,13 +452,13 @@ static bool SendFrame( void ) {
     //do I need to send time? 
     if (should_request_time)
     {
-      return RequestTime(); 
+      RequestTime(); 
     }
 
     //we have nothing to send right now, consider sending a link check 
     else if (ShouldSendLinkCheck())
     {
-      return LinkCheck(); 
+      LinkCheck(); 
     }
     return 0; 
   }
@@ -565,8 +563,9 @@ static void OnTxNextPacketTimerEvent( void* context )
 
 
 
-int lorawan_process()
+int lorawan_process(int up)
 {
+  (void) up; 
 
     //check the interrupts
     int cant_sleep = 1; 
@@ -727,6 +726,7 @@ int lorawan_process()
         // Schedule next packet transmission
         TimerSetValue( &TxNextPacketTimer, TxDutyCycleTime );
         TimerStart( &TxNextPacketTimer );
+        last_cycle_or_join = up; 
         break;
       }
 
@@ -740,6 +740,12 @@ int lorawan_process()
           //BoardLowPowerHandler( ); // The MCU wakes up through events
         }
         CRITICAL_SECTION_END( );
+
+        if (up > last_cycle_or_join+60) 
+        {
+          printf("#LORA: slept too long  %d, %d?!?\r\n", up, last_cycle_or_join) ; 
+          OnTxNextPacketTimerEvent(NULL); 
+        }
         break;
       }
 

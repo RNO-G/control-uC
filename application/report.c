@@ -19,26 +19,33 @@ void report_schedule(int navg)
    monitor_fill(&report.analog_monitor,navg); 
 }
 
-void report_process() 
+void report_process(int up) 
 {
-  static int report_ticks =0; 
+  static uint32_t report_ticks =0; 
+  static int next_report = 5;
+  static uint32_t next_power_monitor_fill = 0; 
+  int power_mon_scheduled = 0;
+  
 
   /// See if we need to do anything
-  switch (report_ticks & ABOUT_10_SECONDS)
+  
+  if (up > next_report)  
   {
-    case 0: 
-      if (report_ticks > 0)
-      {
+    if (report_ticks > 0)
+    {
         power_monitor_schedule(); 
-      }
-      monitor_fill(&report.analog_monitor,20); 
-      break; 
-    case (300/DELAY_MS): 
-      power_monitor_fill(&report.power_monitor); 
-    default: 
-      break; 
+    }
+    monitor_fill(&report.analog_monitor,20); 
+    next_report+=10; 
+    next_power_monitor_fill = report_ticks+300/DELAY_MS; 
+    power_mon_scheduled = 1; 
   }
 
+  if (power_mon_scheduled && report_ticks >= next_power_monitor_fill) 
+  {
+      power_monitor_fill(&report.power_monitor); 
+      power_mon_scheduled = 0; 
+  }
 
   report_ticks++;
 }
