@@ -54,6 +54,7 @@ int i2c_enqueue( i2c_task_t * task);
 int i2c_detect(uint8_t start_addr, uint8_t end_addr, uint8_t * bitset); 
 
 
+void i2c_bus_deinit(); 
 int i2c_unstick(int ncycles); 
 
 #endif

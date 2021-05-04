@@ -24,7 +24,7 @@ void i2c_bus_init()
   init_i2c_devices(); 
 }
  
-static void i2c_bus_deinit()
+void i2c_bus_deinit()
 {
   i2c_m_sync_disable(&I2C); 
 }
