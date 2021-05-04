@@ -38,6 +38,7 @@ int16_t monitor(monitor_t what, int navg);
 int monitor_fill(rno_g_monitor_t * m, int navg); 
 
 int monitor_init(); 
+void monitor_deinit(); 
 
 
 
