@@ -25,6 +25,6 @@
 // about 10 seconds
 #define LOW_POWER_AWAKE_TICKS  8192   
 
-#define ENABLE_WATCHDOG 0 
+#define ENABLE_WATCHDOG 1 
 
 #endif

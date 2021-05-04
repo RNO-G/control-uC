@@ -375,6 +375,7 @@ static int spi_flash_read_config_block(config_block_t * config_block)
     return -2; 
   }
 
+  verify_app_cfg(&config_block->app_cfg); 
 
 
   spi_flash_deep_sleep(); 

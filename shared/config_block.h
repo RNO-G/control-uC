@@ -57,6 +57,10 @@ typedef struct application_cfg
   int8_t gps_offset; 
   rno_g_mode_t wanted_state; 
   sbc_boot_mode_t sbc_boot_mode; 
+  int report_interval; 
+  int report_interval_low_power_mode; 
+  int lte_stats_interval; 
+  int lora_stats_interval; 
 } application_cfg_t; 
 
 typedef struct config_block
@@ -66,6 +70,7 @@ typedef struct config_block
 } config_block_t; 
 
 void default_init_block(config_block_t * block); 
+void verify_app_cfg(application_cfg_t *ac); 
 void default_init_boot_cfg(bootloader_cfg_t * bc); 
 void default_init_app_cfg(application_cfg_t * ac); 
 
