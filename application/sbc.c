@@ -31,7 +31,7 @@ ASYNC_TOKENIZED_BUFFER(SBC_CONSOLE_BUF_LEN, sbc_console,"\r\n", SBC_UART_CONSOLE
 
 #define SBC_CURRENT_THRESH 100 
 
-static sbc_state_t state; 
+static sbc_state_t the_sbc_state; 
 
 void sbc_init()
 {
@@ -47,7 +47,9 @@ void sbc_init()
     set_gpio_expander_state(i2c_gpio,i2c_mask); 
   }
 
-  state = i2c_gpio.sbc ? SBC_ON : SBC_OFF; 
+  the_sbc_state = i2c_gpio.sbc ? SBC_ON : SBC_OFF; 
+
+  if (the_sbc_state == SBC_ON) sbc_io_init(); 
 }
 
 
@@ -69,7 +71,7 @@ static void do_turn_on(const struct timer_task * const task)
 {
   i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
   set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
-  state = SBC_ON; 
+  the_sbc_state = SBC_ON; 
 
   //this means we have to release the boot select switch 
   if (task) 
@@ -83,13 +85,15 @@ static struct timer_task sbc_turn_on_task = { .cb  = do_turn_on, .interval = 50,
 
 int sbc_turn_on(sbc_boot_mode_t boot_mode) 
 {
-  if (state != SBC_OFF) return -1;  
+  if (the_sbc_state != SBC_OFF) return -1;  
+
+  sbc_io_init(); 
 
   if (boot_mode == SBC_BOOT_SDCARD) 
   {
     gpio_set_pin_direction(SBC_BOOT_SDCARD, GPIO_DIRECTION_OUT); 
     gpio_set_pin_level(SBC_BOOT_SDCARD, 0); 
-    state = SBC_TURNING_ON; 
+    the_sbc_state = SBC_TURNING_ON; 
     timer_add_task(&SHARED_TIMER, &sbc_turn_on_task);
   }
   else
@@ -106,6 +110,7 @@ int sbc_turn_on(sbc_boot_mode_t boot_mode)
 
 int sbc_io_process()
 {
+  if (the_sbc_state == SBC_OFF) return 0; 
 
 
     // SBC Commands
@@ -471,7 +476,7 @@ int sbc_io_process()
     return 0; 
 }
 
-sbc_state_t sbc_get_state() { return state; } 
+sbc_state_t sbc_get_state() { return the_sbc_state; } 
 
 static void do_off(const struct timer_task * const task)
 {
@@ -479,7 +484,7 @@ static void do_off(const struct timer_task * const task)
   i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
   i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
   set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
-  state = SBC_OFF; 
+  the_sbc_state = SBC_OFF; 
 }
 static struct timer_task sbc_off_task = { .cb  = do_off, .interval = 1000, .mode = TIMER_TASK_ONE_SHOT }; 
 
@@ -496,9 +501,10 @@ __attribute__((section (".keepme")))
 int sbc_turn_off() 
 {
 
-  if (state != SBC_ON) return -1; 
+  if (the_sbc_state != SBC_ON) return -1; 
 
-  state = SBC_TURNING_OFF; 
+  sbc_io_deinit(); 
+  the_sbc_state = SBC_TURNING_OFF; 
 
   // ONLY HIT POWER BUTTON IF CURRENT IS HIGH ENOUGH WE THINK THE SBC IS ACTUALLY ON... otherwise we'll turn it off then back on 
   report_schedule(50); 

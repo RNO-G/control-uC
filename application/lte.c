@@ -111,9 +111,9 @@ static void lte_check_on_cb(const struct timer_task * const task)
       return; 
     }
   }
+  lte_io_deinit(); 
   //  we are not on
   lte_state = LTE_OFF; 
-  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_IN);
 }
 
 static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval = 10, .mode=TIMER_TASK_ONE_SHOT }; 
@@ -121,8 +121,7 @@ static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval =
 int lte_init() 
 {
   //check to see if we're on... 
-   gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
-  gpio_set_pin_level(LTE_UART_ENABLE,0); 
+  lte_io_init(); 
   dprintf(LTE_UART_DESC,"AT\r\n"); 
   timer_add_task(&SHARED_TIMER, &lte_check_on_task);
   return 0; 
@@ -146,8 +145,7 @@ int lte_turn_on(int force)
   gpio_set_pin_direction(LTE_ON_OFF, GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_ON_OFF,0); 
   lte_state = LTE_TURNING_ON; 
-
-
+  lte_io_init(); 
   timer_add_task(&SHARED_TIMER, &lte_turn_on_task);
   return 0; 
 
@@ -266,7 +264,7 @@ int lte_turn_off(int force)
     return -1; 
   }
 
-  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_IN);
+  lte_io_deinit(); 
 
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_ON_OFF,0); 

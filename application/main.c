@@ -62,10 +62,7 @@ int main(void)
 	/* Initialize system drivers*/ 
 	system_init();
 
-  /* Initialize io system */ 
-  io_init(); 
-
-  /* Initialize UART */ 
+  /* Initialize i2c */ 
   i2c_bus_init(); 
 
   //persist previous state

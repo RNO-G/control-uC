@@ -19,7 +19,10 @@
 #define LTE_UART_DESC 3
 //#define USB_CDC_DESC  3
 
-void io_init(); 
+void sbc_io_init(); 
+void sbc_io_deinit(); 
+void lte_io_init(); 
+void lte_io_deinit(); 
 
 // be careful using this. if n < 4, it is buffered, otherwise data must live until it's written out
 int d_write(int d, int n, const uint8_t * data); 

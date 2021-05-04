@@ -128,7 +128,7 @@ int main(void)
 
   if (copy_application) 
   {
-    io_init(); 
+    sbc_io_init(); 
     if (!have_application) 
     {
       printf("#BOOTLOADER: NO VALID APPLICATION IN FLASH!\n");  
@@ -151,7 +151,7 @@ int main(void)
   //otherwise, check if we should run the bootloader
   if (must_run_bootloader) 
   {
-    io_init(); 
+    sbc_io_init(); 
     sbc_uart_put("#IN BOOTLOADER!\r\n"); 
 
     while(1) 
