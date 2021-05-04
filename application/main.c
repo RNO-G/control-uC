@@ -103,7 +103,7 @@ int main(void)
 
   //enable the calendar
   calendar_enable(&CALENDAR); 
-  uint64_t time_check = 0; 
+  int time_check = 0; 
 
   /** Initialize LoRaWAN */ 
   lorawan_init(1); 
@@ -189,12 +189,12 @@ int main(void)
     if (lorawan_state() == LORAWAN_READY) 
     {
       //our time isn't valid, let's request it
-      if (nticks >= time_check ) 
+      if (up >= time_check ) 
       {
        int have_time = get_time() > 1000000000; 
        lorawan_request_datetime() ;
        int delay_in_secs = have_time ? 3600*4 : 15; 
-       time_check+= (delay_in_secs*1000 / DELAY_MS) ;
+       time_check+= delay_in_secs ;
       }
 
       static int next_report = 10 ; 
@@ -202,12 +202,19 @@ int main(void)
       //Let's testing sending something 
       if (up > next_report && lorawan_state() == LORAWAN_READY) 
       {
-        next_report = up+60; 
-        next_lte = up+30; //delay by 30 seconds relative to us! 
+        if (low_power_mode) 
+        {
+
+        }
+        else
+        {
+          next_report = up+60; 
+          next_lte = up+30; //delay by 30 seconds relative to us! 
+        }
         lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
       }
 
-      if (up > next_lte &&  lorawan_state() == LORAWAN_READY) 
+      if (!low_power_mode && up > next_lte &&  lorawan_state() == LORAWAN_READY) 
       {
         next_lte+=60; 
         lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
