@@ -5,6 +5,7 @@
 #include "shared/io.h" 
 #include "shared/printf.h" 
 #include "application/time.h" 
+#include "lorawan/lorawan.h" 
 #include "config/config.h" 
 #include "include/rno-g-control.h" 
 #include "application/mode.h" 
@@ -167,7 +168,7 @@ int lte_process(int up)
     if( up > next_rfsts)
     {
       lte_request(LTE_RFSTS); 
-      next_rfsts +=10; 
+      next_rfsts +=60; 
     }
 
     while (async_tokenized_buffer_ready(&lte_io))
@@ -241,6 +242,7 @@ int lte_process(int up)
             }
           }
         }
+        lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
       }
       async_tokenized_buffer_discard(&lte_io); 
     }
