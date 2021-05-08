@@ -14,6 +14,7 @@ void mode_init()
   if ( config_block()->app_cfg.wanted_state == RNO_G_LOW_POWER_MODE) 
   {
     the_mode = RNO_G_LOW_POWER_MODE; 
+    low_power_mode_enter(); 
   }
   else
   {

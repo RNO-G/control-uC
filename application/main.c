@@ -33,12 +33,18 @@
 static int last_nint = 0; 
 static volatile int n_interrupts; 
 static volatile int n_nmi; 
+static volatile uint8_t crashed = CRASH_UNSET; 
 
 
 void HardFault_Handler() 
 {
   get_shared_memory()->crash_reason = CRASH_HARDFAULT; 
   get_shared_memory()->ncrash++; 
+  reset(0); 
+}
+
+void WDT_Handler() 
+{
   reset(0); 
 }
 
@@ -95,6 +101,7 @@ int main(void)
   if (get_shared_memory()->crash_reason)
   {
     printf("#WARNING: crash-%d\r\n", get_shared_memory()->crash_reason); 
+    crashed = get_shared_memory()->crash_reason; 
     get_shared_memory()->crash_reason = CRASH_UNSET; 
   }
 
@@ -105,12 +112,9 @@ int main(void)
   /** Initialize LoRaWAN */ 
   lorawan_init(1); 
 
-
   
   /** Initialize power system monitors */ 
   power_monitor_init(); 
-
-
 
 
   // TODO: setup watchdog
@@ -131,15 +135,12 @@ int main(void)
     int up = uptime(); 
     if (!low_power_mode) 
     {
-
       ///Start with potential inputs 
-
       //Check if we got an interrupt 
       if (n_interrupts > last_nint) 
       {
         printf("#INFO: number of interrupts now %d\r\n", ++last_nint); 
       }
-
 
       // Service any messages from the SBC
       sbc_io_process();
@@ -151,10 +152,9 @@ int main(void)
       {
         (mode_set(config_block()->app_cfg.wanted_state)); 
       }
-
-      report_process(up); 
     }
 
+    report_process(up); 
 
 
     // Service LoRaWAN 
@@ -193,37 +193,13 @@ int main(void)
        int delay_in_secs = have_time ? 3600*4 : 15; 
        time_check+= delay_in_secs ;
       }
-
-      static int next_report = 10 ; 
-      static int next_lte= 30; 
-      //Let's testing sending something 
-      if (up > next_report && lorawan_state() == LORAWAN_READY) 
-      {
-        if (low_power_mode) 
-        {
-
-        }
-        else
-        {
-          next_report = up+60; 
-          next_lte = up+30; //delay by 30 seconds relative to us! 
-        }
-        lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
-      }
-
-      if (!low_power_mode && up > next_lte &&  lorawan_state() == LORAWAN_READY) 
-      {
-        next_lte+=60; 
-        lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
-      }
-
     }
 
    
     if (ENABLE_WATCHDOG) 
     {
       static int last_feed = 0; 
-      if (up > last_feed+5) 
+      if (up >= last_feed+2) 
       {
         wdt_feed(&INTERNAL_WATCHDOG); 
         last_feed=up; 
@@ -237,16 +213,11 @@ int main(void)
     }
 
 
-    if (low_power_mode && (wokeup_ticks - nticks) >= LOW_POWER_AWAKE_TICKS + extra_awake_ticks) 
+    if (low_power_mode && (nticks-wokeup_ticks) >= LOW_POWER_AWAKE_TICKS + extra_awake_ticks) 
     {
-      //send report
-
       wokeup_ticks = ++nticks; 
       extra_awake_ticks = 0; 
       low_power_sleep_for_a_while(LOW_POWER_SLEEP_AMOUNT); 
-
-      //after we wake up, we'll be here 
-      power_monitor_schedule(); 
     }
     else
     {

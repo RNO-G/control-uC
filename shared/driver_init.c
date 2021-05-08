@@ -543,8 +543,8 @@ void system_init(void)
 	gpio_set_pin_function(LORA_SPI_CS, GPIO_PIN_FUNCTION_OFF);
 
 
-	gpio_set_pin_level(VICOR_EN, true);
-	gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_OUT);
+	gpio_set_pin_level(VICOR_EN, false);
+//	gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_OUT);
 	gpio_set_pin_function(VICOR_EN, GPIO_PIN_FUNCTION_OFF);
 
 	gpio_set_pin_direction(NALERT, GPIO_DIRECTION_IN);

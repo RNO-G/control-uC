@@ -4,6 +4,7 @@
 #include "application/lowpower.h" 
 #include "application/lte.h" 
 #include "application/sbc.h" 
+#include "lorawan/lorawan.h" 
 #include "application/monitors.h" 
 #include "application/mode.h" 
 #include "application/power.h" 
@@ -24,27 +25,35 @@ void report_process(int up)
   static uint32_t report_ticks =0; 
   static int next_report = 5;
   static uint32_t next_power_monitor_fill = 0; 
-  int power_mon_scheduled = 0;
+  static int power_mon_scheduled = 0;
   
 
   /// See if we need to do anything
   
-  if (up > next_report)  
+  if (up >= next_report)  
   {
+    low_power_mon_on(); 
     if (report_ticks > 0)
     {
         power_monitor_schedule(); 
     }
     monitor_fill(&report.analog_monitor,20); 
-    next_report+=10; 
+    next_report+= 10; 
     next_power_monitor_fill = report_ticks+300/DELAY_MS; 
     power_mon_scheduled = 1; 
   }
 
   if (power_mon_scheduled && report_ticks >= next_power_monitor_fill) 
   {
-      power_monitor_fill(&report.power_monitor); 
-      power_mon_scheduled = 0; 
+    low_power_mon_on(); //in case it got turned off since the step 
+    power_monitor_fill(&report.power_monitor); 
+    power_mon_scheduled = 0; 
+    low_power_mon_off(); 
+
+    if (lorawan_state() == LORAWAN_READY)
+    {
+      lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
+    }
   }
 
   report_ticks++;
