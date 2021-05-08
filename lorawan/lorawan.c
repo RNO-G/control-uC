@@ -213,10 +213,7 @@ int lorawan_tx_getmem(uint8_t len, uint8_t port, uint8_t **msg, uint8_t flags)
   return msg_getmem(&tx,len,port,msg,flags);
 }
 
-int lorawan_tx_push() 
-{
-  return msg_push(&tx); 
-}
+
 
 int lorawan_tx_copy(uint8_t len, uint8_t port, const uint8_t* msg, uint8_t flags) 
 {
@@ -1136,4 +1133,9 @@ int lorawan_request_datetime()
   return 0; 
 }
 
-
+int lorawan_tx_push() 
+{
+  int ret = msg_push(&tx); 
+  OnTxNextPacketTimerEvent(0); 
+  return ret; 
+}
