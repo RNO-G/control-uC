@@ -30,7 +30,12 @@ void init_shared_memory()
     shm->booted_from = BOOT_ROM; 
   }
   else
-  {
+  { 
+    if (_get_reset_reason() == RESET_REASON_WDT ) 
+    {
+      shm->ncrash++; 
+      shm->crash_reason=CRASH_WATCHDOG_EXPIRED; 
+    }
     //just increment boot count 
     shm->nboots++; 
     return;
