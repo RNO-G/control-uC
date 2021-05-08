@@ -110,6 +110,7 @@ static void cb_sbc_tx(const struct usart_async_descriptor * dev)
 }
 
 
+#ifndef _BOOTLOADER_
 static void cb_sbc_console(const struct usart_async_descriptor * dev) 
 {
   (void) dev;
@@ -136,6 +137,7 @@ static void cb_lte_tx(const struct usart_async_descriptor * dev)
   tx_in_progress[LTE_UART_DESC]=0; 
   d_write(LTE_UART_DESC,0,0);
 }
+#endif 
 
 
 static void cb_sbc_err(const struct usart_async_descriptor * dev) 
@@ -144,6 +146,7 @@ static void cb_sbc_err(const struct usart_async_descriptor * dev)
   err_called[SBC_UART_DESC]++; 
 }
 
+#ifndef _BOOTLOADER_
 static void cb_sbc_console_err(const struct usart_async_descriptor * dev) 
 {
    (void) dev;
@@ -155,6 +158,7 @@ static void cb_lte_err(const struct usart_async_descriptor * dev)
    (void) dev; 
    err_called[LTE_UART_DESC]++; 
 }
+#endif
 
 
 
