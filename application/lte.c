@@ -79,8 +79,6 @@ static void lte_turn_on_cb(const struct timer_task * const task)
 {
   (void) task; 
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_IN);
-  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
-  gpio_set_pin_level(LTE_UART_ENABLE,0); 
   lte_state = LTE_ON;
   timer_add_task(&SHARED_TIMER, &lte_setup_gpio_task);
 }
@@ -118,14 +116,14 @@ static void lte_check_on_cb(const struct timer_task * const task)
   lte_state = LTE_OFF; 
 }
 
-static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval = 10, .mode=TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval = 30, .mode=TIMER_TASK_ONE_SHOT }; 
 
 int lte_init() 
 {
   //check to see if we're on... 
   lte_io_init(); 
-  dprintf(LTE_UART_DESC,"AT\r\n"); 
   timer_add_task(&SHARED_TIMER, &lte_check_on_task);
+  dprintf(LTE_UART_DESC,"AT\r\n"); 
   return 0; 
 }
 
