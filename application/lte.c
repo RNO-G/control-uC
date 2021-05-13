@@ -3,6 +3,7 @@
 #include "shared/driver_init.h" 
 #include "hal_usart_async.h" 
 #include "shared/io.h" 
+#include "shared/spi_flash.h" 
 #include "shared/printf.h" 
 #include "application/time.h" 
 #include "lorawan/lorawan.h" 
@@ -168,7 +169,9 @@ int lte_process(int up)
     if( up > next_rfsts)
     {
       lte_request(LTE_RFSTS); 
-      next_rfsts +=60; 
+      int interval = config_block()->app_cfg.lte_stats_interval; 
+      if (interval < 10) interval = 10; 
+      next_rfsts +=interval; 
     }
 
     while (async_tokenized_buffer_ready(&lte_io))
@@ -242,7 +245,10 @@ int lte_process(int up)
             }
           }
         }
-        lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
+        if (lorawan_state() == LORAWAN_READY)
+        {
+          lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
+        }
       }
       async_tokenized_buffer_discard(&lte_io); 
     }
