@@ -1,5 +1,7 @@
 #include "include/rno-g-control.h" 
 #include "application/commands.h" 
+#include "shared/spi_flash.h" 
+#include "shared/config_block.h" 
 #include "application/report.h" 
 #include "application/mode.h" 
 
@@ -32,6 +34,30 @@ int commands_put(uint8_t  opcode, uint8_t payload_len, const uint8_t * payload)
       }
       return mode_set((rno_g_mode_t) mode); 
     case RNO_G_CMD_REPORT: 
+      if (payload_len != RNO_G_CMD_REPORT_SIZE)
+      {
+        return -1; 
+      }
+      const rno_g_cmd_report_t * cmd = (rno_g_cmd_report_t*) payload; 
+      if (cmd->normal_interval) 
+      {
+        config_block()->app_cfg.report_interval = cmd->normal_interval;
+      }
+      else
+      {
+        config_block()->app_cfg.report_interval = default_app_config()->report_interval; 
+      }
+
+      if (cmd->low_power_interval) 
+      {
+        config_block()->app_cfg.report_interval_low_power_mode = cmd->low_power_interval;
+      }
+      else
+      {
+        config_block()->app_cfg.report_interval_low_power_mode = default_app_config()->report_interval_low_power_mode; 
+      }
+
+      config_block_sync(); 
 
     default:
       return -1; 
