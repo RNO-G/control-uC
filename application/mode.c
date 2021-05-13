@@ -77,9 +77,9 @@ int mode_set(rno_g_mode_t mode)
   // Enter low power mode
   if (mode == RNO_G_LOW_POWER_MODE) 
   {
-    turn_off_peripherals(); 
-    lte_turn_off(0); 
     sbc_turn_off(); 
+    lte_turn_off(0); 
+    turn_off_peripherals(); 
     low_power_mode_enter(); 
   }
   else
@@ -87,6 +87,7 @@ int mode_set(rno_g_mode_t mode)
     if (the_mode == RNO_G_LOW_POWER_MODE) 
     {
       low_power_mode_exit(); 
+      delay_ms(10);  // make sure the vicor is on so we can turn on the SBC!
       if (mode != RNO_G_SBC_OFF_MODE) sbc_turn_on(config_block()->app_cfg.sbc_boot_mode); 
       if (mode == RNO_G_NORMAL_MODE) lte_turn_on(2); //this will only turn on if it's not on, and override the mode check 
     }
