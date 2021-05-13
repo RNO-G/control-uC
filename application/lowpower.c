@@ -1,5 +1,6 @@
 #include "application/lowpower.h" 
 #include "application/i2cbus.h" 
+#include "application/sbc.h" 
 #include "hal_calendar.h" 
 #include "shared/driver_init.h" 
 #include "application/monitors.h" 
@@ -8,6 +9,7 @@
 #include "hal_sleep.h" 
 
 volatile int low_power_mode = 0; 
+volatile int waiting_for_sbc = 0; 
 
 volatile static int woke=0; 
 static volatile int vicor_state = 1; 
@@ -21,14 +23,19 @@ int low_power_mon_on()
     gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_IN);
     monitor_init(); 
     vicor_state = 1; 
+    delay_ms(5); //give us a chance... 
   }
   return 0; 
 }
 
+
+
 int low_power_mon_off() 
 {
   if (!low_power_mode) return 0; 
-  if (vicor_state) 
+
+  //Don't turn off the vicor if the SBC is still on!!! 
+  if (vicor_state && sbc_get_state() == SBC_OFF) 
   {
     i2c_bus_deinit(); 
     gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_OUT);
@@ -37,6 +44,9 @@ int low_power_mon_off()
   }
   return 0;
 }
+
+
+
 
 int low_power_mode_enter() 
 {
