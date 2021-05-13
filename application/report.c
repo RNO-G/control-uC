@@ -20,13 +20,14 @@ void report_schedule(int navg)
    monitor_fill(&report.analog_monitor,navg); 
 }
 
-void report_process(int up) 
+const rno_g_report_t * report_process(int up) 
 {
   static uint32_t report_ticks =0; 
   static int next_report = 5;
   static uint32_t next_power_monitor_fill = 0; 
   static int power_mon_scheduled = 0;
   
+  const rno_g_report_t * ret = 0;
 
   /// See if we need to do anything
   
@@ -38,7 +39,9 @@ void report_process(int up)
         power_monitor_schedule(); 
     }
     monitor_fill(&report.analog_monitor,20); 
-    next_report+= 10; 
+    int interval = low_power_mode ? config_block()->app_cfg.report_interval_low_power_mode : config_block()->app_cfg.report_interval; 
+    if (interval < 10) interval = 10; //rate limit! 
+    next_report+= interval; 
     next_power_monitor_fill = report_ticks+300/DELAY_MS; 
     power_mon_scheduled = 1; 
   }
@@ -50,13 +53,15 @@ void report_process(int up)
     power_mon_scheduled = 0; 
     low_power_mon_off(); 
 
+    ret = report_get(); 
     if (lorawan_state() == LORAWAN_READY)
     {
-      lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) report_get(),0); 
+      lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,0); 
     }
   }
 
   report_ticks++;
+  return ret; 
 }
 
 const rno_g_report_t * report_get() 
