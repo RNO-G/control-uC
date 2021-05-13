@@ -3,6 +3,8 @@
 
 #include "shared/printf.h" 
 #include "application/time.h" 
+#include "shared/spi_flash.h" 
+#include "application/lowpower.h" 
 
 
 #include "lorawan.h" 
@@ -54,6 +56,12 @@ static uint8_t rx_ports[LORAWAN_MAX_TX_MESSAGES];
 
 static volatile int joined = 0; 
 static int last_cycle_or_join =0; 
+static int last_sent = -1; 
+static int last_received = -1; 
+static int last_link_check = -1; 
+static int join_time; 
+static int rssi = 0; 
+static int snr = 0; 
 
 struct msg_buffer 
 {
@@ -558,11 +566,9 @@ static void OnTxNextPacketTimerEvent( void* context )
 
 
 
-
-
+static int next_lora_stats = 20; 
 int lorawan_process(int up)
 {
-  (void) up; 
 
     //check the interrupts
     int cant_sleep = 1; 
@@ -753,8 +759,21 @@ int lorawan_process(int up)
       
     } // end of switch
 
-  return cant_sleep;
 
+   if (joined && (up > next_lora_stats) && have_tx_capacity(sizeof(rno_g_lora_stats_t)))
+   {
+       rno_g_lora_stats_t stats;
+       lorawan_stats(&stats); 
+       lorawan_tx_copy(sizeof(stats), RNO_G_MSG_LORA_STATS, (uint8_t*) &stats, 0); 
+
+       int interval = low_power_mode ? config_block()->app_cfg.lora_stats_interval_low_power_mode : config_block()->app_cfg.lora_stats_interval ; 
+       if (interval < 10) interval = 10; 
+       next_lora_stats += interval;
+       cant_sleep =1; 
+   }
+
+
+  return cant_sleep;
 }
 
 //// CALLBACKS 
@@ -934,6 +953,9 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     printf( "RX SNR      : %d\r\n", mcpsIndication->Snr );
     printf( "\r\n" );
 #endif
+    rssi = mcpsIndication->Rssi; 
+    snr = mcpsIndication->Snr; 
+    last_received = uptime(); 
 }
 
 /*!
@@ -989,6 +1011,7 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
 #endif
           
                 joined = 1; 
+                join_time = uptime(); 
                 // Status is OK, node has joined the network
                 DeviceState = DEVICE_STATE_SEND;
             }
@@ -1021,6 +1044,7 @@ static void MlmeConfirm( MlmeConfirm_t *mlmeConfirm )
               printf("#LORA: Link check succeeded.\r\n"); 
               failed_link_checks = 0; 
               link_check_counter = 0; 
+              last_link_check = uptime(); 
             }
             break;
         }

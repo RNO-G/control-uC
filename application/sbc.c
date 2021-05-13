@@ -439,11 +439,12 @@ int sbc_io_process()
         calendar_get_date_time(&CALENDAR,&now); 
         valid = 1; 
         printf("#NOW: %d-%02d-%02d %02d:%02d:%02d, UPTIME: %u,  LORA: ", now.date.year, now.date.month, now.date.day, now.time.hour, now.time.min, now.time.sec, uptime());  
-        int ntx, nrx, ntx_dropped, nrx_dropped; 
         if (lorawan_state()  ==LORAWAN_READY) 
         {
-          lorawan_stats(&ntx,&nrx, &ntx_dropped, &nrx_dropped); 
-          printf("tx=%d/%d, rx=%d/%d\r\n", ntx, ntx+ntx_dropped, nrx, nrx+nrx_dropped);
+
+          rno_g_lora_stats_t stats; 
+          lorawan_stats(&stats); 
+          printf("tx=%d/%d, rx=%d/%d\r\n", stats.tx, stats.tx+stats.tx_dropped, stats.rx, stats.rx+stats.rx_dropped);
         }
         else
         {
