@@ -153,13 +153,34 @@ int main(void)
       }
     }
 
-    report_process(up); 
+    const rno_g_report_t * maybe_a_report = report_process(up); 
+    if (maybe_a_report) 
+    {
+      if (!low_power_mode) 
+      {
+        float turnoff = config_block()->app_cfg.turnoff_voltage; 
+        if (turnoff > 0 &&  maybe_a_report->power_monitor.BATv_cV < 100*turnoff)
+        {
+          mode_set(RNO_G_LOW_POWER_MODE); 
+        }
+      }
+      else 
+      {
+        float turnon = config_block()->app_cfg.turnon_voltage; 
+        if (turnon > 0 && maybe_a_report->power_monitor.BATv_cV > 100*turnon)
+        {
+          mode_set(RNO_G_NORMAL_MODE); 
+        }
+      }
+    }
+
+
+    // See if we meet/exceed thresholds
 
 
     // Service LoRaWAN 
-    lorawan_process(up); 
+    int cant_sleep = lorawan_process(up); 
 
-    //
     uint8_t lora_len, lora_port, *lora_bytes, lora_flags; 
     while (lorawan_rx_peek(&lora_len, &lora_port, &lora_bytes, &lora_flags))
     {
@@ -181,6 +202,7 @@ int main(void)
 
 
     /// See if we need to send anything 
+    //TODO: use configured value, move to lorawan.c 
 
     if (lorawan_state() == LORAWAN_READY) 
     {
@@ -212,8 +234,12 @@ int main(void)
     }
 
 
-    if (low_power_mode && (nticks-wokeup_ticks) >= LOW_POWER_AWAKE_TICKS + extra_awake_ticks) 
+    // See if we need to sleep 
+    if (!cant_sleep && low_power_mode && (nticks-wokeup_ticks) >= LOW_POWER_AWAKE_TICKS + extra_awake_ticks) 
     {
+      //make sure the vicor is off! 
+      low_power_mon_off(); 
+
       wokeup_ticks = ++nticks; 
       extra_awake_ticks = 0; 
       low_power_sleep_for_a_while(LOW_POWER_SLEEP_AMOUNT); 
