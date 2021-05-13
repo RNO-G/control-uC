@@ -116,7 +116,7 @@ static int first_message_length(struct msg_buffer * b)
   int nmessages; 
   CRITICAL_SECTION_BEGIN() ; 
   nmessages = b->n_messages-(b->queued + b->consumed); 
-  int len = nmessages == 0 ? -1 : b->n_messages == 1 ? b->used : b->offsets[1+b->queued + b->consumed] ; 
+  int len = nmessages == 0 ? -1 :  b->used - b->offsets[b->queued+b->consumed] ; 
   CRITICAL_SECTION_END() ; 
 
   return len; 
