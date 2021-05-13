@@ -68,6 +68,11 @@ int main(void)
 	/* Initialize system drivers*/ 
 	system_init();
 
+  if (ENABLE_WATCHDOG) 
+  {
+    wdt_enable(&INTERNAL_WATCHDOG); 
+  }
+ 
   /* Initialize i2c */ 
   i2c_bus_init(); 
 
@@ -117,15 +122,9 @@ int main(void)
   power_monitor_init(); 
 
 
-  // TODO: setup watchdog
-
-  if (ENABLE_WATCHDOG) 
-  {
-    wdt_enable(&INTERNAL_WATCHDOG); 
-  } 
-
   //figure out current mode
   mode_init(); 
+
 
 
   /** The main control loop */ 
