@@ -80,12 +80,21 @@ struct msg_buffer
 static struct msg_buffer tx = {.buffer = tx_buffer, .offsets = tx_offsets, .used = 0, .n_messages = 0, .flags = tx_flags, .ports = tx_ports, .dropped = 0, .count=0};
 static struct msg_buffer rx = {.buffer = rx_buffer, .offsets = rx_offsets, .used = 0, .n_messages = 0, .flags = rx_flags, .ports = rx_ports, .dropped = 0, .count=0};
 
-void lorawan_stats(int * ntx, int * nrx, int *ntx_dropped, int * nrx_dropped) 
+void lorawan_stats(rno_g_lora_stats_t * stats) 
 {
-  if (ntx) *ntx = tx.count; 
-  if (nrx) *nrx = rx.count; 
-  if (ntx_dropped) *ntx_dropped = tx.dropped; 
-  if (nrx_dropped) *nrx_dropped = rx.dropped; 
+  if (!stats) return; 
+
+  stats->when = get_time(); 
+  stats->tx = tx.count; 
+  stats->rx = rx.count; 
+  stats->tx_dropped = tx.dropped; 
+  stats->rx_dropped = rx.dropped; 
+  stats->last_recv = last_received; 
+  stats->last_check = last_link_check; 
+  stats->last_sent = last_sent; 
+  stats->join_time = join_time; 
+  stats->rssi = rssi; 
+  stats->snr = snr; 
 }
 
 static inline  uint8_t * first_message(struct msg_buffer * b) {return b->buffer; }
