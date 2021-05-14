@@ -294,6 +294,7 @@ int spi_flash_raw_read(uint32_t addr, int len, uint8_t * buf)
 
 void spi_flash_deep_sleep()
 {
+  if(!awake) return; 
   CS_ON; 
   io_write(io,&DEEPSLEEP,1); 
   CS_OFF; 
