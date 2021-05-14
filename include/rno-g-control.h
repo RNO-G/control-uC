@@ -159,6 +159,7 @@ typedef struct rno_g_lte_stats
 typedef struct rno_g_lora_stats
 {
   uint32_t when;
+  uint32_t uptime;
   uint32_t rx; 
   uint32_t tx; 
   uint32_t tx_dropped;
