@@ -112,7 +112,6 @@ int main(void)
 
   //enable the calendar
   calendar_enable(&CALENDAR); 
-  int time_check = 0; 
 
   /** Initialize LoRaWAN */ 
   lorawan_init(1); 
@@ -153,9 +152,10 @@ int main(void)
       }
     }
 
-    const rno_g_report_t * maybe_a_report = report_process(up); 
+    const rno_g_report_t * maybe_a_report = report_process(up, &extra_awake_ticks); 
     if (maybe_a_report) 
     {
+      // See if we meet/exceed thresholds
       if (!low_power_mode) 
       {
         float turnoff = config_block()->app_cfg.turnoff_voltage; 
@@ -175,7 +175,6 @@ int main(void)
     }
 
 
-    // See if we meet/exceed thresholds
 
 
     // Service LoRaWAN 
@@ -199,28 +198,11 @@ int main(void)
       lorawan_rx_pop(); 
     }
     
-
-
-    /// See if we need to send anything 
-    //TODO: use configured value, move to lorawan.c 
-
-    if (lorawan_state() == LORAWAN_READY) 
-    {
-      //our time isn't valid, let's request it
-      if (up >= time_check ) 
-      {
-       int have_time = get_time() > 1000000000; 
-       lorawan_request_datetime() ;
-       int delay_in_secs = have_time ? 3600*4 : 15; 
-       time_check+= delay_in_secs ;
-      }
-    }
-
    
+    static int last_feed = 0; 
     if (ENABLE_WATCHDOG) 
     {
-      static int last_feed = 0; 
-      if (up >= last_feed+2) 
+      if (up > last_feed) 
       {
         wdt_feed(&INTERNAL_WATCHDOG); 
         last_feed=up; 
@@ -239,6 +221,11 @@ int main(void)
     {
       //make sure the vicor is off! 
       low_power_mon_off(); 
+
+
+      //feed the watchdog before we sleep 
+      wdt_feed(&INTERNAL_WATCHDOG); 
+      last_feed=up; 
 
       wokeup_ticks = ++nticks; 
       extra_awake_ticks = 0; 

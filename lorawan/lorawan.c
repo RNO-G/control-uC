@@ -58,10 +58,16 @@ static volatile int joined = 0;
 static int last_cycle_or_join =0; 
 static int last_sent = -1; 
 static int last_received = -1; 
+static int last_queued = -1; 
 static int last_link_check = -1; 
+static int last_join_request = -1; 
+static int last_link_request = -1; 
+static int last_delayed = -1; 
+static int last_time_request = -1; 
 static int join_time; 
 static int rssi = 0; 
 static int snr = 0; 
+static int time_check = 0; 
 
 struct msg_buffer 
 {
@@ -88,6 +94,7 @@ void lorawan_stats(rno_g_lora_stats_t * stats)
   if (!stats) return; 
 
   stats->when = get_time(); 
+  stats->uptime = uptime(); 
   stats->tx = tx.count; 
   stats->rx = rx.count; 
   stats->tx_dropped = tx.dropped; 
@@ -110,6 +117,18 @@ static inline  uint8_t * first_message(struct msg_buffer * b) {
   return b->buffer + offs; 
 
 }
+
+static int first_message_to_consume_length(struct msg_buffer * b)
+{
+  int len; 
+  CRITICAL_SECTION_BEGIN() ; 
+  len = b->consumed == 0 ? -1 : b->n_messages == 1? b->used :  b->offsets[1] ; 
+  CRITICAL_SECTION_END() ; 
+
+  return len; 
+}
+
+
 
 static int first_message_length(struct msg_buffer * b)
 {
@@ -159,7 +178,7 @@ static void consume_first_message(struct msg_buffer *b)
 
   else
   {
-    int len = first_message_length(b); 
+    int len = first_message_to_consume_length(b); 
     ASSERT(b->used >= len); 
     b->used-=len; 
     memmove(b->buffer, b->buffer+len, b->used); 
@@ -414,6 +433,7 @@ static void RequestTime(void)
   mlmeReq.Type = MLME_DEVICE_TIME; 
   mlmeReq.Req.Join.Datarate = LORAWAN_DEFAULT_DATARATE; 
 
+  last_time_request = uptime(); 
   status = LoRaMacMlmeRequest(&mlmeReq); 
 
 #if LORAWAN_PRINT_DEBUG
@@ -438,6 +458,7 @@ static void LinkCheck (void)
   MlmeReq_t mlmeReq; 
   mlmeReq.Type = MLME_LINK_CHECK; 
   mlmeReq.Req.Join.Datarate = LORAWAN_DEFAULT_DATARATE; 
+  last_link_request = uptime(); 
   printf("#LORA: Sending link check.\r\n"); 
   status = LoRaMacMlmeRequest(&mlmeReq); 
 
@@ -462,6 +483,7 @@ static void JoinNetwork( void )
   MlmeReq_t mlmeReq;
   mlmeReq.Type = MLME_JOIN;
   mlmeReq.Req.Join.Datarate = LORAWAN_DEFAULT_DATARATE;
+  last_join_request = uptime(); 
   
   // Starts the join procedure
   status = LoRaMacMlmeRequest( &mlmeReq );
@@ -497,7 +519,6 @@ static bool SendFrame( void ) {
   int buffer_length = first_message_length(&tx); 
   if (buffer_length < 0 || !buffer_length) 
   {
-
     //do I need to send time? 
     if (should_request_time)
     {
@@ -532,6 +553,7 @@ static bool SendFrame( void ) {
 
      
       uint8_t * buffer = first_message(&tx); 
+      last_queued = uptime(); 
       CRITICAL_SECTION_BEGIN()
       tx.queued++; 
       CRITICAL_SECTION_END()
@@ -778,6 +800,7 @@ int lorawan_process(int up)
       case DEVICE_STATE_CYCLE: {
         DeviceState = DEVICE_STATE_SLEEP;
         TxDutyCycleTime = APP_TX_DUTYCYCLE + randr( -APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND );
+        if (low_power_mode) TxDutyCycleTime >> 4; 
 
         // Schedule next packet transmission
         TimerSetValue( &TxNextPacketTimer, TxDutyCycleTime );
@@ -791,9 +814,10 @@ int lorawan_process(int up)
         CRITICAL_SECTION_BEGIN( ); 
         if( IsMacProcessPending == 1 ) {
           IsMacProcessPending = 0; // Clear flag and prevent MCU to go into low power modes.
+          last_delayed = uptime(); 
         } else {      
-          if (last_sent + 2 < up) 
-            cant_sleep = 0;  // allow to sleep if more than 2 seconds after sending something
+          if (last_sent + 3 < up && last_join_request + 6 < up && last_queued +3 < up && last_delayed +3 <up && last_link_request + 3 < up  && last_time_request + 3 < up) 
+            cant_sleep = 0;  
           //BoardLowPowerHandler( ); // The MCU wakes up through events
         }
         CRITICAL_SECTION_END( );
@@ -814,6 +838,7 @@ int lorawan_process(int up)
     } // end of switch
 
 
+    //see if we need to sent lora stas
    if (joined && (up > next_lora_stats) && have_tx_capacity(sizeof(rno_g_lora_stats_t)))
    {
        rno_g_lora_stats_t stats;
@@ -825,6 +850,15 @@ int lorawan_process(int up)
        next_lora_stats += interval;
        cant_sleep =1; 
    }
+
+   if (joined && ( up >= time_check) )
+   {
+     int have_time = get_time() > 1000000000; 
+     should_request_time = 1; 
+     int delay_in_secs = have_time ? 3600*4 : 15; 
+     time_check+= delay_in_secs ;
+   }
+
 
 
   return cant_sleep;
@@ -1213,11 +1247,6 @@ int lorawan_init(int initial)
 
 
 
-int lorawan_request_datetime() 
-{
-  should_request_time =1; 
-  return 0; 
-}
 
 int lorawan_tx_push() 
 {

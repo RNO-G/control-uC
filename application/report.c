@@ -11,7 +11,7 @@
 #include "shared/spi_flash.h"
 #include "config/config.h" 
 
-static rno_g_report_t report; 
+static volatile rno_g_report_t report; 
 
 void report_schedule(int navg) 
 {
@@ -20,7 +20,7 @@ void report_schedule(int navg)
    monitor_fill(&report.analog_monitor,navg); 
 }
 
-const rno_g_report_t * report_process(int up) 
+const rno_g_report_t * report_process(int up, int * extrawake) 
 {
   static uint32_t report_ticks =0; 
   static int next_report = 5;
@@ -41,9 +41,12 @@ const rno_g_report_t * report_process(int up)
     monitor_fill(&report.analog_monitor,20); 
     int interval = low_power_mode ? config_block()->app_cfg.report_interval_low_power_mode : config_block()->app_cfg.report_interval; 
     if (interval < 10) interval = 10; //rate limit! 
+
     next_report+= interval; 
-    next_power_monitor_fill = report_ticks+300/DELAY_MS; 
+    int nticks = 300/DELAY_MS; 
+    next_power_monitor_fill = report_ticks+nticks;
     power_mon_scheduled = 1; 
+    if (extrawake) *extrawake+=nticks+2; 
   }
 
   if (power_mon_scheduled && report_ticks >= next_power_monitor_fill) 
@@ -54,10 +57,7 @@ const rno_g_report_t * report_process(int up)
     low_power_mon_off(); 
 
     ret = report_get(); 
-    if (lorawan_state() == LORAWAN_READY)
-    {
-      lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,0); 
-    }
+    lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  low_power_mode ? LORAWAN_MSG_CONFIRMED : 0 ); 
   }
 
   report_ticks++;
