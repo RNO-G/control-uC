@@ -57,7 +57,12 @@ const rno_g_report_t * report_process(int up, int * extrawake)
     low_power_mon_off(); 
 
     ret = report_get(); 
-    lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  low_power_mode ? LORAWAN_MSG_CONFIRMED : 0 ); 
+    lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  0);
+    //Send twice, to improve chance we get it (because... confirmed doesn't work with the way our buffer works yet!) 
+    if (low_power_mode) 
+    {
+      lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  0);
+    }
   }
 
   report_ticks++;
