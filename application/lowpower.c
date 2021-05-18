@@ -60,6 +60,7 @@ int low_power_mode_enter()
 int low_power_mode_exit() 
 {
   low_power_mon_on(); 
+  i2c_unstick(10); //just in case? 
   low_power_mode=0; 
   return 0;
 }
