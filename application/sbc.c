@@ -432,7 +432,12 @@ int sbc_io_process()
         printf("#FLUSH: ACK\r\n"); 
         valid = 1; 
       }
-
+      else if (prefix_matches(in,"LORA-SEND "))
+      {
+        //TODO
+        valid = 1; 
+      }
+ 
       else if (!strcmp(in,"NOW"))
       {
         struct calendar_date_time now; 
