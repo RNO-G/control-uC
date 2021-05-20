@@ -55,6 +55,9 @@ BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS)
 APP_DEPS := $(APP_OBJS:%.o=%.d)
 BL_DEPS := $(BL_OBJS:%.o=%.d)
 
+RNO_G_INSTALL_DIR?=/rno-g/
+PREFIX?=$(RNO_G_INSTALL_DIR)
+
 
 
 MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application $(BUILD_DIR)/bootloader  $(BUILD_DIR)/shared $(BUILD_DIR)/bootloader/shared
@@ -68,20 +71,19 @@ help:
 	@echo "  help:  print this message"
 	@echo "  mcu:  build mcu firwmware (requires cross-compiler)"
 	@echo "  loader-build:  build uart loader"
-	@echo "  loader-install: install uart loader (PREFIX is influential, defaults to /rno-g/)"
-	@echo "  loader-uninstall: uninstall uart loader (PREFIX is influential, defaults to /rno-g/)"
-	@echo "  install: install header file (PREFIX is influential, defaults to /rno-g/"
-	@echo "  uninstall: uninstall header file (PREFIX is influential, defaults to /rno-g/"
+	@echo "  loader-install: install uart loader (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
+	@echo "  loader-uninstall: uninstall uart loader (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
+	@echo "  install: install header file (PREFIX is influential, defaults to /rno-g or RNO_G_INSTALL_DIR/"
+	@echo "  uninstall: uninstall header file (PREFIX is influential, defaults to /rno-g or RNO_G_INSTALL_DIR/"
 	@echo "  clean: Clean everything"
 
 
 # MCU 
 mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin
 
-PREFIX=/rno-g/
 
 install: 
-	install include/rno-g-control.h $(PREFIX)/include
+	install include/rno-g-control.h $(PREFIX)/include/
 
 loader-build: 
 	$(MAKE) -C loader
