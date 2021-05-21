@@ -45,7 +45,7 @@ void HardFault_Handler()
 
 void WDT_Handler() 
 {
-  reset(0); 
+  printf("woof woof woof\r\n") ; 
 }
 
 void NMI_Handler(void) 
@@ -70,6 +70,12 @@ int main(void)
 
   if (ENABLE_WATCHDOG) 
   {
+    NVIC_EnableIRQ(WDT_IRQn); 
+
+    //attempt to set up the EW interrupt. 
+    hri_wdt_wait_for_sync(WDT);
+    hri_wdt_write_EWCTRL_EWOFFSET_bf(WDT, 0xa); 
+    hri_wdt_write_INTEN_EW_bit(WDT,1); 
     wdt_enable(&INTERNAL_WATCHDOG); 
   }
  
