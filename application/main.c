@@ -222,8 +222,8 @@ int main(void)
     }
 
 
-    // See if we need to sleep 
-    if (!cant_sleep && low_power_mode && (nticks-wokeup_ticks) >= LOW_POWER_AWAKE_TICKS + extra_awake_ticks) 
+    // See if we can sleep 
+    if (!cant_sleep && low_power_mode && (nticks-wokeup_ticks) >= LOW_POWER_AWAKE_TICKS + extra_awake_ticks && sbc_get_state() == SBC_OFF) 
     {
       //make sure the vicor is off! 
       low_power_mon_off(); 
