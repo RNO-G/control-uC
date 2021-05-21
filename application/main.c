@@ -34,7 +34,7 @@ static int last_nint = 0;
 static volatile int n_interrupts; 
 static volatile int n_nmi; 
 static volatile uint8_t crashed = CRASH_UNSET; 
-
+static int last_feed = 0; 
 
 void HardFault_Handler() 
 {
@@ -45,6 +45,7 @@ void HardFault_Handler()
 
 void WDT_Handler() 
 {
+  hri_wdt_clear_INTFLAG_EW_bit(WDT); 
   printf("woof woof woof\r\n") ; 
 }
 
@@ -137,6 +138,17 @@ int main(void)
 	while (1)
   {
     int up = uptime(); 
+
+    if (ENABLE_WATCHDOG) 
+    {
+      if (up > last_feed) 
+      {
+        wdt_feed(&INTERNAL_WATCHDOG); 
+        last_feed=up; 
+      }
+    }
+
+ 
     if (!low_power_mode) 
     {
       ///Start with potential inputs 
@@ -205,7 +217,6 @@ int main(void)
     }
     
    
-    static int last_feed = 0; 
     if (ENABLE_WATCHDOG) 
     {
       if (up > last_feed) 
