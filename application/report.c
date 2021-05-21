@@ -21,6 +21,7 @@ void report_schedule(int navg)
    monitor_fill(&report.analog_monitor,navg); 
 }
 
+
 const rno_g_report_t * report_process(int up, int * extrawake) 
 {
   static uint32_t report_ticks =0; 
@@ -34,8 +35,9 @@ const rno_g_report_t * report_process(int up, int * extrawake)
   
 
   int interval = low_power_mode ? config_block()->app_cfg.report_interval_low_power_mode : config_block()->app_cfg.report_interval; 
+  if (interval < 10) interval = 10; //rate limit! 
 
-  if (up >= last_report + interval  && up >=3)   // wait until at least 3 seconds in to make a report 
+  if (up >= last_report + interval  &&  up > 5 && (!low_power_mode  || up >=60)  )   // wait until at least 5 seconds in to make a report , 60 seconds if in low power mode (to give chance to connect to lroa) 
   {
     low_power_mon_on(); 
     if (report_ticks > 0)
@@ -43,7 +45,6 @@ const rno_g_report_t * report_process(int up, int * extrawake)
         power_monitor_schedule(); 
     }
     monitor_fill(&report.analog_monitor,20); 
-    if (interval < 10) interval = 10; //rate limit! 
 
     last_report = up; 
     int nticks = 300/DELAY_MS; 
