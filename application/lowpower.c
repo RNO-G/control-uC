@@ -11,7 +11,7 @@
 volatile int low_power_mode = 0; 
 volatile int waiting_for_sbc = 0; 
 
-volatile static int woke=0; 
+static volatile int woke=0; 
 static volatile int vicor_state = 1; 
 
 int low_power_mon_on() 
@@ -75,9 +75,9 @@ int low_power_sleep_for_a_while(int howlong)
 {
   if (howlong <1) return 0; 
   low_power_mon_off(); 
-  int cmp = _calendar_get_counter(&CALENDAR)+howlong; 
-  _calendar_register_callback(&CALENDAR,wakeup); 
-  _calendar_set_comp(&CALENDAR,cmp); 
+  int cmp = _calendar_get_counter(&CALENDAR.device)+howlong; 
+  _calendar_register_callback(&CALENDAR.device,wakeup); 
+  _calendar_set_comp(&CALENDAR.device,cmp); 
   woke = 0; 
   spi_flash_deep_sleep(); 
   return sleep(3); 
