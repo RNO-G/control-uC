@@ -10,6 +10,7 @@
 #include "application/power.h" 
 #include "shared/spi_flash.h"
 #include "config/config.h" 
+#include <limits.h> 
 
 static volatile rno_g_report_t report; 
 
@@ -23,7 +24,7 @@ void report_schedule(int navg)
 const rno_g_report_t * report_process(int up, int * extrawake) 
 {
   static uint32_t report_ticks =0; 
-  static int next_report = 5;
+  static int last_report = INT_MIN;
   static uint32_t next_power_monitor_fill = 0; 
   static int power_mon_scheduled = 0;
   
@@ -31,7 +32,10 @@ const rno_g_report_t * report_process(int up, int * extrawake)
 
   /// See if we need to do anything
   
-  if (up >= next_report)  
+
+  int interval = low_power_mode ? config_block()->app_cfg.report_interval_low_power_mode : config_block()->app_cfg.report_interval; 
+
+  if (up >= last_report + interval  && up >=3)   // wait until at least 3 seconds in to make a report 
   {
     low_power_mon_on(); 
     if (report_ticks > 0)
@@ -39,10 +43,9 @@ const rno_g_report_t * report_process(int up, int * extrawake)
         power_monitor_schedule(); 
     }
     monitor_fill(&report.analog_monitor,20); 
-    int interval = low_power_mode ? config_block()->app_cfg.report_interval_low_power_mode : config_block()->app_cfg.report_interval; 
     if (interval < 10) interval = 10; //rate limit! 
 
-    next_report+= interval; 
+    last_report = up; 
     int nticks = 300/DELAY_MS; 
     next_power_monitor_fill = report_ticks+nticks;
     power_mon_scheduled = 1; 
@@ -57,11 +60,14 @@ const rno_g_report_t * report_process(int up, int * extrawake)
     low_power_mon_off(); 
 
     ret = report_get(); 
-    lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  0);
-    //Send twice, to improve chance we get it (because... confirmed doesn't work with the way our buffer works yet!) 
-    if (low_power_mode) 
+    if (lorawan_state()  == LORAWAN_READY) 
     {
       lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  0);
+      //Send twice, to improve chance we get it (because... confirmed doesn't work with the way our buffer works yet!) 
+      if (low_power_mode) 
+      {
+        lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  0);
+      }
     }
   }
 
