@@ -9,6 +9,13 @@
 #include "shared/printf.h" 
 #include "shared/io.h" 
 
+void HardFault_Handler() 
+{
+  get_shared_memory()->crash_reason = CRASH_HARDFAULT; 
+  get_shared_memory()->ncrash++; 
+  _reset_mcu(); 
+}
+
 
 
 static void __attribute__((naked)) start_app(uint32_t sp, uint32_t start) 
