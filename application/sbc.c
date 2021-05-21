@@ -492,7 +492,7 @@ static void do_off(const struct timer_task * const task)
   set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
   the_sbc_state = SBC_OFF; 
 }
-static struct timer_task sbc_off_task = { .cb  = do_off, .interval = 1000, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task sbc_off_task = { .cb  = do_off, .interval = 400, .mode = TIMER_TASK_ONE_SHOT }; 
 
 static void do_turn_off(const struct timer_task * const task)
 {
