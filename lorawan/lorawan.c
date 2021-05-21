@@ -180,7 +180,7 @@ static void consume_first_message(struct msg_buffer *b)
   else
   {
     int len = first_message_to_consume_length(b); 
-    if (len > 0) return; 
+    if (len < 0) return; 
 
     ASSERT(b->used >= len); 
     b->used-=len; 
