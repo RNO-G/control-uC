@@ -80,8 +80,9 @@ struct msg_buffer
   uint8_t * ports; 
   uint32_t dropped; 
   uint32_t count; 
-  //a tx message is first queued, then consumed. rx messages are just consumed. 
+  //a tx message is first pushed, then queued queued, then consumed. rx messages are just pushed and consumed. 
   //NOTE: when consuming a message it should be unqueued! 
+  volatile uint32_t pushed; 
   volatile uint32_t queued; 
   volatile uint32_t consumed; 
 }; 
@@ -129,7 +130,6 @@ static int first_message_to_consume_length(struct msg_buffer * b)
 }
 
 
-
 static int first_message_length(struct msg_buffer * b)
 {
   int nmessages; 
@@ -163,10 +163,11 @@ static uint8_t first_message_port(struct msg_buffer * b)
 
 static void consume_first_message(struct msg_buffer *b)
 {
+
   //the simplest case
   if (b->n_messages == 0)
   {
-
+    return; 
   }
 
   //the simple case
@@ -179,6 +180,8 @@ static void consume_first_message(struct msg_buffer *b)
   else
   {
     int len = first_message_to_consume_length(b); 
+    if (len > 0) return; 
+
     ASSERT(b->used >= len); 
     b->used-=len; 
     memmove(b->buffer, b->buffer+len, b->used); 
@@ -257,6 +260,7 @@ int msg_push(struct msg_buffer *b)
   {
     return -1;
   }
+  b->pushed++; 
   b->n_messages++; 
   b->got_mem = 0; 
   return 0; 
@@ -312,8 +316,9 @@ int lorawan_rx_peek(uint8_t *len, uint8_t * port, uint8_t **msg, uint8_t * flags
 
 int lorawan_rx_pop() 
 {
-  if (!rx.n_messages || rx.n_messages <= rx.consumed) return -1; 
+  if (!rx.pushed) return -1; 
   CRITICAL_SECTION_BEGIN();
+  rx.pushed--; 
   rx.consumed++; 
   CRITICAL_SECTION_END();
   return 0; 
@@ -555,6 +560,7 @@ static bool SendFrame( void ) {
       uint8_t * buffer = first_message(&tx); 
       last_queued = uptime(); 
       CRITICAL_SECTION_BEGIN()
+      tx.pushed--; 
       tx.queued++; 
       CRITICAL_SECTION_END()
 
@@ -800,7 +806,7 @@ int lorawan_process(int up)
       case DEVICE_STATE_CYCLE: {
         DeviceState = DEVICE_STATE_SLEEP;
         TxDutyCycleTime = APP_TX_DUTYCYCLE + randr( -APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND );
-        if (low_power_mode) TxDutyCycleTime >> 4; 
+        if (low_power_mode) TxDutyCycleTime >>=4; 
 
         // Schedule next packet transmission
         TimerSetValue( &TxNextPacketTimer, TxDutyCycleTime );
