@@ -44,17 +44,55 @@ void default_init_app_cfg(application_cfg_t * ac)
   *ac = dflt_ac; 
 }
 
-void verify_app_cfg(application_cfg_t* ac) 
+int verify_app_cfg(application_cfg_t* ac) 
 {
-  if (ac->wanted_state >= RNO_G_NOT_A_MODE) ac->wanted_state = dflt_ac.wanted_state;
-  if (ac->sbc_boot_mode > SBC_BOOT_SDCARD) ac->sbc_boot_mode = dflt_ac.sbc_boot_mode; 
-  if (ac->report_interval == -1) ac->report_interval = dflt_ac.report_interval; 
-  if (ac->report_interval_low_power_mode == -1) ac->report_interval_low_power_mode = dflt_ac.report_interval_low_power_mode; 
-  if (ac->lte_stats_interval == -1) ac->lte_stats_interval = dflt_ac.lte_stats_interval; 
-  if (ac->lora_stats_interval == -1) ac->lora_stats_interval = dflt_ac.lora_stats_interval; 
-  if (ac->lora_stats_interval_low_power_mode == -1) ac->lora_stats_interval_low_power_mode = dflt_ac.lora_stats_interval_low_power_mode; 
-  if (isnan(ac->turnon_voltage)) ac->turnon_voltage = dflt_ac.turnon_voltage; 
-  if (isnan(ac->turnoff_voltage)) ac->turnoff_voltage = dflt_ac.turnoff_voltage; 
+  int changed = 0;
+  if (ac->wanted_state >= RNO_G_NOT_A_MODE) 
+  {
+    ac->wanted_state = dflt_ac.wanted_state;
+    changed++; 
+  }
+  if (ac->sbc_boot_mode > SBC_BOOT_SDCARD)
+  {
+    ac->sbc_boot_mode = dflt_ac.sbc_boot_mode; 
+    changed++; 
+  }
+  if (ac->report_interval == -1)
+  {
+    ac->report_interval = dflt_ac.report_interval; 
+    changed++; 
+  }
+  if (ac->report_interval_low_power_mode == -1)
+  {
+    ac->report_interval_low_power_mode = dflt_ac.report_interval_low_power_mode; 
+    changed++;
+  }
+  if (ac->lte_stats_interval == -1)
+  {
+    ac->lte_stats_interval = dflt_ac.lte_stats_interval; 
+    changed++; 
+  }
+  if (ac->lora_stats_interval == -1)
+  {
+    ac->lora_stats_interval = dflt_ac.lora_stats_interval; 
+    changed++; 
+  }
+  if (ac->lora_stats_interval_low_power_mode == -1) 
+  {
+    ac->lora_stats_interval_low_power_mode = dflt_ac.lora_stats_interval_low_power_mode; 
+    changed++; 
+  }
+  if (isnan(ac->turnon_voltage)) 
+  {
+    ac->turnon_voltage = dflt_ac.turnon_voltage; 
+    changed++; 
+  }
+  if (isnan(ac->turnoff_voltage)) 
+  {
+    ac->turnoff_voltage = dflt_ac.turnoff_voltage; 
+    changed++; 
+  }
+  return changed; 
 }
 
 void default_init_block(config_block_t * block) 
