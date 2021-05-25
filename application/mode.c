@@ -15,7 +15,6 @@ void mode_init()
   {
     the_mode = RNO_G_LOW_POWER_MODE; 
     low_power_mode_enter(); 
-    sbc_get_state(); 
     low_power_mon_off(); 
   }
   else
