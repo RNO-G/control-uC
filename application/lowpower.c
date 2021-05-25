@@ -23,7 +23,7 @@ int low_power_mon_on()
     gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_IN);
     monitor_init(); 
     vicor_state = 1; 
-    delay_ms(5); //give us a chance... 
+    delay_ms(15); //wait a bit for things to stabilize 
   }
   return 0; 
 }
