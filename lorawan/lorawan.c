@@ -62,7 +62,7 @@ static int last_queued = -1;
 static int last_link_check = -1; 
 static int last_join_request = -1; 
 static int last_link_request = -1; 
-static int last_delayed = -1; 
+static int process_pending = 0; 
 static int last_time_request = -1; 
 static int join_time; 
 static int rssi = 0; 
@@ -519,6 +519,7 @@ static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 static volatile int sent_empty = 0; 
 static bool SendFrame( void ) { 
 
+  if (tx.queued) return true; 
   McpsReq_t mcpsReq;
   LoRaMacTxInfo_t txInfo;
   int buffer_length = first_message_length(&tx); 
@@ -621,6 +622,7 @@ static void OnTxNextPacketTimerEvent( void* context )
     (void) context; 
     MibRequestConfirm_t mibReq;
     LoRaMacStatus_t status;
+    process_pending = 0; 
 
     TimerStop( &TxNextPacketTimer );
 
@@ -806,7 +808,7 @@ int lorawan_process(int up)
       case DEVICE_STATE_CYCLE: {
         DeviceState = DEVICE_STATE_SLEEP;
         TxDutyCycleTime = APP_TX_DUTYCYCLE + randr( -APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND );
-        if (low_power_mode) TxDutyCycleTime >>=4; 
+//        if (low_power_mode) TxDutyCycleTime >>=4; 
 
         // Schedule next packet transmission
         TimerSetValue( &TxNextPacketTimer, TxDutyCycleTime );
@@ -820,11 +822,13 @@ int lorawan_process(int up)
         CRITICAL_SECTION_BEGIN( ); 
         if( IsMacProcessPending == 1 ) {
           IsMacProcessPending = 0; // Clear flag and prevent MCU to go into low power modes.
-          last_delayed = uptime(); 
+          process_pending = 1; //our persistent flag until sleep ends 
         } else {      
-          if (last_sent + 3 < up && last_join_request + 6 < up && last_queued +3 < up && last_delayed +3 <up && last_link_request + 3 < up  && last_time_request + 3 < up) 
+          if (!process_pending && !tx.queued && last_sent + 4 < up && last_join_request + 6 < up && last_link_request + 3 < up  && last_time_request + 3 < up) 
+          {
             cant_sleep = 0;  
           //BoardLowPowerHandler( ); // The MCU wakes up through events
+          }
         }
         CRITICAL_SECTION_END( );
 
@@ -863,6 +867,7 @@ int lorawan_process(int up)
      should_request_time = 1; 
      int delay_in_secs = have_time ? 3600*4 :  low_power_mode ?  60 : 15; 
      time_check+= delay_in_secs ;
+     cant_sleep=1; 
    }
 
 
@@ -941,6 +946,14 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
 
   if (sent_empty) 
   {
+    CRITICAL_SECTION_BEGIN();
+    if (tx.queued) 
+    {
+      tx.pushed++; 
+      tx.queued--; 
+    }
+    CRITICAL_SECTION_END();
+ 
     sent_empty = 0; 
   }
   else
@@ -950,8 +963,8 @@ static void McpsConfirm( McpsConfirm_t *mcpsConfirm )
     tx.queued--; 
     CRITICAL_SECTION_END();
     tx.count++; 
-    last_sent = uptime(); 
   }
+  last_sent = uptime(); 
 }
 
 static void McpsIndication( McpsIndication_t *mcpsIndication )
