@@ -70,9 +70,9 @@ help:
 	@echo "Targets: " 
 	@echo "  help:  print this message"
 	@echo "  mcu:  build mcu firwmware (requires cross-compiler)"
-	@echo "  loader-build:  build uart loader"
-	@echo "  loader-install: install uart loader (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
-	@echo "  loader-uninstall: uninstall uart loader (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
+	@echo "  client-build:  build client programs / libraries (on SBC)"
+	@echo "  client-install: install client programs /libraries  (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
+	@echo "  client-uninstall: uninstall client  program /libraries (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
 	@echo "  install: install header file (PREFIX is influential, defaults to /rno-g or RNO_G_INSTALL_DIR/"
 	@echo "  uninstall: uninstall header file (PREFIX is influential, defaults to /rno-g or RNO_G_INSTALL_DIR/"
 	@echo "  clean: Clean everything"
@@ -85,14 +85,14 @@ mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin
 install: 
 	install include/rno-g-control.h $(PREFIX)/include/
 
-loader-build: 
-	$(MAKE) -C loader
+client-build: 
+	$(MAKE) -C client
 
-loader-install: 
-	$(MAKE) -C loader install
+client-install: 
+	$(MAKE) -C client install
 
-loader-uninstall: 
-	$(MAKE) -C loader uninstall
+client-uninstall: 
+	$(MAKE) -C client uninstall
 
 
 
