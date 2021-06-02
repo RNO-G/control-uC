@@ -18,6 +18,7 @@ static volatile uint64_t err_called[4];
 static volatile uint64_t last_err_called[4];  
 static volatile uint64_t last_reset[4];  
 static volatile uint8_t tx_in_progress[4];  
+static volatile uint8_t uart_init[4]; 
 
 static const char * get_name(int d) 
 {
@@ -139,7 +140,6 @@ static void cb_lte_tx(const struct usart_async_descriptor * dev)
 }
 #endif 
 
-
 static void cb_sbc_err(const struct usart_async_descriptor * dev) 
 {
   (void) dev;
@@ -162,28 +162,80 @@ static void cb_lte_err(const struct usart_async_descriptor * dev)
 
 
 
-void io_init()
+
+
+void sbc_io_init()
 {
-  usart_async_enable(&SBC_UART); 
-  desc[SBC_UART_DESC] = &SBC_UART; 
 
-  usart_async_register_callback(&SBC_UART, USART_ASYNC_RXC_CB, cb_sbc); 
-  usart_async_register_callback(&SBC_UART, USART_ASYNC_TXC_CB, cb_sbc_tx); 
-  usart_async_register_callback(&SBC_UART, USART_ASYNC_ERROR_CB, cb_sbc_err); 
-
+  static int callbacks_set = 0; 
 #ifndef _BOOTLOADER_
-  usart_async_enable(&SBC_UART_CONSOLE); 
   desc[SBC_UART_CONSOLE_DESC] = &SBC_UART_CONSOLE; 
-  usart_async_register_callback(&SBC_UART_CONSOLE, USART_ASYNC_RXC_CB, cb_sbc_console); 
-  usart_async_register_callback(&SBC_UART_CONSOLE, USART_ASYNC_TXC_CB, cb_sbc_console_tx); 
-  usart_async_register_callback(&SBC_UART_CONSOLE, USART_ASYNC_ERROR_CB, cb_sbc_console_err); 
-  usart_async_enable(&LTE_UART); 
-  desc[LTE_UART_DESC] = &LTE_UART; 
-  usart_async_register_callback(&LTE_UART, USART_ASYNC_RXC_CB, cb_lte); 
-  usart_async_register_callback(&LTE_UART, USART_ASYNC_TXC_CB, cb_lte_tx); 
-  usart_async_register_callback(&LTE_UART, USART_ASYNC_ERROR_CB, cb_lte_err); 
+  if (!callbacks_set) 
+  {
+    usart_async_register_callback(&SBC_UART_CONSOLE, USART_ASYNC_RXC_CB, cb_sbc_console); 
+    usart_async_register_callback(&SBC_UART_CONSOLE, USART_ASYNC_TXC_CB, cb_sbc_console_tx); 
+    usart_async_register_callback(&SBC_UART_CONSOLE, USART_ASYNC_ERROR_CB, cb_sbc_console_err); 
+  }
+  usart_async_enable(&SBC_UART_CONSOLE); 
+  uart_init[SBC_UART_CONSOLE_DESC] = 1; 
 #endif
 
+  desc[SBC_UART_DESC] = &SBC_UART; 
+
+  if (!callbacks_set) 
+  {
+    usart_async_register_callback(&SBC_UART, USART_ASYNC_RXC_CB, cb_sbc); 
+    usart_async_register_callback(&SBC_UART, USART_ASYNC_TXC_CB, cb_sbc_tx); 
+    usart_async_register_callback(&SBC_UART, USART_ASYNC_ERROR_CB, cb_sbc_err); 
+    callbacks_set = 1;
+  }
+  usart_async_enable(&SBC_UART); 
+  uart_init[SBC_UART_DESC] = 1; 
+
+}
+
+void sbc_io_deinit() 
+{
+  usart_async_disable(&SBC_UART); 
+  uart_init[SBC_UART_DESC]=0;
+  tx_in_progress[SBC_UART_DESC]=0;
+  usart_async_flush_rx_buffer(&SBC_UART); 
+#ifndef _BOOTLOADER_
+  usart_async_disable(&SBC_UART_CONSOLE); 
+  uart_init[SBC_UART_CONSOLE_DESC]=0;
+  tx_in_progress[SBC_UART_CONSOLE_DESC]=0;
+  usart_async_flush_rx_buffer(&SBC_UART_CONSOLE); 
+#endif
+
+}
+void lte_io_init() 
+{
+#ifndef _BOOTLOADER_
+  static int callbacks_set = 0;
+  desc[LTE_UART_DESC] = &LTE_UART; 
+  if (!callbacks_set) 
+  {
+    usart_async_register_callback(&LTE_UART, USART_ASYNC_RXC_CB, cb_lte); 
+    usart_async_register_callback(&LTE_UART, USART_ASYNC_TXC_CB, cb_lte_tx); 
+    usart_async_register_callback(&LTE_UART, USART_ASYNC_ERROR_CB, cb_lte_err); 
+    callbacks_set=1; 
+  }
+  usart_async_enable(&LTE_UART); 
+  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
+  gpio_set_pin_level(LTE_UART_ENABLE,0); 
+  uart_init[LTE_UART_DESC] = 1; 
+#endif
+}
+
+void lte_io_deinit() 
+{
+#ifndef _BOOTLOADER_
+  usart_async_disable(&LTE_UART); 
+  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_IN);
+  uart_init[LTE_UART_DESC]=0;
+  tx_in_progress[LTE_UART_DESC]=0;
+  usart_async_flush_rx_buffer(&LTE_UART); 
+#endif
 }
 
 int d_check(int d, int thresh) 
@@ -218,6 +270,7 @@ static uint8_t write_buf_end[3];
 
 int d_write(int d, int n, const uint8_t * data) 
 {
+  if (!uart_init[d]) return 0; 
 
   int i = d-1; 
 
@@ -267,6 +320,7 @@ int d_write(int d, int n, const uint8_t * data)
 
 int d_read(int d, int n, uint8_t * buf) 
 {
+   if (!uart_init[d]) return 0; 
    d_check(d, 10); 
    return usart_async_is_rx_not_empty(desc[d])
           ?  io_read(&desc[d]->io, buf,n) 

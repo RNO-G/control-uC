@@ -3,11 +3,13 @@
 
 // 1 if low_power_mode is on, 0 otherwise 
 
-extern int low_power_mode; 
+extern volatile int low_power_mode; 
 
 // Enters low power mode. This turns off the SBC and LTE, then the vicor. 
 int low_power_mode_enter() ; 
 
+int low_power_mon_on(); 
+int low_power_mon_off(); 
 
 int low_power_mode_exit() ; 
 

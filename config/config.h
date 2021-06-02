@@ -19,12 +19,12 @@
 
 #define MODE_CHANGE_MINTICKS 100
 
-//seconds
-#define LOW_POWER_SLEEP_AMOUNT 60 
+//seconds. Must be less than 7 with EW. 
+#define LOW_POWER_SLEEP_AMOUNT 7 
 
-// about 10 seconds
-#define LOW_POWER_AWAKE_TICKS  8192   
+#define LOW_POWER_AWAKE_TICKS  300   
 
 #define ENABLE_WATCHDOG 1 
+#define ENABLE_WATCHDOG_EW 1 
 
 #endif

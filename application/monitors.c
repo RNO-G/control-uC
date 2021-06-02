@@ -68,7 +68,15 @@ static uint16_t read_adc(int chan, int navg)
 
 int monitor_init()
 {
+	adc_sync_init(&ANALOGIN, ADC, (void *)NULL);
   return 0; 
+}
+
+
+void monitor_deinit() 
+{
+  adc_sync_deinit(&ANALOGIN); 
+
 }
 
 

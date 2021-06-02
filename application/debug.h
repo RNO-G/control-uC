@@ -6,6 +6,7 @@
 //to avoid inlining! 
 DONT_STRIP void dbg_gpio_set_pin_level(int pin, int level); 
 
+DONT_STRIP void infinite_loop(); 
 
 
 

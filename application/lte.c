@@ -3,8 +3,10 @@
 #include "shared/driver_init.h" 
 #include "hal_usart_async.h" 
 #include "shared/io.h" 
+#include "shared/spi_flash.h" 
 #include "shared/printf.h" 
 #include "application/time.h" 
+#include "lorawan/lorawan.h" 
 #include "config/config.h" 
 #include "include/rno-g-control.h" 
 #include "application/mode.h" 
@@ -77,8 +79,6 @@ static void lte_turn_on_cb(const struct timer_task * const task)
 {
   (void) task; 
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_IN);
-  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
-  gpio_set_pin_level(LTE_UART_ENABLE,0); 
   lte_state = LTE_ON;
   timer_add_task(&SHARED_TIMER, &lte_setup_gpio_task);
 }
@@ -111,20 +111,19 @@ static void lte_check_on_cb(const struct timer_task * const task)
       return; 
     }
   }
+  lte_io_deinit(); 
   //  we are not on
   lte_state = LTE_OFF; 
-  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_IN);
 }
 
-static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval = 10, .mode=TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval = 30, .mode=TIMER_TASK_ONE_SHOT }; 
 
 int lte_init() 
 {
   //check to see if we're on... 
-   gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_OUT);
-  gpio_set_pin_level(LTE_UART_ENABLE,0); 
-  dprintf(LTE_UART_DESC,"AT\r\n"); 
+  lte_io_init(); 
   timer_add_task(&SHARED_TIMER, &lte_check_on_task);
+  dprintf(LTE_UART_DESC,"AT\r\n"); 
   return 0; 
 }
 
@@ -146,8 +145,7 @@ int lte_turn_on(int force)
   gpio_set_pin_direction(LTE_ON_OFF, GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_ON_OFF,0); 
   lte_state = LTE_TURNING_ON; 
-
-
+  lte_io_init(); 
   timer_add_task(&SHARED_TIMER, &lte_turn_on_task);
   return 0; 
 
@@ -169,7 +167,9 @@ int lte_process(int up)
     if( up > next_rfsts)
     {
       lte_request(LTE_RFSTS); 
-      next_rfsts +=10; 
+      int interval = config_block()->app_cfg.lte_stats_interval; 
+      if (interval < 10) interval = 10; 
+      next_rfsts +=interval; 
     }
 
     while (async_tokenized_buffer_ready(&lte_io))
@@ -243,6 +243,10 @@ int lte_process(int up)
             }
           }
         }
+        if (lorawan_state() == LORAWAN_READY)
+        {
+          lorawan_tx_copy(RNO_G_LTE_STATS_SIZE ,RNO_G_MSG_LTE_STATS , (uint8_t*) lte_get_stats(),0); 
+        }
       }
       async_tokenized_buffer_discard(&lte_io); 
     }
@@ -266,7 +270,7 @@ int lte_turn_off(int force)
     return -1; 
   }
 
-  gpio_set_pin_direction(LTE_UART_ENABLE, GPIO_DIRECTION_IN);
+  lte_io_deinit(); 
 
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_ON_OFF,0); 

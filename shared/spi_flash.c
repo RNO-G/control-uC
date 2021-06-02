@@ -294,6 +294,7 @@ int spi_flash_raw_read(uint32_t addr, int len, uint8_t * buf)
 
 void spi_flash_deep_sleep()
 {
+  if(!awake) return; 
   CS_ON; 
   io_write(io,&DEEPSLEEP,1); 
   CS_OFF; 
@@ -356,6 +357,7 @@ static int spi_flash_read_config_block(config_block_t * config_block)
   if (current_config_block  < 0 ) 
   {
     default_init_block(config_block); 
+    config_block_sync(); 
     spi_flash_deep_sleep(); 
     return -1; 
   }
@@ -372,10 +374,14 @@ static int spi_flash_read_config_block(config_block_t * config_block)
   if (app_test != config_block_app_magic) 
   {
     default_init_app_cfg(&config_block->app_cfg); 
+    config_block_sync(); 
     return -2; 
   }
 
-  verify_app_cfg(&config_block->app_cfg); 
+  if (verify_app_cfg(&config_block->app_cfg))
+  {
+    config_block_sync(); 
+  }
 
 
   spi_flash_deep_sleep(); 

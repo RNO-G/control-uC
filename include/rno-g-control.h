@@ -118,20 +118,27 @@ enum rno_g_msg_type
 {
   RNO_G_MSG_REPORT = 1, 
   RNO_G_MSG_LTE_STATS = 2, 
-  RNO_G_MSG_LORA_STATS = 3 
+  RNO_G_MSG_LORA_STATS = 3, 
+  RNO_G_MSG_SBC = 4 
 }; 
+
+/** TODO, shrink this so it can fit in DR2 (53 bytes). Right now is 68 bytes 
+ *
+ *  Bridge can distinguish based on payload size as long as we keep the old struct def alive somehow. 
+ * */ 
 
 typedef struct rno_g_report
 {
   uint32_t when; 
-  uint8_t mode; 
-  uint8_t lte_state; 
+  uint8_t mode;  
+  uint8_t lte_state;
   uint8_t sbc_state; 
-  uint8_t sbc_boot_mode; 
+  uint8_t sbc_boot_mode;
   rno_g_monitor_t analog_monitor; 
   rno_g_power_system_monitor_t power_monitor; 
   rno_g_power_state_t power_state; 
 }rno_g_report_t; 
+
 
 typedef struct rno_g_lte_stats
 {
@@ -152,18 +159,32 @@ typedef struct rno_g_lte_stats
 typedef struct rno_g_lora_stats
 {
   uint32_t when;
+  uint32_t uptime;
   uint32_t rx; 
   uint32_t tx; 
   uint32_t tx_dropped;
   uint32_t rx_dropped;
+  int last_recv; 
+  int last_sent; 
+  int last_check; 
+  int join_time; 
+  short rssi; 
+  short snr; 
 } rno_g_lora_stats_t; 
 
+
+typedef struct rno_g_sbc_msg
+{
+  uint32_t when; 
+  char msg[40]; 
+} rno_g_sbc_msg_t; 
 
 enum rno_g_msg_size
 {
   RNO_G_REPORT_SIZE = sizeof(rno_g_report_t),
   RNO_G_LTE_STATS_SIZE = sizeof(rno_g_lte_stats_t),
-  RNO_G_LORA_STATS_SIZE = sizeof(rno_g_lora_stats_t)
+  RNO_G_LORA_STATS_SIZE = sizeof(rno_g_lora_stats_t), 
+  RNO_G_SBC_MSG_SIZE = sizeof(rno_g_sbc_msg_t)
 }; 
 
 
@@ -181,7 +202,9 @@ enum rno_g_cmd_type
   RNO_G_CMD_LORA_STATS=4,
   RNO_G_CMD_LORA_TIMESYNC=5,
   RNO_G_CMD_SET_GPS_SECS_OFFSET=6, 
-  RNO_G_CMD_TOO_LARGE = 7
+  RNO_G_CMD_SET_BATTERY_THRESHOLDS=7, 
+  RNO_G_CMD_SBC=8, 
+  RNO_G_CMD_TOO_LARGE = 9
 } ; 
 
 /* Sets the running mode */ 
@@ -198,13 +221,14 @@ typedef struct rno_g_cmd_report
 
 typedef struct rno_g_cmd_lte_stats
 {
-  uint16_t interval; //0 = once , otherwise in seconds
+  uint16_t interval; //in seconds, 0 treated as dfeault
 } rno_g_cmd_lte_stats_t; 
 
 
 typedef struct rno_g_cmd_lora_stats
 {
-  uint16_t interval; //0 = once , otherwise in seconds
+  uint16_t interval; //in seconds, 0 treated as default
+  uint16_t low_power_interval; //in seconds, 0 treated a sdefault
 } rno_g_cmd_lora_stats_t; 
 
 
@@ -218,6 +242,21 @@ typedef struct rno_g_cmd_set_gps_secs_offset
   int16_t offset; 
 } rno_g_cmd_set_gps_secs_offset_t; 
 
+typedef struct rno_g_cmd_battery_thresholds
+{
+  float turnoff_voltage;
+  float turnon_voltage; 
+} rno_g_cmd_battery_thresholds_t; 
+
+typedef struct rno_g_cmd_sbc
+{
+  char cmd[40]; 
+  uint8_t max_response_len; 
+  uint8_t max_history_len; 
+} rno_g_cmd_sbc_t; 
+
+
+
 enum rno_g_cmd_size
 {
   RNO_G_CMD_SET_MODE_SIZE = sizeof(rno_g_cmd_set_mode_t), 
@@ -225,7 +264,9 @@ enum rno_g_cmd_size
   RNO_G_CMD_LTE_STATS_SIZE = sizeof(rno_g_cmd_lte_stats_t), 
   RNO_G_CMD_LORA_STATS_SIZE = sizeof(rno_g_cmd_lora_stats_t), 
   RNO_G_CMD_LORA_TIMESYNC_SIZE = sizeof(rno_g_cmd_lora_timesync_t),  
-  RNO_G_CMD_SET_GPS_SECS_OFFSET_SIZE = sizeof(rno_g_cmd_set_gps_secs_offset_t)
+  RNO_G_CMD_SET_GPS_SECS_OFFSET_SIZE = sizeof(rno_g_cmd_set_gps_secs_offset_t), 
+  RNO_G_CMD_SET_BATTERY_THRESHOLDS_SIZE = sizeof(rno_g_cmd_battery_thresholds_t), 
+  RNO_G_CMD_SBC_SIZE = sizeof(rno_g_cmd_sbc_t)
 }; 
 
 

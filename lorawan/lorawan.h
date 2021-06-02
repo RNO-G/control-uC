@@ -5,6 +5,7 @@
 
 
 #include <stdint.h> 
+#include "rno-g-control.h" 
 
 
 typedef enum e_lwan_msg_flags
@@ -38,8 +39,6 @@ int lorawan_tx_getmem(uint8_t len, uint8_t opcode, uint8_t ** payload, uint8_t f
 int lorawan_tx_push(); 
 
 
-int lorawan_request_datetime(); 
-
 
 /** run the lorawan state machine for a bit 
  *  Returns  1 if we should inhibit sleeping 
@@ -60,7 +59,7 @@ int lorawan_rx_peek(uint8_t * len, uint8_t * port, uint8_t **msg, uint8_t *flags
 /** Pop the message off the queue */ 
 int lorawan_rx_pop(); 
 
-void lorawan_stats(int *tx, int *rx, int * tx_drop, int *rx_drop); 
+void lorawan_stats(rno_g_lora_stats_t * stats); 
 
 
 #endif
