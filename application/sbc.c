@@ -65,7 +65,7 @@ static void do_release_boot(const struct timer_task * const task)
     gpio_set_pin_direction(SBC_BOOT_SDCARD, GPIO_DIRECTION_IN); 
 }
 
-static struct timer_task sbc_release_boot_task = { .cb  = do_release_boot, .interval = 150, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task sbc_release_boot_task = { .cb  = do_release_boot, .interval = 500, .mode = TIMER_TASK_ONE_SHOT }; 
 
 static void do_turn_on(const struct timer_task * const task)
 {
@@ -81,7 +81,7 @@ static void do_turn_on(const struct timer_task * const task)
 }
 
 //could use the same task for both, I guess? 
-static struct timer_task sbc_turn_on_task = { .cb  = do_turn_on, .interval = 50, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task sbc_turn_on_task = { .cb  = do_turn_on, .interval = 100, .mode = TIMER_TASK_ONE_SHOT }; 
 
 int sbc_turn_on(sbc_boot_mode_t boot_mode) 
 {
@@ -484,9 +484,21 @@ int sbc_io_process()
 
 sbc_state_t sbc_get_state() { return the_sbc_state; } 
 
+static int noff_tries = 0; //give it up to 20 secs to turn off, I guess? 
+//TODO:make this not use a timer and just handle this in the process loop. Not sure if all these things are reentrant! 
 static void do_off(const struct timer_task * const task)
 {
-  (void) task;
+  if (noff_tries++ < 5)
+  {
+    report_schedule(50); 
+    if (report_get()->analog_monitor.i_sbc5v > SBC_CURRENT_THRESH)
+    {
+      timer_add_task(&SHARED_TIMER, task);
+      return; 
+    }
+  }
+
+
   i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
   i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
   set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
@@ -519,6 +531,7 @@ int sbc_turn_off()
     gpio_set_pin_level(SBC_SOFT_RESET,0); 
     gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT); 
   }
+  noff_tries = 0; 
   timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
 
   return 0; 

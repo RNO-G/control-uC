@@ -1,7 +1,7 @@
 CFLAGS=-Wall -O3 -g -Wextra
 
 
-PROGS=rno-g-controller-loader rno-g-controller-extract
+PROGS=rno-g-controller-loader rno-g-controller-extract rno-g-controllerd
 
 RNO_G_INSTALL_DIR?=/rno-g/
 PREFIX?=$(RNO_G_INSTALL_DIR)
@@ -10,6 +10,9 @@ all: $(PROGS)
 
 clean: 
 	rm -f $(PROGS) 
+
+rno-g-controllerd: rno-g-controllerd.c rno-g-controller.c 
+	$(CC) -o $@  $(CFLAGS) -D_HOST_ $^ -I../include
 
 rno-g-controller-loader: rno-g-controller-loader.c ../shared/base64.c 
 	$(CC) -o $@  $(CFLAGS) -D_HOST_ $^ -I../
