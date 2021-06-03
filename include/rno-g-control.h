@@ -28,6 +28,8 @@ typedef enum sbc_boot_mode
   SBC_BOOT_SDCARD = 1
 }sbc_boot_mode_t; 
 
+#define SBC_BOOT_MODE_STR(m) {"INTERNAL","SDCARD"}[m] 
+
 
 /** The overarching mode of the station */ 
 typedef enum rno_g_station_mode 
@@ -40,6 +42,7 @@ typedef enum rno_g_station_mode
   RNO_G_NOT_A_MODE = 5 // used for range check
 } rno_g_mode_t; 
 
+#define RNO_G_MODE_STR(m) (m < RNO_G_NOT_A_MODE ? {"INIT","NORMAL","SBC_ONLY","SBC_OFF","LOW_POWER"}[m] : "INVALID" )
 
 
 /** TODO:
@@ -56,6 +59,33 @@ typedef struct rno_g_power_state
   uint8_t surf_amp_power : 6; 
 } rno_g_power_state_t; 
 
+#define STRBL(x) (x) ? "true" : "false"
+
+
+#define RNO_G_POWER_STATE_JSON_FMT "{\"low_power_mode\": %s,\"sbc_power\":%s,"\
+                                   "\"lte_power\": %s,\"radiant_power\":%s,"\
+                                   "\"lowthresh_power\":%s,\"dh_amp_power\":[%s,%s,%s],"\
+                                   "\"surf_amp_power:\":[%s,%s,%s,%s,%s,%s]}"; 
+
+#define RNO_G_POWER_STATE_JSON_VALS(ps) \
+  STRBL(ps.low_power_mode),\
+  STRBL(ps.sbc_power),\
+  STRBL(ps.lte_power),\
+  STRBL(ps.radiant_power),\
+  STRBL(ps.lowthresh_power),\
+  STRBL(ps.dh_amp_power & 1),\
+  STRBL(ps.dh_amp_power & 2),\
+  STRBL(ps.dh_amp_power & 4),\
+  STRBL(ps.surf_amp_power & 1),\
+  STRBL(ps.surf_amp_power & 2),\
+  STRBL(ps.surf_amp_power & 4),\
+  STRBL(ps.surf_amp_power & 8),\
+  STRBL(ps.surf_amp_power & 16),\
+  STRBL(ps.surf_amp_power & 32)
+
+
+
+
 
 /** voltages, temperatures, etc. recorded by the MCU ADC */ 
 typedef struct rno_g_monitor
@@ -67,6 +97,18 @@ typedef struct rno_g_monitor
   int16_t i_sbc5v; 
   int16_t i_5v[2]; 
 } rno_g_monitor_t;
+
+#define RNO_G_MONITOR_JSON_FMT "{\"when\": %u, \"temp_C\": %f, \"I_surf3V_mA\":[%d,%d,%d,%d,%d,%d],"\
+                               "\"I_down3V_mA\":[%d,%d,%d],\"I_sbc5V_mA\":%d,\"I_radiant_mA\":%d,\"I_lowthresh_mA\":%d}"
+
+#define RNO_G_MONITOR_JSON_VALS(mon) \
+  mon.when,mon.temp_cC/100.,\
+  mon.i_surf3v[0],mon.i_surf3v[1],\
+  mon.i_surf3v[2],mon.i_surf3v[3],\
+  mon.i_surf3v[4],mon.i_surf3v[5],\
+  mon.i_down3v[0],mon.i_down3v[1],mon.i_down3v[2]\
+  mon.isbc5v,mon.i_5v[0],mon.i_5v[1] 
+
 
 /** Monitoring from the power board */ 
 typedef struct power_system_monitor
@@ -91,6 +133,20 @@ typedef struct power_system_monitor
 
 } rno_g_power_system_monitor_t;
 
+#define RNO_G_POWER_SYSTEM_MONITOR_JSON_FMT "{\"when_power\":%u,\"PV_V\":%f,\"PV_I_mA\":%u,\"BAT_V\":%f,\"BAT_I_mA\":%u"\
+                                            "\"when_temp\":%u,\"local_T_C\":%f,\"remote1_T_C\":%f:\"remote2_T_C\":%f}"
+
+#define RNO_G_POWER_SYSTEM_MONITOR_JSON_VALS(pm) \
+ pm.when_power,\
+ pm.PVv_cV/100.,\
+ pm.PVi_mA.,\
+ pm.BATv_cV/100.,\
+ pm.BATi_mA.,\
+ pm.when_temp.,\
+ pm.local_T_c+local_T_sixteenth_C/16.,\
+ pm.remote1_T_c+remote1_T_sixteenth_C/16.,\
+ pm.remote2_T_c+remote2_T_sixteenth_C/16.
+
 
 typedef enum lte_state
 {
@@ -101,6 +157,8 @@ typedef enum lte_state
   LTE_TURNING_OFF
 } lte_state_t; 
 
+#define LTE_STATE_STR(state)  {"LTE_INIT","LTE_OFF","LTE_TURNING_ON","LTE_TURNING_OFF"}[state] 
+
 typedef enum sbc_state
 {
   SBC_OFF, 
@@ -110,6 +168,7 @@ typedef enum sbc_state
 } sbc_state_t; 
 
 
+#define SBC_STATE_STR(state)  {"SBC_OFF","SBC_ON","SBC_TURNING_ON","SBC_TURNING_OFF"}[state] 
 
 
 /** These are the messages you can get from the LoRaWAN */ 
@@ -138,6 +197,17 @@ typedef struct rno_g_report
   rno_g_power_system_monitor_t power_monitor; 
   rno_g_power_state_t power_state; 
 }rno_g_report_t; 
+
+
+#define RNO_G_REPORT_JSON_FMT "{\"when\":%u,\"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\,\"sbc_boot_mode\":\"%s\""\
+                              "\"analog\":" RNO_G_MONITOR_JSON_FMT\
+                              "\"power_monitor\":" RNO_G_POWER_SYSTEM_MONITOR_JSON_FMT\
+                              "\"power_state\":" RNO_G_POWER_SYSTEM_MONITOR_JSON_FMT "}" 
+
+#define RNO_G_REPORT_JSON_VALS(r) \
+  r.when, RNO_G_MODE_STR(r.mode), LTE_STATE_STR(r.lte_state), SBC_STATE_STR(r.sbc_state), SBC_BOOT_MODE_STR(r.sbc_boot_mode),\
+  RNO_G_MONITOR_JSON_VALS(r.analog_monitor), RNO_G_POWER_SYSTEM_MONITOR_JSON_VALS(r.power_monitor), RNO_G_POWER_STATE_JSON_VALS(r.power_state)
+  
 
 
 typedef struct rno_g_lte_stats
@@ -268,8 +338,6 @@ enum rno_g_cmd_size
   RNO_G_CMD_SET_BATTERY_THRESHOLDS_SIZE = sizeof(rno_g_cmd_battery_thresholds_t), 
   RNO_G_CMD_SBC_SIZE = sizeof(rno_g_cmd_sbc_t)
 }; 
-
-
 
 
 #ifdef __cplusplus
