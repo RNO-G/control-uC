@@ -45,6 +45,7 @@ int lorawan_tx_push();
  * */ 
 int lorawan_process(int up); 
 
+int lorawan_sched_timesync(); 
 
 
 /** Copy the next message in the queue returning its size. */ 

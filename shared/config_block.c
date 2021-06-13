@@ -92,6 +92,10 @@ int verify_app_cfg(application_cfg_t* ac)
     ac->turnoff_voltage = dflt_ac.turnoff_voltage; 
     changed++; 
   }
+  if (ac->timesync_interval == -1) 
+  {
+    ac->timesync_interval = 4*3600; 
+  }
   return changed; 
 }
 

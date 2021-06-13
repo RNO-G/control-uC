@@ -64,6 +64,7 @@ typedef struct application_cfg
   int lora_stats_interval_low_power_mode; 
   float turnon_voltage; 
   float turnoff_voltage; 
+  int timesync_interval; 
 } application_cfg_t; 
 
 typedef struct config_block

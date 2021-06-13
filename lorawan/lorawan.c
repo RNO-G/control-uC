@@ -428,7 +428,7 @@ static bool ShouldSendLinkCheck(void)
 
 
 
-static bool should_request_time = 0; 
+static volatile int  should_request_time = 0; 
 static void RequestTime(void) 
 {
   //This sends a time request packet 
@@ -865,14 +865,20 @@ int lorawan_process(int up)
    {
      int have_time = get_time() > 1000000000; 
      should_request_time = 1; 
-     int delay_in_secs = have_time ? 3600*4 :  low_power_mode ?  60 : 15; 
+     int delay_in_secs = have_time ? config_block()->app_cfg.timesync_interval :  low_power_mode ?  60 : 15; 
      time_check+= delay_in_secs ;
      cant_sleep=1; 
    }
 
 
-
   return cant_sleep;
+}
+
+
+int lorawan_sched_timesync() 
+{
+  should_request_time = 1; 
+  return 0; 
 }
 
 //// CALLBACKS 
