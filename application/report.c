@@ -22,7 +22,7 @@ void report_schedule(int navg)
 }
 
 
-const rno_g_report_t * report_process(int up, int * extrawake) 
+const rno_g_report_t * report_process(int up, uint32_t * extrawake) 
 {
   static uint32_t report_ticks =0; 
   static int last_report = INT_MIN;
