@@ -8,6 +8,7 @@
 #include "shared/spi_flash.h" 
 #include "hal_calendar.h" 
 #include "shared/printf.h" 
+#include "shared/base64.h" 
 #include "include/rno-g-control.h" 
 #include "hal_flash.h"
 #include "application/i2cbus.h" 
@@ -294,6 +295,51 @@ static int sbc_io_process()
                  st.low_power_mode, st.sbc_power, st.lte_power, st.radiant_power, st.lowthresh_power, st.dh_amp_power, st.surf_amp_power); 
 
          valid=1; 
+      }
+      else if (!strcmp(in,"B64MON"))
+      {
+        const rno_g_report_t *report = report_get(); 
+        printf("#B64MON: "); 
+        base64_print(SBC_UART_DESC, sizeof(rno_g_report_t), (uint8_t*) report); 
+        printf("\r\n"); 
+        valid=1; 
+      }
+      else if (prefix_matches(in,"SET_BATT_MILLIVS"))
+      {
+        valid =1;  
+        int turnon, turnoff; 
+        const char * nxt = 0; 
+
+        if (parse_int(in+sizeof("SET_BATT_MILLIVS"), &nxt,&turnoff) ||
+            parse_int(nxt,&nxt,&turnon)) 
+        {
+          printf("#ERR: Failed to interpret:%s\r\n", in); 
+        }
+        else
+        {
+          if (turnon > 100) //make sure reasonable in V
+          {
+            float f = turnon/1000. ; 
+
+            if (f!=config_block()->app_cfg.turnon_voltage)
+            {
+              config_block()->app_cfg.turnon_voltage = f; 
+              need_sync = 1; 
+            }
+          }
+          if (turnoff > 100) //make sure reasonable in V
+          {
+            float f = turnoff/1000. ; 
+
+            if (f!=config_block()->app_cfg.turnoff_voltage)
+            {
+              config_block()->app_cfg.turnoff_voltage = f; 
+              need_sync = 1; 
+            }
+          }
+          printf("#SET_BATT_MILLIVS: %d %d\r\n", turnoff, turnon); 
+        }
+
       }
       else if (prefix_matches(in,"MONITOR-SCHED"))
       {
