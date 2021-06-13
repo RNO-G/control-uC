@@ -162,7 +162,13 @@ int main(void)
       //Check if we got an interrupt 
       if (n_interrupts > last_nint) 
       {
-        printf("#INFO: number of interrupts now %d\r\n", ++last_nint); 
+       printf("#INFO: number of interrupts now %d (3 to reset) \r\n", ++last_nint); 
+
+       if (n_interrupts >= 3) 
+       {
+         reset(0); 
+       }
+
       }
 
       // Service LTE (this does nothing for now) 
