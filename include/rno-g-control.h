@@ -309,7 +309,7 @@ typedef struct rno_g_cmd_lora_timesync
 
 typedef struct rno_g_cmd_set_gps_secs_offset
 {
-  int16_t offset; 
+  int8_t offset; 
 } rno_g_cmd_set_gps_secs_offset_t; 
 
 typedef struct rno_g_cmd_battery_thresholds
@@ -324,7 +324,6 @@ typedef struct rno_g_cmd_sbc
   uint8_t max_response_len; 
   uint8_t max_history_len; 
 } rno_g_cmd_sbc_t; 
-
 
 
 enum rno_g_cmd_size
