@@ -32,6 +32,10 @@ ASYNC_TOKENIZED_BUFFER(SBC_CONSOLE_BUF_LEN, sbc_console,"\r\n", SBC_UART_CONSOLE
 #define SBC_CURRENT_THRESH 100 
 
 static sbc_state_t the_sbc_state; 
+static int noff_tries = 0; //give it up to 20 secs to turn off, I guess? 
+static int up_turning_off = 0; 
+static int up_turning_on = 0; 
+static int ready_to_turn_off = 0; 
 
 void sbc_init()
 {
@@ -67,21 +71,22 @@ static void do_release_boot(const struct timer_task * const task)
 
 static struct timer_task sbc_release_boot_task = { .cb  = do_release_boot, .interval = 500, .mode = TIMER_TASK_ONE_SHOT }; 
 
-static void do_turn_on(const struct timer_task * const task)
+
+static void do_turn_on(int release_boot)
 {
   i2c_gpio_expander_t turn_on_sbc = {.sbc=1}; 
   set_gpio_expander_state (turn_on_sbc,turn_on_sbc); 
   the_sbc_state = SBC_ON; 
 
   //this means we have to release the boot select switch 
-  if (task) 
+  if (release_boot) 
   {
     timer_add_task(&SHARED_TIMER, &sbc_release_boot_task);
   }
 }
 
-//could use the same task for both, I guess? 
-static struct timer_task sbc_turn_on_task = { .cb  = do_turn_on, .interval = 100, .mode = TIMER_TASK_ONE_SHOT }; 
+
+
 
 int sbc_turn_on(sbc_boot_mode_t boot_mode) 
 {
@@ -94,7 +99,7 @@ int sbc_turn_on(sbc_boot_mode_t boot_mode)
     gpio_set_pin_direction(SBC_BOOT_SDCARD, GPIO_DIRECTION_OUT); 
     gpio_set_pin_level(SBC_BOOT_SDCARD, 0); 
     the_sbc_state = SBC_TURNING_ON; 
-    timer_add_task(&SHARED_TIMER, &sbc_turn_on_task);
+    up_turning_on = uptime(); 
   }
   else
   {
@@ -108,7 +113,7 @@ int sbc_turn_on(sbc_boot_mode_t boot_mode)
 
 
 
-int sbc_io_process()
+static int sbc_io_process()
 {
   if (the_sbc_state == SBC_OFF) return 0; 
 
@@ -482,35 +487,52 @@ int sbc_io_process()
     return 0; 
 }
 
-sbc_state_t sbc_get_state() { return the_sbc_state; } 
-
-static int noff_tries = 0; //give it up to 20 secs to turn off, I guess? 
-//TODO:make this not use a timer and just handle this in the process loop. Not sure if all these things are reentrant! 
-static void do_off(const struct timer_task * const task)
+int sbc_process (int up) 
 {
-  if (noff_tries++ < 5)
+
+  if (the_sbc_state == SBC_ON) 
   {
-    report_schedule(50); 
-    if (report_get()->analog_monitor.i_sbc5v > SBC_CURRENT_THRESH)
-    {
-      timer_add_task(&SHARED_TIMER, task);
-      return; 
-    }
+    sbc_io_process(); 
   }
 
+  else if (the_sbc_state == SBC_TURNING_OFF) 
+  {
+    if (!ready_to_turn_off && noff_tries++ < 5 && up_turning_off > 0  && up > up_turning_off + 3 )
+    {
+      report_schedule(50); 
+      if (report_get()->analog_monitor.i_sbc5v < SBC_CURRENT_THRESH)
+      {
+        ready_to_turn_off = 1; 
+      }
+    }
 
-  i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
-  i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
-  set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
-  the_sbc_state = SBC_OFF; 
+    if (noff_tries >= 5 || ready_to_turn_off) 
+    {
+      i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
+      i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
+      set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
+      the_sbc_state = SBC_OFF; 
+      report_schedule(50); 
+      noff_tries = 0; 
+    }
+  }
+  else if (the_sbc_state == SBC_TURNING_ON && up > up_turning_on+1) 
+  {
+    do_turn_on(1); 
+  }
+
+  return 0; 
 }
-static struct timer_task sbc_off_task = { .cb  = do_off, .interval = 400, .mode = TIMER_TASK_ONE_SHOT }; 
+
+
+sbc_state_t sbc_get_state() { return the_sbc_state; } 
+
 
 static void do_turn_off(const struct timer_task * const task)
 {
   (void) task;
   gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_IN); 
-  timer_add_task(&SHARED_TIMER, &sbc_off_task);
+  up_turning_off = uptime(); 
 }
 
 static struct timer_task sbc_turn_off_task = { .cb  = do_turn_off, .interval = 20, .mode = TIMER_TASK_ONE_SHOT }; 
@@ -524,15 +546,24 @@ int sbc_turn_off()
   sbc_io_deinit(); 
   the_sbc_state = SBC_TURNING_OFF; 
 
+
   // ONLY HIT POWER BUTTON IF CURRENT IS HIGH ENOUGH WE THINK THE SBC IS ACTUALLY ON... otherwise we'll turn it off then back on 
   report_schedule(50); 
+  up_turning_off = -1; 
   if (report_get()->analog_monitor.i_sbc5v > SBC_CURRENT_THRESH) 
   {
     gpio_set_pin_level(SBC_SOFT_RESET,0); 
     gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT); 
+    int up = uptime(); 
+    ready_to_turn_off = 1; 
+    sbc_process(up); //actually turn it off 
   }
-  noff_tries = 0; 
-  timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
+  else
+  {
+    noff_tries = 0; 
+    ready_to_turn_off = 0; 
+    timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
+  }
 
   return 0; 
 

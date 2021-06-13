@@ -151,6 +151,10 @@ int main(void)
       }
     }
 
+    // Service any messages from the SBC
+    sbc_process(up);
+
+
  
     if (!low_power_mode) 
     {
@@ -160,9 +164,6 @@ int main(void)
       {
         printf("#INFO: number of interrupts now %d\r\n", ++last_nint); 
       }
-
-      // Service any messages from the SBC
-      sbc_io_process();
 
       // Service LTE (this does nothing for now) 
       lte_process(up); 
