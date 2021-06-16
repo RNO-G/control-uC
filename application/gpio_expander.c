@@ -208,9 +208,9 @@ int get_gpio_expander_fault_state(i2c_gpio_expander_t * faults)
   i2c_queue_flush(); //either way we need to wait 
 
 
-  faults->sbc = D.data & ( 1 << I2C_EXPANDER_SBC_BIT);
-  faults->radiant = D.data & ( 1 << I2C_EXPANDER_5V_1_BIT);
-  faults->lt = D.data & ( 1 << I2C_EXPANDER_5V_2_BIT);
+  faults->sbc =!!( D.data & ( 1 << I2C_EXPANDER_SBC_BIT));
+  faults->radiant = !!( D.data & ( 1 << I2C_EXPANDER_5V_1_BIT));
+  faults->lt = !!(D.data & ( 1 << I2C_EXPANDER_5V_2_BIT));
 
 
   faults->surface_amps =0; 
