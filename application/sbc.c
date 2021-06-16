@@ -38,14 +38,22 @@ static int up_turning_off = 0;
 static int up_turning_on = 0; 
 static int ready_to_turn_off = 0; 
 
+
+static int16_t sbc_V() 
+{
+  monitor_select(MON_SBC_5V); 
+  delay_us(10000); 
+  return monitor(MON_SBC_5V,50); 
+}
+
 void sbc_init()
 {
   i2c_gpio_expander_t i2c_gpio; 
   get_gpio_expander_state(&i2c_gpio,1); //this must be called after i2cbus_init, so we'll have a value; 
-  report_schedule(50); 
+  
 
   //current is off but power is on, so we're probably out of sync... 
-  if (report_get()->analog_monitor.i_sbc5v < SBC_CURRENT_THRESH && i2c_gpio.sbc)  
+  if (sbc_V() < SBC_CURRENT_THRESH && i2c_gpio.sbc)  
   {
     i2c_gpio.sbc=0;
     i2c_gpio_expander_t i2c_mask = {.sbc = 1} ; 
@@ -545,15 +553,20 @@ int sbc_process (int up)
   {
     if (!ready_to_turn_off && noff_tries++ < 5 && up_turning_off > 0  && up > up_turning_off + 3 )
     {
-      report_schedule(50); 
-      if (report_get()->analog_monitor.i_sbc5v < SBC_CURRENT_THRESH)
+      if (sbc_V() < SBC_CURRENT_THRESH)
       {
         ready_to_turn_off = 1; 
+      }
+      else
+      {
+        up_turning_off = up; 
       }
     }
 
     if (noff_tries >= 5 || ready_to_turn_off) 
     {
+
+      //just in case it was pressed 
       i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
       i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
       set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
@@ -594,21 +607,21 @@ int sbc_turn_off()
 
 
   // ONLY HIT POWER BUTTON IF CURRENT IS HIGH ENOUGH WE THINK THE SBC IS ACTUALLY ON... otherwise we'll turn it off then back on 
-  report_schedule(50); 
   up_turning_off = -1; 
-  if (report_get()->analog_monitor.i_sbc5v > SBC_CURRENT_THRESH) 
+  if (sbc_V() > SBC_CURRENT_THRESH) 
   {
     gpio_set_pin_level(SBC_SOFT_RESET,0); 
     gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OUT); 
-    int up = uptime(); 
-    ready_to_turn_off = 1; 
-    sbc_process(up); //actually turn it off 
+    ready_to_turn_off = 0; 
+    noff_tries = 0; 
+    timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
   }
   else
   {
     noff_tries = 0; 
-    ready_to_turn_off = 0; 
-    timer_add_task(&SHARED_TIMER, &sbc_turn_off_task);
+    ready_to_turn_off = 1; 
+    int up = uptime(); 
+    sbc_process(up); //actually turn it off 
   }
 
   return 0; 
