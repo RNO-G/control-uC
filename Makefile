@@ -188,7 +188,7 @@ $(MKDIRS):
 
 clean:
 	rm -rf $(BUILD_DIR) 
-	make -C loader clean 
+	make -C client clean 
 
 uninstall: 
 	rm -f $(PREFIX)/include/rno-g-control.h
