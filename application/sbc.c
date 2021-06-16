@@ -278,6 +278,15 @@ static int sbc_io_process()
         printf("#EXPANDER-STATE: surf: %x, dh: %x, radiant: %x, lt: %x, sbc: %x\r\n", exp_state.surface_amps, exp_state.dh_amps, 
             exp_state.radiant, exp_state.lt, exp_state.sbc); 
       }
+      else if (!strcmp(in,"FAULT-STATE"))
+      {
+        valid =1; 
+        i2c_gpio_expander_t exp_faults; 
+        get_gpio_expander_fault_state(&exp_faults); 
+        printf("#FAULT-STATE: surf: %x, dh: %x, radiant: %x, lt: %x, sbc: %x\r\n", exp_faults.surface_amps, exp_faults.dh_amps, 
+            exp_faults.radiant, exp_faults.lt, exp_faults.sbc); 
+      }
+ 
       else if (!strcmp(in,"MONITOR"))
       {
         const rno_g_report_t *report = report_get(); 
