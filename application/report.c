@@ -14,11 +14,10 @@
 
 static volatile rno_g_report_t report; 
 
+static int report_scheduled_navg = 0; 
 void report_schedule(int navg) 
 {
-   power_monitor_schedule(); 
-   if (!navg) navg=10; 
-   monitor_fill(&report.analog_monitor,navg); 
+  report_scheduled_navg = navg; 
 }
 
 
@@ -27,7 +26,7 @@ const rno_g_report_t * report_process(int up, uint32_t * extrawake)
   static uint32_t report_ticks =0; 
   static int last_report = INT_MIN;
   static uint32_t next_power_monitor_fill = 0; 
-  static int power_mon_scheduled = 0;
+  static uint32_t power_mon_scheduled = 0; 
   
   const rno_g_report_t * ret = 0;
 
@@ -37,14 +36,16 @@ const rno_g_report_t * report_process(int up, uint32_t * extrawake)
   int interval = low_power_mode ? config_block()->app_cfg.report_interval_low_power_mode : config_block()->app_cfg.report_interval; 
   if (interval < 10) interval = 10; //rate limit! 
 
-  if (up >= last_report + interval  &&  up > 5 && (!low_power_mode  || up >=60)  )   // wait until at least 5 seconds in to make a report , 60 seconds if in low power mode (to give chance to connect to lroa) 
+  if (report_scheduled_navg ||   (up >= last_report + interval  &&  up > 5 && (!low_power_mode  || up >=60))  )   // wait until at least 5 seconds in to make a report , 60 seconds if in low power mode (to give chance to connect to lroa) 
   {
     low_power_mon_on(); 
     if (report_ticks > 0)
     {
         power_monitor_schedule(); 
     }
-    monitor_fill(&report.analog_monitor,20); 
+    monitor_fill(&report.analog_monitor,report_scheduled_navg ?: 20); 
+
+    report_scheduled_navg = 0; 
 
     last_report = up; 
     int nticks = 300/DELAY_MS; 
