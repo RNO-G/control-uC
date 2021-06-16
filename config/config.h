@@ -15,7 +15,7 @@
 #define ABOUT_A_MINUTE 65535
 
 
-#define APP_VERSION "Kangerlussuaq.061221.1" 
+#define APP_VERSION "Summit.061621.0" 
 
 #define MODE_CHANGE_MINTICKS 100
 
