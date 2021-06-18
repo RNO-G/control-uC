@@ -216,7 +216,11 @@ static int sbc_io_process()
           printf("#LTE-OFF!: ACK\r\n"); 
         }
       }
- 
+      else if (!strcmp(in,"LTE-STATE"))
+      {
+        valid =1 ; 
+        printf("#LTE-STATE: %d\r\n",lte_get_state()); 
+      }
       else if (!strcmp(in,"RADIANT-ON"))
       {
         valid=1; 
@@ -321,13 +325,13 @@ static int sbc_io_process()
         printf("\r\n"); 
         valid=1; 
       }
-      else if (prefix_matches(in,"SET_BATT_MILLIVS"))
+      else if (prefix_matches(in,"SET-BATT-MILLIVS"))
       {
         valid =1;  
         int turnon, turnoff; 
         const char * nxt = 0; 
 
-        if (parse_int(in+sizeof("SET_BATT_MILLIVS"), &nxt,&turnoff) ||
+        if (parse_int(in+sizeof("SET-BATT-MILLIVS"), &nxt,&turnoff) ||
             parse_int(nxt,&nxt,&turnon)) 
         {
           printf("#ERR: Failed to interpret:%s\r\n", in); 
@@ -354,9 +358,35 @@ static int sbc_io_process()
               need_sync = 1; 
             }
           }
-          printf("#SET_BATT_MILLIVS: %d %d\r\n", turnoff, turnon); 
+          printf("#SET-BATT-MILLIVS: %d %d\r\n", turnoff, turnon); 
         }
 
+      }
+      else if (!strcmp(in,"GET-BATT-MILLIVS"))
+      {
+        valid = 1; 
+        printf("#GET-BATT-MILLIVS: %d %d\r\n", config_block()->app_cfg.turnoff_voltage, config_block()->app_cfg.turnon_voltage); 
+
+      }
+      else if (!strcmp(in,"MODE-GET"))
+      {
+        valid = 1; 
+        printf("#MODE-GET: %d\r\n", mode_query()); 
+      }
+      else if (prefix_matches(in,"MODE-SET"))
+      {
+        int tomode = 0; 
+        parse_int(in + sizeof("MODE-GET"),0,&tomode); 
+        if (tomode > 0 && tomode < RNO_G_NORMAL_MODE) 
+        {
+          printf("MODE-SET: %d\r\n", tomode); 
+          mode_set(tomode); 
+        }
+        else
+        {
+          printf("#ERR: Invalid mode\r\n"); 
+        }
+        valid = 1; 
       }
       else if (prefix_matches(in,"MONITOR-SCHED"))
       {
