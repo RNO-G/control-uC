@@ -44,15 +44,15 @@
 //
 // 
 //
-static uint8_t tx_buffer[LORAWAN_TX_BUFFER_SIZE]; 
-static uint16_t tx_offsets[LORAWAN_MAX_TX_MESSAGES]; 
-static uint8_t tx_flags[LORAWAN_MAX_TX_MESSAGES]; 
-static uint8_t tx_ports[LORAWAN_MAX_TX_MESSAGES]; 
+static uint8_t tx_buffer[LORAWAN_BUFFER_SIZE]; 
+static uint16_t tx_offsets[LORAWAN_MAX_MESSAGES]; 
+static uint8_t tx_flags[LORAWAN_MAX_MESSAGES]; 
+static uint8_t tx_ports[LORAWAN_MAX_MESSAGES]; 
 
-static uint8_t rx_buffer[LORAWAN_TX_BUFFER_SIZE]; 
-static uint16_t rx_offsets[LORAWAN_MAX_TX_MESSAGES]; 
-static uint8_t rx_flags[LORAWAN_MAX_TX_MESSAGES]; 
-static uint8_t rx_ports[LORAWAN_MAX_TX_MESSAGES]; 
+static uint8_t rx_buffer[LORAWAN_BUFFER_SIZE]; 
+static uint16_t rx_offsets[LORAWAN_MAX_MESSAGES]; 
+static uint8_t rx_flags[LORAWAN_MAX_MESSAGES]; 
+static uint8_t rx_ports[LORAWAN_MAX_MESSAGES]; 
 
 static volatile int joined = 0; 
 static int last_cycle_or_join =0; 
@@ -145,7 +145,7 @@ static uint8_t first_message_flags(struct msg_buffer * b)
 {
   int imessage; 
   CRITICAL_SECTION_BEGIN() ; 
-  imessage = b->n_messages-(b->queued + b->consumed) - 1; 
+  imessage = (b->queued + b->consumed); 
   CRITICAL_SECTION_END() ; 
   if (imessage < 0) return 0; 
   else return b->flags[imessage]; 
@@ -155,7 +155,7 @@ static uint8_t first_message_port(struct msg_buffer * b)
 {
   int imessage; 
   CRITICAL_SECTION_BEGIN() ; 
-  imessage = b->n_messages-(b->queued + b->consumed) - 1; 
+  imessage = b->queued + b->consumed; 
   CRITICAL_SECTION_END() ; 
  
   return imessage < 0 ? 0 : b->ports[imessage]; 
@@ -175,29 +175,35 @@ static void consume_first_message(struct msg_buffer *b)
   {
     b->n_messages=0 ;
     b->used = 0; 
+    memset(b->offsets,0,sizeof(*b->offsets)*LORAWAN_MAX_MESSAGES); 
+
+    CRITICAL_SECTION_BEGIN();
+    b->consumed--; 
+    CRITICAL_SECTION_END();
   }
 
-  else
+  CRITICAL_SECTION_BEGIN();
+  if (!b->queued) //can't move memory from underneath it! 
   {
     int len = first_message_to_consume_length(b); 
-    if (len < 0) return; 
-
-    ASSERT(b->used >= len); 
-    b->used-=len; 
-    memmove(b->buffer, b->buffer+len, b->used); 
-    b->n_messages--; 
-
-    if (b->n_messages) 
+    if (len >= 0)
     {
-      //NOTE: these 3 can be circular buffers... change later. 
-      memmove(b->flags, b->flags+1, b->n_messages); 
-      memmove(b->ports, b->ports+1, b->n_messages); 
-      memmove(b->offsets, b->offsets+1, b->n_messages*sizeof(*b->offsets)); 
-      for (int i = 0; i < b->n_messages; i++) b->offsets[i]-=len; 
+      ASSERT(b->used >= len); 
+      b->used-=len; 
+      memmove(b->buffer, b->buffer+len, b->used); 
+      b->n_messages--; 
+
+      if (b->n_messages) 
+      {
+        //NOTE: these 3 can be circular buffers... change later. 
+        memmove(b->flags, b->flags+1, b->n_messages); 
+        memmove(b->ports, b->ports+1, b->n_messages); 
+        memmove(b->offsets, b->offsets+1, b->n_messages*sizeof(*b->offsets)); 
+        for (int i = 0; i < b->n_messages; i++) b->offsets[i]-=len; 
+      }
+      b->consumed--; 
     }
   }
-  CRITICAL_SECTION_BEGIN();
-  b->consumed--; 
   CRITICAL_SECTION_END();
 }
 
@@ -207,7 +213,7 @@ static int have_tx_capacity(int len)
 {
 
  // CRITICAL_SECTION_BEGIN() ; 
-  int have_room = (len+tx.used < LORAWAN_TX_BUFFER_SIZE) && (tx.n_messages < LORAWAN_MAX_TX_MESSAGES);
+  int have_room = (len+tx.used < LORAWAN_BUFFER_SIZE) && (tx.n_messages < LORAWAN_MAX_MESSAGES);
  // CRITICAL_SECTION_END() ; 
 
   return have_room; 
@@ -215,7 +221,7 @@ static int have_tx_capacity(int len)
 static int have_rx_capacity(int len)
 {
  // CRITICAL_SECTION_BEGIN() ; 
-  int have_room = (len+rx.used < LORAWAN_RX_BUFFER_SIZE) && (rx.n_messages < LORAWAN_MAX_RX_MESSAGES);
+  int have_room = (len+rx.used < LORAWAN_BUFFER_SIZE) && (rx.n_messages < LORAWAN_MAX_MESSAGES);
   //CRITICAL_SECTION_END() ; 
 
   return have_room;
@@ -230,7 +236,7 @@ int msg_getmem(struct msg_buffer *b, uint8_t len, uint8_t port, uint8_t **msg, u
   int got_mem = 0; 
 
   //see if we need to clear anything 
-  while (b->consumed)
+  while (b->consumed && !b->queued)
   {
     consume_first_message(b); 
   }
@@ -272,7 +278,7 @@ int lorawan_tx_getmem(uint8_t len, uint8_t port, uint8_t **msg, uint8_t flags)
   if (!have_tx_capacity(len))
   {
     //try to consume 
-    while (tx.consumed)
+    while (tx.consumed && !tx.queued)
     {
       consume_first_message(&tx); 
     }
@@ -517,6 +523,7 @@ static uint8_t IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
 
 /* Send the next thing in our buffer, I guess ? */ 
 static volatile int sent_empty = 0; 
+static uint8_t * lora_buffer = 0; 
 static bool SendFrame( void ) { 
 
   if (tx.queued) return true; 
@@ -558,9 +565,9 @@ static bool SendFrame( void ) {
     } else { 
 
      
-      uint8_t * buffer = first_message(&tx); 
       last_queued = uptime(); 
       CRITICAL_SECTION_BEGIN()
+      lora_buffer = first_message(&tx); 
       tx.pushed--; 
       tx.queued++; 
       CRITICAL_SECTION_END()
@@ -572,7 +579,7 @@ static bool SendFrame( void ) {
 #endif
         mcpsReq.Type = MCPS_UNCONFIRMED;
         mcpsReq.Req.Unconfirmed.fPort = port;
-        mcpsReq.Req.Unconfirmed.fBuffer = buffer;
+        mcpsReq.Req.Unconfirmed.fBuffer = lora_buffer;
         mcpsReq.Req.Unconfirmed.fBufferSize = buffer_length;
         mcpsReq.Req.Unconfirmed.Datarate = LORAWAN_DEFAULT_DATARATE;
       } else {
@@ -581,7 +588,7 @@ static bool SendFrame( void ) {
 #endif
         mcpsReq.Type = MCPS_CONFIRMED;
         mcpsReq.Req.Confirmed.fPort = port;
-        mcpsReq.Req.Confirmed.fBuffer = buffer;
+        mcpsReq.Req.Confirmed.fBuffer = lora_buffer;
         mcpsReq.Req.Confirmed.fBufferSize = buffer_length;
         mcpsReq.Req.Confirmed.NbTrials = 8;
         mcpsReq.Req.Confirmed.Datarate = LORAWAN_DEFAULT_DATARATE;

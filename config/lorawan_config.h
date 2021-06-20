@@ -5,11 +5,8 @@
 /* Defines for lorawan here */ 
 
 
-#define LORAWAN_TX_BUFFER_SIZE 256
-#define LORAWAN_MAX_TX_MESSAGES 4
-
-#define LORAWAN_RX_BUFFER_SIZE 512
-#define LORAWAN_MAX_RX_MESSAGES 8
+#define LORAWAN_BUFFER_SIZE 512
+#define LORAWAN_MAX_MESSAGES 4
 
 #define LORAWAN_PRINT_DEBUG 0
 
