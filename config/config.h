@@ -15,7 +15,7 @@
 #define ABOUT_A_MINUTE 65535
 
 
-#define APP_VERSION "Summit.062021.0" 
+#define APP_VERSION "Summit.062121.0" 
 
 #define MODE_CHANGE_MINTICKS 100
 

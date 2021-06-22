@@ -365,7 +365,9 @@ static int sbc_io_process()
       else if (!strcmp(in,"GET-BATT-MILLIVS"))
       {
         valid = 1; 
-        printf("#GET-BATT-MILLIVS: %d %d\r\n", config_block()->app_cfg.turnoff_voltage, config_block()->app_cfg.turnon_voltage); 
+        int turnoff = config_block()->app_cfg.turnoff_voltage *1000;
+        int turnon = config_block()->app_cfg.turnon_voltage *1000;
+        printf("#GET-BATT-MILLIVS: %d %d\r\n", turnoff, turnon); 
 
       }
       else if (!strcmp(in,"MODE-GET"))
