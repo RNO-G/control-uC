@@ -864,7 +864,7 @@ int lorawan_process(int up)
 
        int interval = low_power_mode ? config_block()->app_cfg.lora_stats_interval_low_power_mode : config_block()->app_cfg.lora_stats_interval ; 
        if (interval < 10) interval = 10; 
-       next_lora_stats += interval;
+       next_lora_stats = up + interval;
        cant_sleep =1; 
    }
 

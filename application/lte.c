@@ -169,7 +169,7 @@ int lte_process(int up)
       lte_request(LTE_RFSTS); 
       int interval = config_block()->app_cfg.lte_stats_interval; 
       if (interval < 10) interval = 10; 
-      next_rfsts +=interval; 
+      next_rfsts = up + interval; 
     }
 
     while (async_tokenized_buffer_ready(&lte_io))
