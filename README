@@ -17,7 +17,7 @@ Directory structure:
   lorawan/  the LoraMac endpoint reference implementation, ported to this microcontroller. 
   linker/  linker scripts 
   shared/  code shared between application and bootloader  (outside of asf4 and config) 
-  loader/ userspace loading programs for loading a program to the bootloader via usb or uart. These are built separately. 
+  client/ userspace loading programs for loading a program to the bootloader via usb or uart. These are built separately. 
 
 
 
