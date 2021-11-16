@@ -387,8 +387,8 @@ static int sbc_io_process()
       else if (prefix_matches(in,"MODE-SET"))
       {
         int tomode = 0; 
-        parse_int(in + sizeof("MODE-GET"),0,&tomode); 
-        if (tomode > 0 && tomode < RNO_G_NORMAL_MODE) 
+        parse_int(in + sizeof("MODE-SET"),0,&tomode); 
+        if (tomode > 0 && tomode < RNO_G_NOT_A_MODE) 
         {
           printf("MODE-SET: %d\r\n", tomode); 
           mode_set(tomode); 
