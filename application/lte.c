@@ -85,12 +85,19 @@ static void lte_turn_on_cb(const struct timer_task * const task)
 
 static struct timer_task lte_turn_on_task = { .cb  = lte_turn_on_cb, .interval = 550, .mode = TIMER_TASK_ONE_SHOT }; 
 
+
+static void lte_power_off_cb(const struct timer_task * const task) 
+{
+  gpio_set_pin_level(LTE_REG_EN,0);
+  lte_state = LTE_OFF; 
+}
+static struct timer_task lte_power_off_task = { .cb  = lte_power_off_cb, .interval = 500, .mode = TIMER_TASK_ONE_SHOT }; 
+
 static void lte_turn_off_cb(const struct timer_task * const task)
 {
   (void) task; 
   gpio_set_pin_direction(LTE_ON_OFF,GPIO_DIRECTION_IN);
-  gpio_set_pin_level(LTE_REG_EN,0);
-  lte_state = LTE_OFF; 
+  timer_add_task(&SHARED_TIMER, &lte_power_off_task);
 }
 
 static struct timer_task lte_turn_off_task = { .cb  = lte_turn_off_cb, .interval = 300, .mode = TIMER_TASK_ONE_SHOT }; 
