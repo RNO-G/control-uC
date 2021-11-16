@@ -15,7 +15,7 @@
 #define ABOUT_A_MINUTE 65535
 
 
-#define APP_VERSION "Summit.062921.0" 
+#define APP_VERSION "Chicago.102221.0" 
 
 #define MODE_CHANGE_MINTICKS 100
 

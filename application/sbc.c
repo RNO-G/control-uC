@@ -221,6 +221,15 @@ static int sbc_io_process()
         valid =1 ; 
         printf("#LTE-STATE: %d\r\n",lte_get_state()); 
       }
+      else if (!strcmp(in,"LTE-STATS"))
+      {
+        valid =1 ; 
+        const rno_g_lte_stats_t * st = lte_get_stats(); 
+        printf("#LTE-STATS: { when:%d, mcc: %hd mnc: %hd, earcfn: %hu, \r\n",st->when, st->mcc, st->mnc, st->earfcn); 
+        printf("              rsrp:%hhd, rssi: %hhd, rsrqx10: -%hhu, \r\n", st->rsrp, st->rssi, st->neg_rsrq_x10); 
+        printf("              band: %hhu, svcdom: %hhd, prseok: %hhd } \r\n", st->band, st->service_domain, st->parsed_ok); 
+      }
+ 
       else if (!strcmp(in,"RADIANT-ON"))
       {
         valid=1; 
