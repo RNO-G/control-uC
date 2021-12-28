@@ -50,11 +50,6 @@ void ANALOGIN_PORT_init(void)
 {
 
 	// Disable digital pin circuitry
-	gpio_set_pin_direction(TEMP_SENSOR, GPIO_DIRECTION_OFF);
-
-	gpio_set_pin_function(TEMP_SENSOR, PINMUX_PA02B_ADC_AIN0);
-
-	// Disable digital pin circuitry
 	gpio_set_pin_direction(AIN1, GPIO_DIRECTION_OFF);
 
 	gpio_set_pin_function(AIN1, PINMUX_PA03B_ADC_AIN1);
@@ -558,31 +553,33 @@ void system_init(void)
 
 	// GPIO on PA28
 
-	gpio_set_pin_level(WATCHDOG,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
+	// Set pin direction to input
+	gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_IN);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(WATCHDOG, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(LTE_NRST,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
-	gpio_set_pin_function(WATCHDOG, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(LTE_NRST, GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PB00
 
-	gpio_set_pin_level(HEATER_FET_CNTRL,
-	                   // <y> Initial level
-	                   // <id> pad_initial_level
-	                   // <false"> Low
-	                   // <true"> High
-	                   false);
+	// Set pin direction to input
+	gpio_set_pin_direction(I2C_NRST, GPIO_DIRECTION_IN);
 
-	// Set pin direction to output
-	gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OUT);
+	gpio_set_pin_pull_mode(I2C_NRST,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
 
-	gpio_set_pin_function(HEATER_FET_CNTRL, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(I2C_NRST, GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PB01
 
@@ -700,6 +697,21 @@ void system_init(void)
 	gpio_set_pin_direction(LTE_DTR, GPIO_DIRECTION_OUT);
 
 	gpio_set_pin_function(LTE_DTR, GPIO_PIN_FUNCTION_OFF);
+
+	// GPIO on PB17
+
+	// Set pin direction to input
+	gpio_set_pin_direction(HEATER_FET_CTRL, GPIO_DIRECTION_IN);
+
+	gpio_set_pin_pull_mode(HEATER_FET_CTRL,
+	                       // <y> Pull configuration
+	                       // <id> pad_pull_config
+	                       // <GPIO_PULL_OFF"> Off
+	                       // <GPIO_PULL_UP"> Pull-up
+	                       // <GPIO_PULL_DOWN"> Pull-down
+	                       GPIO_PULL_OFF);
+
+	gpio_set_pin_function(HEATER_FET_CTRL, GPIO_PIN_FUNCTION_OFF);
 
 	// GPIO on PB22
 
