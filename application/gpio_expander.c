@@ -48,6 +48,10 @@ static i2c_task_t B_query  = { .addr = I2C_EXPANDER_B, .write =0, .reg=I2C_EXPAN
 static i2c_task_t A_dir = { .addr = I2C_EXPANDER_A, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
 static i2c_task_t B_dir = { .addr = I2C_EXPANDER_B, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
 
+#ifndef _RNO_G_REV_D
+static i2c_task_t B_inv = { .addr = I2C_EXPANDER_B, .write = 1, .reg=I2C_EXPANDER_INVERT_POLARITY_REGISTER, .data = 0x3, .done = 1}; 
+#endif
+
 //these are only used for reads
 static i2c_task_t C =  { .addr = I2C_EXPANDER_C, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ;
 static i2c_task_t D = { .addr = I2C_EXPANDER_C, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ; 
@@ -68,6 +72,15 @@ static const uint8_t dh_amp_map[3] = {
   I2C_EXPANDER_DH_AMP_2_BIT, 
   I2C_EXPANDER_DH_AMP_3_BIT, 
 }; 
+
+
+int gpio_expander_init() 
+{
+#ifndef _RNO_G_REV_D
+  i2c_enqueue(&B_inv); 
+#endif
+  get_gpio_expander_state(0,0); 
+}
 
 
 //yuck

@@ -24,6 +24,9 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value, int cached);
 /** Read the faults */ 
 int get_gpio_expander_fault_state(i2c_gpio_expander_t * faults);
 
+/** Initialize gpio expander state */ 
+int gpio_expander_init(); 
+
 
 
 

@@ -10,7 +10,7 @@
 static void init_i2c_devices()
 {
   //make sure the gpio expander state is correct
-  get_gpio_expander_state(0,0); 
+  gpio_expander_init(); 
 }
 
 
