@@ -19,9 +19,11 @@ typedef enum e_monitor
   MON_SBC_5V  ,
   MON_DOWN_3V1 , 
   MON_DOWN_3V2 , 
-  MON_DOWN_3V3 , 
-  MON_5V1, 
+  MON_DOWN_3V3  
+#ifdef _RNO_G_REV_D
+  , MON_5V1, 
   MON_5V2 
+#endif
 } monitor_t ; 
 
 

@@ -61,6 +61,14 @@ struct wdt_descriptor INTERNAL_WATCHDOG;
 static void ANALOGIN_PORT_init(void)
 {
 
+#ifdef _RNO_G_REV_D
+	// Disable digital pin circuitry
+	gpio_set_pin_direction(TEMP_SENSOR, GPIO_DIRECTION_OFF);
+
+	gpio_set_pin_function(TEMP_SENSOR, PINMUX_PA02B_ADC_AIN0);
+#endif
+
+
 	// Disable digital pin circuitry
 	gpio_set_pin_direction(AIN1, GPIO_DIRECTION_OFF);
 
@@ -556,10 +564,24 @@ void system_init(void)
 	gpio_set_pin_function(LTE_REG_EN, GPIO_PIN_FUNCTION_OFF);
 
 
+#ifdef _RNO_G_REV_D 
 	gpio_set_pin_level(WATCHDOG, false);
 	gpio_set_pin_direction(WATCHDOG, GPIO_DIRECTION_OUT);
 	gpio_set_pin_function(WATCHDOG, GPIO_PIN_FUNCTION_OFF);
+#endif 
 
+
+#ifndef _RNO_G_REV_D
+  gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_IN); 
+  gpio_set_pin_pull_mode(LTE_NRST, GPIO_PULL_OFF); 
+  gpio_set_pin_function(LTE_NRST, GPIO_PIN_FUNCTION_OFF); 
+
+  gpio_set_pin_direction(I2C_NRST, GPIO_DIRECTION_IN); 
+  gpio_set_pin_pull_mode(I2C_NRST, GPIO_PULL_OFF); 
+  gpio_set_pin_function(I2C_NRST, GPIO_PIN_FUNCTION_OFF); 
+#endif 
+
+  //Is it better to be high-Z or low? Not sure it makes a difference in terms of power consumption... since there should be no current flowing either way? 
 	gpio_set_pin_level(HEATER_FET_CNTRL, false);
 	gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OUT);
 	gpio_set_pin_function(HEATER_FET_CNTRL, GPIO_PIN_FUNCTION_OFF);

@@ -18,6 +18,12 @@ ifeq ($(DEBUG_FLAG),1)
 	CFLAGS += -DDEBUG
 endif
 
+REV=rev_E
+ifeq ($(BUILD_FOR_REV_D),1)
+	CFLAGS += -D_RNO_G_REV_D
+	REV=rev_D 
+endif
+
 
 CFLAGS+= $(WARNINGS) 
 
@@ -64,7 +70,7 @@ MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application 
 OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-main
 BL_OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-bootloader
 
-.PHONY: help install mcu clean 
+.PHONY: help install mcu clean rev
 
 help: 
 	@echo "Targets: " 
@@ -79,8 +85,10 @@ help:
 
 
 # MCU 
-mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin
+mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin rev
 
+rev: 
+	echo $(REV) > $(BUILD_DIR)/rev.txt
 
 install: 
 	install include/rno-g-control.h $(PREFIX)/include/

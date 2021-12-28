@@ -5,6 +5,7 @@
 #include "hpl_calendar.h" 
 #include "shared/printf.h" 
 #include "application/time.h" 
+#include <string.h> 
 
 
 
@@ -35,12 +36,16 @@ uint8_t dh_map[3] = { MON_DOWN_3V1, MON_DOWN_3V2, MON_DOWN_3V3 };
 
 enum ADC_CHANNELS
 {
+#ifdef _RNO_G_REV_D
   ADC_TEMP = 0, 
+#endif
   ADC_MONA = 13,
   ADC_MONB = 12,
+#ifdef _RNO_G_REV_D
   ADC_MON_5V1 = 15,
   ADC_MON_5V2 = 14, 
-  ADC_MON_ITEMP = 18
+#endif
+  ADC_MON_ITEMP = 0x18
 };
 
 
@@ -80,6 +85,9 @@ void monitor_deinit()
 }
 
 
+/** on REV_D, this is the on-board temperature sensor
+ * */ 
+#ifdef _RNO_G_REV_D
 int16_t monitor_temperature(int navg) 
 {
   uint16_t raw = read_adc(ADC_TEMP, navg); 
@@ -93,6 +101,52 @@ int16_t monitor_temperature(int navg)
 
   return (int16_t) (t*100); 
 }
+#else
+// otherwise, let's monitor the internal temperature? 
+// See section 37.11.8.2 of datasheet
+int16_t monitor_temperature(int navg) 
+{
+
+  uint16_t raw = read_adc(ADC_MON_ITEMP, navg); 
+
+  static uint64_t calib = 0; 
+  static float room_T ; 
+  static float hot_T; 
+
+  static float room_1V; 
+  static float hot_1V; 
+  static float room_V; 
+  static float hot_V; 
+  if (!calib) 
+  {
+    memcpy(&calib, (uint64_t*) 0x00806030, sizeof(calib)); 
+    room_T = (calib & 0xff)  + 0.1 * ( (calib >> 8) & 0xf); 
+    hot_T = ((calib >> 12)  & 0xff)  + 0.1 * ( (calib >> 20) & 0xf); 
+    int8_t room_1V_diff = (calib >> 24 ) & 0xff; 
+    int8_t hot_1V_diff = (calib >> 32 ) & 0xff; 
+    room_1V = 1. - 0.001 * room_1V_diff;
+    hot_1V = 1. - 0.001 * hot_1V_diff;
+    uint16_t room_val = (calib >> 40) & 0xfff; 
+    uint16_t hot_val = (calib >> 52) & 0xfff; 
+
+    room_V = room_val * room_1V / 4095.;
+    hot_V = hot_val * hot_1V / 4095.;
+  }
+  float est_1V =1 ; 
+
+  float T = 0;
+  for (int i = 0; i < 2; i++) 
+  {
+     T = ( raw  * est_1V/ 4095. - room_V) * (hot_T - room_T) / ( hot_V - room_V); 
+     if (i == 1) break; 
+     est_1V = room_1V + ( hot_1V - room_1V) * (T - room_T) / (hot_T - room_T); 
+  }
+
+  return (int16_t) (T*100); 
+}
+
+
+#endif
 
 
 int16_t imon(int input, int navg, int R) 
@@ -142,7 +196,13 @@ int monitor_fill(rno_g_monitor_t * m, int navg)
   int i;
   m->when = get_time() ; 
 
-  for (i = 0; i < 6; i++) 
+#ifdef _RNO_G_REV_D
+  const int max = 6; 
+#else
+  const int max = 5; 
+#endif
+
+  for (i = 0; i < max; i++) 
   {
     m->i_surf3v[i] = monitor(surf_map[i], navg); 
     monitor_select(surf_map[ (i+1) % 6] ); 
@@ -159,17 +219,19 @@ int monitor_fill(rno_g_monitor_t * m, int navg)
     {
      m->temp_cC = monitor(MON_TEMPERATURE,navg); 
     }
+#ifdef _RNO_G_REV_D
     else if (i==5) 
     {
      m->i_5v[0] = monitor(MON_5V1, navg);
      m->i_5v[1] = monitor(MON_5V2, navg);
     }
+#endif
     else if (i == 4) 
     {
       m->i_sbc5v = monitor(MON_SBC_5V, navg); 
       monitor_select(MON_DOWN_3V1); 
     }
-    if ( i < 5) 
+    if ( i < max-1) 
       delay_us(3000); 
   }
   return 0; 
@@ -217,10 +279,12 @@ int16_t monitor(monitor_t what, int navg)
     case MON_DOWN_3V2: 
     case MON_DOWN_3V3: 
       return imon(ADC_MONB,navg,1400); 
+#ifdef _RNO_G_REV_D
     case  MON_5V1: 
       return imon(ADC_MON_5V1,navg,620); 
     case  MON_5V2: 
       return imon(ADC_MON_5V2,navg,620); 
+#endif
     default: 
       return -32768; 
   }
