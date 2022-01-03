@@ -85,7 +85,7 @@ int gpio_expander_init()
   i2c_enqueue(&A_inv); 
   i2c_enqueue(&B_inv); 
 #endif
-  get_gpio_expander_state(0,0); 
+  return get_gpio_expander_state(0,0); 
 }
 
 
@@ -226,8 +226,8 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
   value->j29 = 0;
   value->ext_bus = 0; 
 #else
-  value->j29 = A_state.data & (1 << I2C_EXPANDER_J29_BIT);
-  value->ext_bus = A_state.data & (1 << I2C_EXPANDER_EXT_BUS_BIT);
+  value->j29 = !!(A_state.data & (1 << I2C_EXPANDER_J29_BIT));
+  value->ext_bus = !!(A_state.data & (1 << I2C_EXPANDER_EXT_BUS_BIT));
 #endif
 
   return 0; 

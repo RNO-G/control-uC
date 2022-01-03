@@ -21,6 +21,7 @@ int i2c_busmux_reset(void)
   gpio_set_pin_direction(I2C_NRST, GPIO_DIRECTION_OUT); 
   delay_us(1); 
   gpio_set_pin_direction(I2C_NRST, GPIO_DIRECTION_IN); 
+  return 0; 
 }
 
 static i2c_task_t busmux_select = { .addr = I2C_BUSMUX_ADDR, .write = 1, .reg=0, .data = 0, .done = 1, .flags = I2CTSK_REG_LESS}; 
