@@ -15,7 +15,13 @@
 #define ABOUT_A_MINUTE 65535
 
 
-#define APP_VERSION "Chicago.102221.0" 
+#ifdef _RNO_G_REV_D
+#define APP_REV "REVD"
+#else
+#define APP_REV "REVE"
+#endif
+
+#define APP_VERSION "Chicago.12312021.0" APP_REV
 
 #define MODE_CHANGE_MINTICKS 100
 
