@@ -9,6 +9,8 @@ typedef struct i2c_gpio_expander
   uint8_t radiant : 1;  
   uint8_t lt : 1;  
   uint8_t sbc : 1; 
+  uint8_t j29 : 1; 
+  uint8_t ext_bus : 1; 
 } i2c_gpio_expander_t; 
 
 

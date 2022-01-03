@@ -34,6 +34,9 @@ enum i2c_expander_dir
 #define I2C_EXPANDER_DH_AMP_1_BIT 6
 #define I2C_EXPANDER_DH_AMP_3_BIT 7
 
+#define I2C_EXPANDER_J29_BIT 6
+#define I2C_EXPANDER_EXT_BUS_BIT 7
+
 
 
 
@@ -49,7 +52,9 @@ static i2c_task_t A_dir = { .addr = I2C_EXPANDER_A, .write = 1, .reg=I2C_EXPANDE
 static i2c_task_t B_dir = { .addr = I2C_EXPANDER_B, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
 
 #ifndef _RNO_G_REV_D
-static i2c_task_t B_inv = { .addr = I2C_EXPANDER_B, .write = 1, .reg=I2C_EXPANDER_INVERT_POLARITY_REGISTER, .data = 0x3, .done = 1}; 
+static i2c_task_t A_inv = { .addr = I2C_EXPANDER_A, .write = 1, .reg=I2C_EXPANDER_INVERT_POLARITY_REGISTER, .data = (1 << I2C_EXPANDER_EXT_BUS_BIT), .done = 1}; 
+static i2c_task_t B_inv = { .addr = I2C_EXPANDER_B, .write = 1, .reg=I2C_EXPANDER_INVERT_POLARITY_REGISTER, 
+                            .data = (1 << I2C_EXPANDER_5V_1_BIT) | (1 << I2C_EXPANDER_5V_2_BIT) , .done = 1}; 
 #endif
 
 //these are only used for reads
@@ -77,6 +82,7 @@ static const uint8_t dh_amp_map[3] = {
 int gpio_expander_init() 
 {
 #ifndef _RNO_G_REV_D
+  i2c_enqueue(&A_inv); 
   i2c_enqueue(&B_inv); 
 #endif
   get_gpio_expander_state(0,0); 
@@ -87,7 +93,11 @@ int gpio_expander_init()
 int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask) 
 {
   //check to make sure we don't need to wait for previous command to take
-  int need_A =!! mask.surface_amps; 
+#ifdef _RNO_G_REV_D
+  int need_A =!! (mask.surface_amps ); 
+#else
+  int need_A =!! (mask.surface_amps || mask.j29 || mask.ext_bus ); 
+#endif
   int need_B =!! (mask.dh_amps || mask.radiant || mask.lt || mask.sbc); 
 
   if ( (need_A && !A_state.done) || (need_B && ! B_state.done))
@@ -112,6 +122,18 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
         GPIO_EXPANDER_SET_OUTPUT(A,surf_amp_map[i], value.surface_amps & (1 << i)) 
       }
     }
+
+#ifndef _RNO_G_REV_D
+    if (mask.j29) 
+    {
+      GPIO_EXPANDER_SET_OUTPUT(A, I2C_EXPANDER_J29_BIT, value.j29)
+    }
+    if (mask.ext_bus)
+    {
+      GPIO_EXPANDER_SET_OUTPUT(A, I2C_EXPANDER_EXT_BUS_BIT, value.ext_bus)
+    }
+
+#endif
 
     //first set the value, then the direction
     i2c_enqueue(&A_state);
@@ -199,6 +221,14 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
     if (B_state.data & ( 1 << dh_amp_map[i]))
       value->dh_amps |= (1 << i); 
   }
+
+#ifdef _RNO_G_REV_D
+  value->j29 = 0;
+  value->ext_bus = 0; 
+#else
+  value->j29 = A_state.data & (1 << I2C_EXPANDER_J29_BIT);
+  value->ext_bus = A_state.data & (1 << I2C_EXPANDER_EXT_BUS_BIT);
+#endif
 
   return 0; 
 }
