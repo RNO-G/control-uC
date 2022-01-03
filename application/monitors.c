@@ -88,7 +88,7 @@ void monitor_deinit()
 /** on REV_D, this is the on-board temperature sensor
  * */ 
 #ifdef _RNO_G_REV_D
-int16_t monitor_temperature(int navg) 
+static float monitor_temperature(int navg) 
 {
   uint16_t raw = read_adc(ADC_TEMP, navg); 
   float v = raw * 3.3 / 4096; 
@@ -99,12 +99,12 @@ int16_t monitor_temperature(int navg)
             v > 1 ? 157.4-84*v : 
             154.4-80.76*v; 
 
-  return (int16_t) (t*100); 
+  return t; 
 }
 #else
 // otherwise, let's monitor the internal temperature? 
 // See section 37.11.8.2 of datasheet
-int16_t monitor_temperature(int navg) 
+static float monitor_temperature(int navg) 
 {
 
   uint16_t raw = read_adc(ADC_MON_ITEMP, navg); 
@@ -142,7 +142,7 @@ int16_t monitor_temperature(int navg)
      est_1V = room_1V + ( hot_1V - room_1V) * (T - room_T) / (hot_T - room_T); 
   }
 
-  return (int16_t) (T*100); 
+  return T;
 }
 
 
@@ -191,33 +191,53 @@ static void mon_b_select(monitor_t what)
   _mon_select(0x4f,shift); 
 }
 
+#ifdef _RNO_G_REV_D
 int monitor_fill(rno_g_monitor_t * m, int navg)
+#else
+int monitor_fill(rno_g_report_v2_t * r, int navg)
+#endif
 {
   int i;
-  m->when = get_time() ; 
+  int when = get_time() ; 
+
 
 #ifdef _RNO_G_REV_D
   const int max = 6; 
+  m->when = when; 
 #else
   const int max = 5; 
+  r->analog_delta_when = when - r->when; 
 #endif
 
   for (i = 0; i < max; i++) 
   {
+#ifdef _RNO_G_REV_D
     m->i_surf3v[i] = monitor(surf_map[i], navg); 
+#else
+    r->i_surf_div4[i] = monitor(surf_map[i], navg) >> 2; 
+#endif
     monitor_select(surf_map[ (i+1) % 6] ); 
     delay_us(3000); 
 
     //alternate between the two to avoid capacitance issues
     if (i < 3) 
     {
+#ifdef _RNO_G_REV_D
       m->i_down3v[i] = monitor(dh_map[i], navg); 
+#else
+      r->i_dh_div4[i] = monitor(dh_map[i], navg) >> 2; 
+#endif
       if (i < 2) monitor_select(dh_map[i+1]); 
       else monitor_select(MON_SBC_5V); 
     }
     else if (i==3) 
     {
+#ifdef _RNO_G_REV_D
      m->temp_cC = monitor(MON_TEMPERATURE,navg); 
+#else
+     float T = monitor_temperature(navg); 
+     r->T_local_times16 = 16*T; 
+#endif
     }
 #ifdef _RNO_G_REV_D
     else if (i==5) 
@@ -228,7 +248,11 @@ int monitor_fill(rno_g_monitor_t * m, int navg)
 #endif
     else if (i == 4) 
     {
+#ifdef _RNO_G_REV_D
       m->i_sbc5v = monitor(MON_SBC_5V, navg); 
+#else
+      r->i_sbc_div4 = monitor(MON_SBC_5V,navg) >> 4; 
+#endif 
       monitor_select(MON_DOWN_3V1); 
     }
     if ( i < max-1) 
@@ -265,7 +289,7 @@ int16_t monitor(monitor_t what, int navg)
   {
 
     case MON_TEMPERATURE:
-      return monitor_temperature(navg); 
+      return 100*monitor_temperature(navg); 
     case MON_SURF3V_1:
     case MON_SURF3V_2:
     case MON_SURF3V_3:

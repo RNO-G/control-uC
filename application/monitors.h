@@ -21,7 +21,7 @@ typedef enum e_monitor
   MON_DOWN_3V2 , 
   MON_DOWN_3V3  
 #ifdef _RNO_G_REV_D
-  , MON_5V1, 
+  , MON_5V1,  // now in power in revE 
   MON_5V2 
 #endif
 } monitor_t ; 
@@ -36,8 +36,12 @@ void monitor_select(monitor_t what);
 
 int16_t monitor(monitor_t what, int navg); 
 
-/** Fill all monitor values */ 
+/** Fill all analog monitor values */ 
+#ifdef _RNO_G_REV_D
 int monitor_fill(rno_g_monitor_t * m, int navg); 
+#else
+int monitor_fill(rno_g_report_v2_t * r, int navg); 
+#endif
 
 int monitor_init(); 
 void monitor_deinit(); 

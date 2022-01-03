@@ -12,7 +12,17 @@
 #include "config/config.h" 
 #include <limits.h> 
 
-static volatile rno_g_report_t report; 
+#ifdef _RNO_G_REV_D
+#define REPORT_T rno_g_report_v_t
+#define REPORT_SIZE RNO_G_REPORT_SIZE
+#define REPORT_TYPE RNO_G_MSG_REPORT
+#else
+#define REPORT_T rno_g_report_v2_t
+#define REPORT_SIZE RNO_G_REPORT_V2_SIZE
+#define REPORT_TYPE RNO_G_MSG_REPORT_V2
+#endif
+
+static REPORT_T report; 
 
 static int report_scheduled_navg = 0; 
 void report_schedule(int navg) 
@@ -21,14 +31,14 @@ void report_schedule(int navg)
 }
 
 
-const rno_g_report_t * report_process(int up, uint32_t * extrawake) 
+const REPORT_T * report_process(int up, uint32_t * extrawake) 
 {
   static uint32_t report_ticks =0; 
   static int last_report = INT_MIN;
   static uint32_t next_power_monitor_fill = 0; 
   static uint32_t power_mon_scheduled = 0; 
   
-  const rno_g_report_t * ret = 0;
+  const REPORT_T * ret = 0;
 
   /// See if we need to do anything
   
@@ -38,12 +48,19 @@ const rno_g_report_t * report_process(int up, uint32_t * extrawake)
 
   if (report_scheduled_navg ||   (up >= last_report + interval  &&  up > 5 && (!low_power_mode  || up >=60))  )   // wait until at least 5 seconds in to make a report , 60 seconds if in low power mode (to give chance to connect to lroa) 
   {
+#ifdef _RNO_G_REV_D
     low_power_mon_on(); 
+#endif 
     if (report_ticks > 0)
     {
         power_monitor_schedule(); 
     }
+#ifdef _RNO_G_REV_D
     monitor_fill(&report.analog_monitor,report_scheduled_navg ?: 20); 
+#else
+    report.when = get_time(); //have ot fill this to get delta_t right
+    monitor_fill(&report,report_scheduled_navg ?: 20); 
+#endif
 
     report_scheduled_navg = 0; 
 
@@ -56,19 +73,35 @@ const rno_g_report_t * report_process(int up, uint32_t * extrawake)
 
   if (power_mon_scheduled && report_ticks >= next_power_monitor_fill) 
   {
+#ifdef _RNO_G_REV_D
     low_power_mon_on(); //in case it got turned off since the step 
     power_monitor_fill(&report.power_monitor); 
     power_mon_scheduled = 0; 
     low_power_mon_off(); 
+#else
+
+    int new_time = get_time(); 
+
+    //now we need a new delta_t, which means the analog one might need to be updated 
+    //this is super hacky and unmaintainable... sorry 
+    int new_analog_delta_when = report.analog_delta_when - (new_time - report.when); 
+    if (new_analog_delta_when < -128) new_analog_delta_when = -128; 
+    report.analog_delta_when = new_analog_delta_when; 
+    report.when = new_time; 
+
+    power_monitor_fill(&report); 
+
+    power_mon_scheduled = 0; 
+#endif
 
     ret = report_get(); 
     if (lorawan_state()  == LORAWAN_READY) 
     {
-      lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  0);
+      lorawan_tx_copy(REPORT_SIZE , REPORT_TYPE , (uint8_t*) ret,  0);
       //Send twice, to improve chance we get it (because... confirmed doesn't work with the way our buffer works yet!) 
       if (low_power_mode) 
       {
-        lorawan_tx_copy(RNO_G_REPORT_SIZE ,RNO_G_MSG_REPORT , (uint8_t*) ret,  0);
+        lorawan_tx_copy(REPORT_SIZE ,REPORT_TYPE , (uint8_t*) ret,  0);
       }
     }
   }
@@ -77,9 +110,11 @@ const rno_g_report_t * report_process(int up, uint32_t * extrawake)
   return ret; 
 }
 
-const rno_g_report_t * report_get() 
+const REPORT_T * report_get() 
 {
+#ifdef _RNO_G_REV_D
   report.when = get_time(); 
+#endif
   i2c_gpio_expander_t exp; 
   get_gpio_expander_state(&exp,1); 
   report.power_state.low_power_mode = low_power_mode; 

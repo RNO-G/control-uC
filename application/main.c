@@ -180,14 +180,26 @@ int main(void)
       }
     }
 
-    const rno_g_report_t * maybe_a_report = report_process(up, &extra_awake_ticks); 
+    // to allow using the same code for both types, use these macros: 
+
+#ifdef _RNO_G_REV_D
+#define REPORT_T rno_g_report_t 
+#define BATTERY_VOLTAGE(r) (r->power_monitor.BATv_cV / 100.)
+#else
+#define REPORT_T rno_g_report_v2_t 
+#define BATTERY_VOLTAGE(r) (r->V_batt_div25  / 40.)
+#endif
+
+
+    const REPORT_T * maybe_a_report = report_process(up, &extra_awake_ticks); 
+
     if (maybe_a_report) 
     {
       // See if we meet/exceed thresholds
       if (!low_power_mode) 
       {
         float turnoff = config_block()->app_cfg.turnoff_voltage; 
-        if (turnoff > 0 &&  maybe_a_report->power_monitor.BATv_cV < 100*turnoff)
+        if (turnoff > 0 &&  BATTERY_VOLTAGE(maybe_a_report) < turnoff)
         {
           mode_set(RNO_G_LOW_POWER_MODE); 
         }
@@ -195,7 +207,7 @@ int main(void)
       else 
       {
         float turnon = config_block()->app_cfg.turnon_voltage; 
-        if (turnon > 0 && maybe_a_report->power_monitor.BATv_cV > 100*turnon)
+        if (turnon > 0 && BATTERY_VOLTAGE(maybe_a_report) > turnon)
         {
           mode_set(RNO_G_NORMAL_MODE); 
         }

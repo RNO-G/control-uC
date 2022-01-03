@@ -302,6 +302,7 @@ static int sbc_io_process()
  
       else if (!strcmp(in,"MONITOR"))
       {
+#ifdef _RNO_G_REV_D
         const rno_g_report_t *report = report_get(); 
         rno_g_monitor_t mon = report->analog_monitor;
         rno_g_power_system_monitor_t pwr = report->power_monitor;
@@ -324,14 +325,27 @@ static int sbc_io_process()
          printf("#MONITOR: power_state: { low_power: %d, sbc_power: %d, lte_power: %d, radiant_power: %d, lowthresh_power: %d, dh_amp_power: %x, surf_amp_power: %x}\r\n", 
                  st.low_power_mode, st.sbc_power, st.lte_power, st.radiant_power, st.lowthresh_power, st.dh_amp_power, st.surf_amp_power); 
 
+#else
+       const rno_g_report_v2_t * report = report_get(); 
+       printf(RNO_G_REPORT_V2_JSON_FMT "\r\n", RNO_G_REPORT_V2_JSON_VALS(report)); 
+#endif
          valid=1; 
       }
       else if (!strcmp(in,"B64MON"))
       {
+#ifdef _RNO_G_REV_D
         const rno_g_report_t *report = report_get(); 
         printf("#B64MON: "); 
         base64_print(SBC_UART_DESC, sizeof(rno_g_report_t), (uint8_t*) report); 
         printf("\r\n"); 
+#else
+
+        const rno_g_report_v2_t *report = report_get(); 
+        printf("#B64MON: "); 
+        base64_print(SBC_UART_DESC, sizeof(rno_g_report_v2_t), (uint8_t*) report); 
+        printf("\r\n"); 
+
+#endif
         valid=1; 
       }
       else if (prefix_matches(in,"SET-BATT-MILLIVS"))
