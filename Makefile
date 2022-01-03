@@ -86,7 +86,7 @@ help:
 
 
 # MCU 
-mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin rev
+mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin $(OUTPUT_NAME).hex $(BL_OUTPUT_NAME).hex rev
 
 rev: 
 	echo $(REV) > $(BUILD_DIR)/rev.txt
@@ -157,7 +157,7 @@ $(BUILD_DIR)/lorawan/%.o: lorawan/%.c config.mk lorawan.mk
 	@echo Finished building: $<
 
 # special case shared for bootloader to define _BOOTLOADER_
-$(BUILD_DIR)/bootloader/shared/%.o: shared/%.c
+$(BUILD_DIR)/bootloader/shared/%.o: shared/%.c config.mk
 	@echo Building bootloader file: $<
 	$(CC) $(CFLAGS) -D_BOOTLOADER_ $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d)  -MT$(@:%.o=%.o) -o $@ $<
 	@echo Finished building: $<
