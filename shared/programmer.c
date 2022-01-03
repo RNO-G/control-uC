@@ -71,7 +71,6 @@ static volatile enum
 
 
 
-static int last_dropped; 
 
 
 
@@ -207,7 +206,7 @@ int programmer_cmd(char * in, int in_len)
             )
         {
 
-          if (len > &__rom_size__  || len < 0) len = &__rom_size__; 
+          if (len > (int) &__rom_size__  || len < 0) len = (int) &__rom_size__; 
 
           if (slot < MIN_WRITE_SLOT || slot > 4) 
           {
