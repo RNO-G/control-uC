@@ -183,15 +183,13 @@ int main(void)
     // to allow using the same code for both types, use these macros: 
 
 #ifdef _RNO_G_REV_D
-#define REPORT_T rno_g_report_t 
 #define BATTERY_VOLTAGE(r) (r->power_monitor.BATv_cV / 100.)
 #else
-#define REPORT_T rno_g_report_v2_t 
 #define BATTERY_VOLTAGE(r) (r->V_batt_div25  / 40.)
 #endif
 
 
-    const REPORT_T * maybe_a_report = report_process(up, &extra_awake_ticks); 
+    const RNO_G_REPORT_T * maybe_a_report = report_process(up, &extra_awake_ticks); 
 
     if (maybe_a_report) 
     {

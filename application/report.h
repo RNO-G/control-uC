@@ -5,12 +5,13 @@
 
 // may return a report if a new one was made 
 #ifdef _RNO_G_REV_D
-const rno_g_report_t * report_process(int up, uint32_t * extrawake) ; 
-const rno_g_report_t * report_get(); 
+#define RNO_G_REPORT_T rno_g_report_t
 #else
-const rno_g_report_v2_t * report_process(int up, uint32_t * extrawake) ; 
-const rno_g_report_v2_t * report_get(); 
+#define RNO_G_REPORT_T rno_g_report_v2_t
 #endif
+
+const RNO_G_REPORT_T * report_process(int up, uint32_t * extrawake) ; 
+const RNO_G_REPORT_T * report_get(); 
 void report_schedule(int navg); 
 
 

@@ -333,19 +333,10 @@ static int sbc_io_process()
       }
       else if (!strcmp(in,"B64MON"))
       {
-#ifdef _RNO_G_REV_D
-        const rno_g_report_t *report = report_get(); 
+        const RNO_G_REPORT_T *report = report_get(); 
         printf("#B64MON: "); 
-        base64_print(SBC_UART_DESC, sizeof(rno_g_report_t), (uint8_t*) report); 
+        base64_print(SBC_UART_DESC, sizeof(RNO_G_REPORT_T), (uint8_t*) report); 
         printf("\r\n"); 
-#else
-
-        const rno_g_report_v2_t *report = report_get(); 
-        printf("#B64MON: "); 
-        base64_print(SBC_UART_DESC, sizeof(rno_g_report_v2_t), (uint8_t*) report); 
-        printf("\r\n"); 
-
-#endif
         valid=1; 
       }
       else if (prefix_matches(in,"SET-BATT-MILLIVS"))
