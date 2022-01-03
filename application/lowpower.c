@@ -7,6 +7,7 @@
 #include "shared/spi_flash.h" 
 #include "time.h" 
 #include "hal_sleep.h" 
+#include "application/i2cbusmux.h" 
 
 volatile int low_power_mode = 0; 
 volatile int waiting_for_sbc = 0; 
@@ -16,6 +17,8 @@ static volatile int vicor_state = 1;
 
 int low_power_mon_on() 
 {
+#ifndef _RNO_G_REV_D
+
   if (!low_power_mode) return 0; 
   if (!vicor_state) 
   {
@@ -25,6 +28,7 @@ int low_power_mon_on()
     vicor_state = 1; 
     delay_ms(15); //wait a bit for things to stabilize 
   }
+#endif
   return 0; 
 }
 
@@ -32,6 +36,7 @@ int low_power_mon_on()
 
 int low_power_mon_off() 
 {
+#ifndef _RNO_G_REV_D
   if (!low_power_mode) return 0; 
 
   //Don't turn off the vicor if the SBC is still on!!! 
@@ -42,6 +47,7 @@ int low_power_mon_off()
     vicor_state = 0; 
     monitor_deinit(); 
   }
+#endif
   return 0;
 }
 
@@ -50,7 +56,12 @@ int low_power_mon_off()
 
 int low_power_mode_enter() 
 {
+#ifndef _RNO_G_REV_D
+  i2c_busmux_quick_select(I2C_BUSMUX_WINTER); 
+  gpio_set_pin_level(VICOR_EN, false); 
+#else
   low_power_mon_off(); 
+#endif
   low_power_mode =1; 
   return 0;
 } 
@@ -59,9 +70,15 @@ int low_power_mode_enter()
 
 int low_power_mode_exit() 
 {
+#ifndef _RNO_G_REV_D
   low_power_mon_on(); 
   i2c_unstick(10); //just in case? 
+#else
+  gpio_set_pin_level(VICOR_EN, true); 
+  i2c_busmux_quick_select(I2C_BUSMUX_BOTH); 
+#endif
   low_power_mode=0; 
+
   return 0;
 }
 

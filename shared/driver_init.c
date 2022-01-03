@@ -551,9 +551,14 @@ void system_init(void)
 	gpio_set_pin_function(LORA_SPI_CS, GPIO_PIN_FUNCTION_OFF);
 
 
+#ifdef _RNO_G_REV_D
 	gpio_set_pin_level(VICOR_EN, false);
-//	gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_OUT);
 	gpio_set_pin_function(VICOR_EN, GPIO_PIN_FUNCTION_OFF);
+#else
+  //polarity changed here! 
+	gpio_set_pin_level(VICOR_EN, true); //also it's no longer a VICOR, but whatever
+	gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_OUT);
+#endif
 
 	gpio_set_pin_direction(NALERT, GPIO_DIRECTION_IN);
 	gpio_set_pin_pull_mode(NALERT, GPIO_PULL_OFF);
