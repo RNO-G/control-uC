@@ -17,7 +17,7 @@ static volatile int vicor_state = 1;
 
 int low_power_mon_on() 
 {
-#ifndef _RNO_G_REV_D
+#ifdef _RNO_G_REV_D
 
   if (!low_power_mode) return 0; 
   if (!vicor_state) 
@@ -36,7 +36,7 @@ int low_power_mon_on()
 
 int low_power_mon_off() 
 {
-#ifndef _RNO_G_REV_D
+#ifdef _RNO_G_REV_D
   if (!low_power_mode) return 0; 
 
   //Don't turn off the vicor if the SBC is still on!!! 
@@ -70,7 +70,7 @@ int low_power_mode_enter()
 
 int low_power_mode_exit() 
 {
-#ifndef _RNO_G_REV_D
+#ifdef _RNO_G_REV_D
   low_power_mon_on(); 
   i2c_unstick(10); //just in case? 
 #else
@@ -91,7 +91,9 @@ static void wakeup()
 int low_power_sleep_for_a_while(int howlong) 
 {
   if (howlong <1) return 0; 
+#ifdef _RNO_G_REV_D
   low_power_mon_off(); 
+#endif
   int cmp = _calendar_get_counter(&CALENDAR.device)+howlong; 
   _calendar_register_callback(&CALENDAR.device,wakeup); 
   _calendar_set_comp(&CALENDAR.device,cmp); 

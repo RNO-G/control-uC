@@ -189,7 +189,7 @@ int power_monitor_fill(rno_g_report_v2_t * r)
   state->PVv_cV = (power_ctx.sense1 *5) >> 1 ;  //25 mV / adc
   state->PVi_mA = (power_ctx.delta_sense1 *5) >> 1;   // 12.5 uV / adc, 5 mOhms
   state->BATv_cV = (power_ctx.sense2 *5) >> 1 ;  //25 mV / adc
-  state->BATi_mA = ((power_ctx._delta_sense2) *5 ) >> 2;   // 12.5 uV / adc, 10 mOhms
+  state->BATi_mA = ((power_ctx.delta_sense2) *5 ) >> 2;   // 12.5 uV / adc, 10 mOhms
   state->when_power = power_ctx.last_read; 
 
 

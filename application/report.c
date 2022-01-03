@@ -12,17 +12,15 @@
 #include "config/config.h" 
 #include <limits.h> 
 
+#define REPORT_SIZE sizeof(RNO_G_REPORT_T) 
+
 #ifdef _RNO_G_REV_D
-#define REPORT_T rno_g_report_v_t
-#define REPORT_SIZE RNO_G_REPORT_SIZE
 #define REPORT_TYPE RNO_G_MSG_REPORT
 #else
-#define REPORT_T rno_g_report_v2_t
-#define REPORT_SIZE RNO_G_REPORT_V2_SIZE
 #define REPORT_TYPE RNO_G_MSG_REPORT_V2
 #endif
 
-static REPORT_T report; 
+static RNO_G_REPORT_T report; 
 
 static int report_scheduled_navg = 0; 
 void report_schedule(int navg) 
@@ -31,14 +29,14 @@ void report_schedule(int navg)
 }
 
 
-const REPORT_T * report_process(int up, uint32_t * extrawake) 
+const RNO_G_REPORT_T * report_process(int up, uint32_t * extrawake) 
 {
   static uint32_t report_ticks =0; 
   static int last_report = INT_MIN;
   static uint32_t next_power_monitor_fill = 0; 
   static uint32_t power_mon_scheduled = 0; 
   
-  const REPORT_T * ret = 0;
+  const RNO_G_REPORT_T * ret = 0;
 
   /// See if we need to do anything
   
@@ -110,7 +108,7 @@ const REPORT_T * report_process(int up, uint32_t * extrawake)
   return ret; 
 }
 
-const REPORT_T * report_get() 
+const RNO_G_REPORT_T * report_get() 
 {
 #ifdef _RNO_G_REV_D
   report.when = get_time(); 
