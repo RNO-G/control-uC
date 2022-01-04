@@ -12,6 +12,7 @@
 #include "include/rno-g-control.h" 
 #include "hal_flash.h"
 #include "application/i2cbus.h" 
+#include "application/i2cbusmux.h" 
 #include "shared/programmer.h" 
 #include "linker/map.h"
 #include "application/mode.h" 
@@ -302,6 +303,38 @@ static int sbc_io_process()
         set_gpio_expander_state(turn_off_radiant, turn_off_radiant_mask); 
         printf("#RADIANT-OFF: ACK\r\n"); 
       }
+      else if (!strcmp(in,"J29-ON"))
+      {
+        valid=1; 
+        i2c_gpio_expander_t turn_on_j29 = {.j29 = 1}; 
+        set_gpio_expander_state(turn_on_j29, turn_on_j29); 
+        printf("#J29-ON: ACK\r\n"); 
+      }
+
+      else if (!strcmp(in,"J29-OFF") )
+      {
+        valid=1;
+        i2c_gpio_expander_t turn_off_j29 = {0}; 
+        i2c_gpio_expander_t turn_off_j29_mask = {.j29 = 1}; 
+        set_gpio_expander_state(turn_off_j29, turn_off_j29_mask); 
+        printf("#J29-OFF: ACK\r\n"); 
+      }
+       else if (!strcmp(in,"EXTBUS-ON"))
+      {
+        valid=1; 
+        i2c_gpio_expander_t turn_on_extbus = {.ext_bus = 1}; 
+        set_gpio_expander_state(turn_on_extbus, turn_on_extbus); 
+        printf("#EXTBUS-ON: ACK\r\n"); 
+      }
+
+      else if (!strcmp(in,"EXTBUS-OFF") )
+      {
+        valid=1;
+        i2c_gpio_expander_t turn_off_extbus = {0}; 
+        i2c_gpio_expander_t turn_off_extbus_mask = {.ext_bus = 1}; 
+        set_gpio_expander_state(turn_off_extbus, turn_off_extbus_mask); 
+        printf("#EXTBUS-OFF: ACK\r\n"); 
+      }
       else if (!strcmp(in,"LOWTHRESH-ON"))
       {
         valid=1; 
@@ -344,8 +377,8 @@ static int sbc_io_process()
         valid =1; 
         i2c_gpio_expander_t exp_state; 
         get_gpio_expander_state(&exp_state,!force); 
-        printf("#EXPANDER-STATE: surf: %x, dh: %x, radiant: %x, lt: %x, sbc: %x\r\n", exp_state.surface_amps, exp_state.dh_amps, 
-            exp_state.radiant, exp_state.lt, exp_state.sbc); 
+        printf("#EXPANDER-STATE: surf: %x, dh: %x, radiant: %x, lt: %x, sbc: %x, j29: %x, ext_bus: %x\r\n", exp_state.surface_amps, exp_state.dh_amps, 
+            exp_state.radiant, exp_state.lt, exp_state.sbc, exp_state.j29, exp_state.ext_bus); 
       }
       else if (!strcmp(in,"FAULT-STATE"))
       {
@@ -525,7 +558,16 @@ static int sbc_io_process()
         i2c_detect(0,127,0); 
         valid=3; 
       }
-
+      else if (!strcmp(in,"I2C-RESET"))
+      {
+#ifdef _RNO_G_REV_D
+        printf("#I2C-RESET: NOT SUPPORTED ON REVD\r\n"); 
+#else
+        i2c_busmux_reset(); 
+        printf("#I2C-RESET: ACK\r\n"); 
+#endif
+        valid=3; 
+      }
       else if (prefix_matches(in,"I2C-UNSTICK"))
       {
         const char *nxt = 0; 
