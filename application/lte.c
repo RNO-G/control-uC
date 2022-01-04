@@ -11,11 +11,27 @@
 #include "include/rno-g-control.h" 
 #include "application/mode.h" 
 
+/**
+ *
+ *  Some notes:
+ *
+ *  Right now this is heavily timer based, though it could be refactored into
+ *  state machine calls to lte_process with some work (not sure it matters too
+ *  much... might improve reliability of other interrupts though if we get rid
+ *  of the LTE timer. 
+ *
+ */ 
+
+#define LTE_INTERVAL(s)  (s * 100)
+#define LTE_MS_INTERVAL(ms)  (ms/10)
+
 ASYNC_TOKENIZED_BUFFER(128, lte_io,"\r\n", LTE_UART_DESC); 
 
 static lte_state_t lte_state = LTE_INIT; 
 
 lte_state_t lte_get_state() { return lte_state; } 
+
+
 
 
 enum 
@@ -53,7 +69,7 @@ static void lte_delayed_rfsts(const struct timer_task * const task)
 
 
 
-static struct timer_task lte_delayed_rfsts_task = {.cb = lte_delayed_rfsts, .interval=300, .mode = TIMER_TASK_ONE_SHOT}; 
+static struct timer_task lte_delayed_rfsts_task = {.cb = lte_delayed_rfsts, .interval=LTE_INTERVAL(3), .mode = TIMER_TASK_ONE_SHOT}; 
 
 
 static void lte_delayed_setup_led(const struct timer_task * const task) 
@@ -63,7 +79,7 @@ static void lte_delayed_setup_led(const struct timer_task * const task)
   timer_add_task(&SHARED_TIMER, &lte_delayed_rfsts_task);
 }
 
-static struct timer_task lte_delayed_setup_led_task = {.cb = lte_delayed_setup_led, .interval=200, .mode = TIMER_TASK_ONE_SHOT}; 
+static struct timer_task lte_delayed_setup_led_task = {.cb = lte_delayed_setup_led, .interval=LTE_INTERVAL(2), .mode = TIMER_TASK_ONE_SHOT}; 
 
 static void lte_setup_gpio(const struct timer_task * const task) 
 {
@@ -73,7 +89,7 @@ static void lte_setup_gpio(const struct timer_task * const task)
 }
 
 
-static struct timer_task lte_setup_gpio_task = {.cb = lte_setup_gpio, .interval=500, .mode = TIMER_TASK_ONE_SHOT}; 
+static struct timer_task lte_setup_gpio_task = {.cb = lte_setup_gpio, .interval=LTE_INTERVAL(5), .mode = TIMER_TASK_ONE_SHOT}; 
 
 static void lte_turn_on_cb(const struct timer_task * const task)
 {
@@ -83,15 +99,16 @@ static void lte_turn_on_cb(const struct timer_task * const task)
   timer_add_task(&SHARED_TIMER, &lte_setup_gpio_task);
 }
 
-static struct timer_task lte_turn_on_task = { .cb  = lte_turn_on_cb, .interval = 550, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_turn_on_task = { .cb  = lte_turn_on_cb, .interval = LTE_MS_INTERVAL(5500), .mode = TIMER_TASK_ONE_SHOT }; 
 
 
 static void lte_power_off_cb(const struct timer_task * const task) 
 {
+  (void) task; 
   gpio_set_pin_level(LTE_REG_EN,0);
   lte_state = LTE_OFF; 
 }
-static struct timer_task lte_power_off_task = { .cb  = lte_power_off_cb, .interval = 500, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_power_off_task = { .cb  = lte_power_off_cb, .interval = LTE_INTERVAL(5), .mode = TIMER_TASK_ONE_SHOT }; 
 
 static void lte_turn_off_cb(const struct timer_task * const task)
 {
@@ -100,7 +117,7 @@ static void lte_turn_off_cb(const struct timer_task * const task)
   timer_add_task(&SHARED_TIMER, &lte_power_off_task);
 }
 
-static struct timer_task lte_turn_off_task = { .cb  = lte_turn_off_cb, .interval = 300, .mode = TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_turn_off_task = { .cb  = lte_turn_off_cb, .interval = LTE_INTERVAL(3), .mode = TIMER_TASK_ONE_SHOT }; 
 
 
 static void lte_check_on_cb(const struct timer_task * const task)
@@ -123,7 +140,7 @@ static void lte_check_on_cb(const struct timer_task * const task)
   lte_state = LTE_OFF; 
 }
 
-static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval = 30, .mode=TIMER_TASK_ONE_SHOT }; 
+static struct timer_task lte_check_on_task = {.cb = lte_check_on_cb, .interval = LTE_MS_INTERVAL(300), .mode=TIMER_TASK_ONE_SHOT }; 
 
 int lte_init() 
 {
@@ -259,9 +276,6 @@ int lte_process(int up)
     }
   }
 
-  //check for rfstats 
-
-
   icall++; 
 
   return 0; 
@@ -285,4 +299,60 @@ int lte_turn_off(int force)
   timer_add_task(&SHARED_TIMER, &lte_turn_off_task);
 
   return 0 ;
+}
+
+#ifndef _RNO_G_REV_D
+static void lte_finish_reset_cb(const struct timer_task  *const  task) 
+{
+  (void) task; 
+  gpio_set_pin_direction(LTE_NRST,GPIO_DIRECTION_OFF); 
+}
+
+static struct timer_task lte_reset_task = {.cb = lte_finish_reset_cb, .interval=LTE_MS_INTERVAL(250), .mode = TIMER_TASK_ONE_SHOT}; 
+
+
+
+#endif
+static void lte_power_cycle(const struct timer_task * const task) 
+{
+  (void) task; 
+  lte_turn_on(1); 
+}
+
+static struct timer_task lte_power_cycle_task = {.cb = lte_power_cycle, .interval = LTE_INTERVAL(15), .mode = TIMER_TASK_ONE_SHOT}; 
+
+int lte_reset(int type)
+{
+
+  if (type < 0 || type >= LTE_NOT_A_RESET) return -1; 
+
+  if (type == LTE_FACTORY_RESET) 
+  {
+#ifdef _RNO_G_REV_D
+    return -1; 
+#else 
+    gpio_set_pin_level(LTE_NRST,0); 
+    gpio_set_pin_direction(LTE_NRST,GPIO_DIRECTION_OUT); 
+    timer_add_task(&SHARED_TIMER, &lte_reset_task); 
+#endif
+  }
+
+  else if (type == LTE_SOFT_CYCLE) 
+  {
+    dprintf(LTE_UART_DESC, "ATZ\r\n"); 
+  }
+  else if (type == LTE_HARD_CYCLE)
+  {
+    dprintf(LTE_UART_DESC, "AT#ENHRST=1,0\r\n"); 
+  }
+  else if (type == LTE_POWER_CYCLE) 
+  {
+    lte_turn_off(1); 
+    timer_add_task(&SHARED_TIMER, &lte_power_cycle_task);
+  }
+  else
+  {
+    return -1; 
+  }
+  return 0; 
 }
