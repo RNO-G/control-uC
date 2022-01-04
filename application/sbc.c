@@ -202,6 +202,62 @@ static int sbc_io_process()
           printf("#LTE-OFF: ACK\r\n"); 
         }
       }
+      else if (!strcmp(in,"LTE-FACTORY-RESET"))
+      {
+        valid =1; 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-FACTORY-RESET: MODE IS OFF \r\n"); 
+        }
+        else 
+        {
+#ifdef _RNO_G_REV_D
+          printf("#LTE-FACTORY-RESET: NOT SUPPORTED ON REVD\r\n"); 
+#else
+          lte_reset(LTE_FACTORY_RESET); 
+          printf("#LTE-FACTORY-RESET: ACK\r\n"); 
+#endif
+        }
+      }
+      else if (!strcmp(in,"LTE-SOFT-RESET"))
+      {
+        valid =1; 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-SOFT-RESET: MODE IS OFF \r\n"); 
+        }
+        else
+        {
+          lte_reset(LTE_SOFT_CYCLE); 
+          printf("LTE-SOFT-RESET: ACK\r\n"); 
+        }
+      }
+      else if (!strcmp(in,"LTE-HARD-RESET"))
+      {
+        valid =1; 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-HARD-RESET: MODE IS OFF \r\n"); 
+        }
+        else
+        {
+          lte_reset(LTE_HARD_CYCLE); 
+          printf("LTE-HARD-RESET: ACK\r\n"); 
+        }
+      }
+      else if (!strcmp(in,"LTE-POWER-CYCLE"))
+      {
+        valid =1; 
+        if (mode_query()!=RNO_G_NORMAL_MODE)
+        {
+          printf("#LTE-POWER-CYCLE: MODE IS OFF \r\n"); 
+        }
+        else
+        {
+          lte_reset(LTE_POWER_CYCLE); 
+          printf("LTE-POWER-CYCLE: ACK\r\n"); 
+        }
+      }
       else if (!strcmp(in,"LTE-OFF!"))
       {
         valid =1; 
