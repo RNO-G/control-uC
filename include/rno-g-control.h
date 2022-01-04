@@ -169,10 +169,18 @@ typedef enum lte_state
   LTE_OFF, 
   LTE_TURNING_ON,
   LTE_ON,
-  LTE_TURNING_OFF
+  LTE_TURNING_OFF, 
+  LTE_RESETTING
 } lte_state_t; 
 
-#define LTE_STATE_STR(s)   ( s == LTE_INIT  ? "INIT" : s == LTE_OFF ? "OFF" : s == LTE_TURNING_ON ? "TURNING_ON" : s == LTE_ON ? "ON" : s == LTE_TURNING_OFF ? "TURNING_OFF" : "INVALID" )
+#define LTE_STATE_STR(s) \
+  ( s == LTE_INIT  ? "INIT" : \
+    s == LTE_OFF ? "OFF" : \
+    s == LTE_TURNING_ON ? "TURNING_ON" : \
+    s == LTE_ON ? "ON" : \
+    s == LTE_TURNING_OFF ? "TURNING_OFF" : \
+    s == LTE_RESETTING ? "RESETTING" :\
+    "INVALID" )
 
 typedef enum sbc_state
 {
