@@ -137,7 +137,10 @@ $(BL_OUTPUT_NAME).bin: $(BL_OUTPUT_NAME).elf
         $@ || exit 0
 $.lss: %.elf 
 	$(OC) -h -S $< > $@ 
-
+  
+config.mk: config.mk.default 
+	@echo "Copying config.mk.default to config.mk" 
+	cp $< $@
 
 $(OUTPUT_NAME).elf: $(APP_OBJS)
 	@echo Building target: $@
