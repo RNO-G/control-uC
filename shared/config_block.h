@@ -10,19 +10,8 @@
 /** Shared configuration block in SPI flash between application and bootloader. 
  *
  *
- *
  */ 
 
-
-typedef enum 
-{
-  BOOT_ROM=0, 
-  BOOT_FLASH_SLOT_1 = 1, 
-  BOOT_FLASH_SLOT_2 = 2, 
-  BOOT_FLASH_SLOT_3 = 3, 
-  BOOT_FLASH_SLOT_4 = 4, 
-  BOOT_BOOTLOADER =10 
-} boot_option_t; 
 
 
 
@@ -43,7 +32,7 @@ typedef struct bootloader_cfg
   // The priority list for attemped recovery from too many resets
   // if n_resets_before_reflash is exceeded, the next item in this list will be flashed
   // 
-  boot_option_t recovery_priority_list[4]; 
+  rno_g_boot_option_t recovery_priority_list[4]; 
 
 
 

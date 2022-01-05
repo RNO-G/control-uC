@@ -5,6 +5,12 @@
 #include "application/report.h" 
 #include "application/mode.h" 
 #include "lorawan/lorawan.h"
+#include "application/i2cbus.h"
+#include "application/i2cbusmux.h"
+#include "application/lte.h"
+#include "shared/printf.h" 
+#include "application/reset.h" 
+#include "hal_delay.h"
 
 
 
@@ -123,7 +129,37 @@ static int handle_cmd_sbc(rno_g_cmd_sbc_t * cmd)
 {
 
   //not implemented yet 
+  (void) cmd; 
   return -1; 
+
+}
+
+static int handle_cmd_reset(rno_g_cmd_reset_t * cmd) 
+{
+  switch (cmd->what) 
+  {
+    case RNO_G_RESET_MICRO:
+      printf("#LORA RESET INITIATED (TARGET=%d)", cmd->opt.micro.boot_opt); 
+      delay_ms(10); 
+      reset(cmd->opt.micro.boot_opt); 
+      return 0; //yeah we won't get here
+    case RNO_G_RESET_I2C:
+      if (!cmd->opt.i2c.unstick)
+#ifndef _RNO_G_REV_D
+        return i2c_busmux_reset();
+#else
+        cmd->opt.i2c.unstick = 10; 
+#endif
+        return i2c_unstick(cmd->opt.i2c.unstick); 
+    case RNO_G_RESET_LORA:
+      return lorawan_reset(); 
+    case RNO_G_RESET_LTE: 
+      return lte_reset(cmd->opt.lte.reset_type); 
+    default: 
+      return -1; 
+
+  }
+
 
 }
 
@@ -204,6 +240,13 @@ int commands_put(uint8_t  opcode, uint8_t payload_len, const uint8_t * payload)
       }
       return handle_cmd_sbc((rno_g_cmd_sbc_t*) payload); 
     }
+
+    case RNO_G_CMD_RESET: 
+    if (payload_len != RNO_G_CMD_RESET_SIZE) 
+    {
+      return -1; 
+    }
+    return handle_cmd_reset((rno_g_cmd_reset_t*) payload); 
 
     default:
       return -1; 

@@ -586,7 +586,7 @@ static int sbc_io_process()
         valid=3; 
         printf("#SYS-RESET(%d)!!\r\n", opt); 
         delay_ms(10); 
-        reset((boot_option_t) opt); 
+        reset((rno_g_boot_option_t) opt); 
       }
 
 

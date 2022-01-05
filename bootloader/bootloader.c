@@ -22,7 +22,11 @@ static void __attribute__((naked)) start_app(uint32_t sp, uint32_t start)
 {
   asm("msr msp,r0\n\
        bx r1\n"); 
+
+  (void) sp;
+  (void) start;
 }
+
 
 void relenquish() 
 {
@@ -121,7 +125,7 @@ int main(void)
     int ntries = 0; 
     do 
     {
-      boot_option_t boot_option= cfg->recovery_priority_list[shm->boot_list_index]; 
+      rno_g_boot_option_t boot_option= cfg->recovery_priority_list[shm->boot_list_index]; 
       shm->boot_list_index = shm->boot_list_index+1 % 4; 
 
       //check if this is one of the spi flash slots and  that an application exists there

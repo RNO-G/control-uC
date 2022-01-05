@@ -25,8 +25,8 @@ typedef struct shared_memory
   //  the application with that index is copied into flash 
   //  this will then be set back to BOOT_ROM afterwards, but
   //  the booted_from will tell us what we booted from. 
-  boot_option_t boot_option ; 
-  boot_option_t booted_from; 
+  rno_g_boot_option_t boot_option ; 
+  rno_g_boot_option_t booted_from; 
 
   // index within boot priority list (defined by config) 
   int boot_list_index ; 

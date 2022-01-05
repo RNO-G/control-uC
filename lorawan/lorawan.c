@@ -1286,3 +1286,10 @@ int lorawan_tx_push()
   OnTxNextPacketTimerEvent(0); 
   return ret; 
 }
+
+int lorawan_reset() 
+{
+  SX1272Reset(); 
+  return lorawan_init(0); 
+}
+

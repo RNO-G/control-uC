@@ -14,6 +14,4 @@ int sbc_turn_off();
 
 
 
-
-
 #endif

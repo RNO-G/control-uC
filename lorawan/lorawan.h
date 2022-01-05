@@ -47,6 +47,7 @@ int lorawan_process(int up);
 
 int lorawan_sched_timesync(); 
 
+int lorawan_reset(); 
 
 /** Copy the next message in the queue returning its size. */ 
 uint8_t lorawan_copy_next_received_message(uint8_t * msg, uint8_t maxlen, uint8_t * port, uint8_t * flags);

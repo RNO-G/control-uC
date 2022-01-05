@@ -322,10 +322,10 @@ static void lte_power_cycle(const struct timer_task * const task)
 
 static struct timer_task lte_power_cycle_task = {.cb = lte_power_cycle, .interval = LTE_INTERVAL(15), .mode = TIMER_TASK_ONE_SHOT}; 
 
-int lte_reset(int type)
+int lte_reset(rno_g_lte_reset_type_t type)
 {
 
-  if (type < 0 || type >= LTE_NOT_A_RESET) return -1; 
+  if (type >= LTE_NOT_A_RESET) return -1; 
 
   if (type == LTE_FACTORY_RESET) 
   {

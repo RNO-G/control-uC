@@ -3,6 +3,6 @@
 
 #include "shared/config_block.h" 
 
-void reset(boot_option_t option);  
+void reset(rno_g_boot_option_t option);  
 
 #endif

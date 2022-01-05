@@ -372,7 +372,8 @@ enum rno_g_cmd_type
   RNO_G_CMD_SET_GPS_SECS_OFFSET=6, 
   RNO_G_CMD_SET_BATTERY_THRESHOLDS=7, 
   RNO_G_CMD_SBC=8, 
-  RNO_G_CMD_TOO_LARGE = 9
+  RNO_G_CMD_RESET=9, 
+  RNO_G_CMD_TOO_LARGE = 10
 } ; 
 
 /* Sets the running mode */ 
@@ -424,6 +425,62 @@ typedef struct rno_g_cmd_sbc
 } rno_g_cmd_sbc_t; 
 
 
+typedef enum 
+{
+  LTE_SOFT_CYCLE = 0, 
+  LTE_HARD_CYCLE = 1, 
+  LTE_POWER_CYCLE = 2, 
+  LTE_FACTORY_RESET = 3, 
+  LTE_NOT_A_RESET 
+} rno_g_lte_reset_type_t; 
+
+typedef enum 
+{
+  BOOT_ROM=0, 
+  BOOT_FLASH_SLOT_1 = 1, 
+  BOOT_FLASH_SLOT_2 = 2, 
+  BOOT_FLASH_SLOT_3 = 3, 
+  BOOT_FLASH_SLOT_4 = 4, 
+  BOOT_BOOTLOADER =10 
+} rno_g_boot_option_t; 
+
+typedef enum 
+{
+  SBC_RESET_OFF_ON, 
+  SBC_RESET_RST
+} rno_g_sbc_reset_type; 
+
+
+// resets a subsystem. what tells what to reset, opt is an extra argument for some modes (should be safe to 0)
+typedef struct rno_g_cmd_reset
+{
+  enum 
+  {
+    RNO_G_RESET_MICRO, 
+    RNO_G_RESET_I2C, 
+    RNO_G_RESET_LORA, 
+    RNO_G_RESET_LTE
+  } what; 
+
+  union 
+  {
+    struct
+    {
+      rno_g_boot_option_t boot_opt; 
+    } micro; 
+
+    struct 
+    {
+      int unstick; //if 0, uses busmux, otherwise uses i2c_unstick. if rev_d and 0, same as 10. 
+    } i2c; 
+
+    struct 
+    {
+      rno_g_lte_reset_type_t reset_type; 
+    } lte;
+  } opt; 
+} rno_g_cmd_reset_t; 
+
 enum rno_g_cmd_size
 {
   RNO_G_CMD_SET_MODE_SIZE = sizeof(rno_g_cmd_set_mode_t), 
@@ -433,7 +490,8 @@ enum rno_g_cmd_size
   RNO_G_CMD_LORA_TIMESYNC_SIZE = sizeof(rno_g_cmd_lora_timesync_t),  
   RNO_G_CMD_SET_GPS_SECS_OFFSET_SIZE = sizeof(rno_g_cmd_set_gps_secs_offset_t), 
   RNO_G_CMD_SET_BATTERY_THRESHOLDS_SIZE = sizeof(rno_g_cmd_battery_thresholds_t), 
-  RNO_G_CMD_SBC_SIZE = sizeof(rno_g_cmd_sbc_t)
+  RNO_G_CMD_SBC_SIZE = sizeof(rno_g_cmd_sbc_t), 
+  RNO_G_CMD_RESET_SIZE = sizeof(rno_g_cmd_reset_t)
 }; 
 
 
