@@ -147,7 +147,8 @@ station_number.mk:
 
 config.mk: config.mk.default 
 	@echo "Copying config.mk.default to config.mk (backing up old if it exists)" 
-	@cp --backup=t $< $@
+	@ if [ -f "$@" ] ; then  diff  -q $@ $< || cp $@ $@.`date -Is`.backup ;  fi 
+	@cp $< $@
 
 $(OUTPUT_NAME).elf: $(APP_OBJS)
 	@echo Building target: $@
