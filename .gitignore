@@ -1,2 +1,3 @@
 build 
-config.mk 
+config.mk*
+station_number.mk

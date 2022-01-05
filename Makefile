@@ -4,11 +4,12 @@
 
 
 include config.mk 
+include station_number.mk
 
 
 CFLAGS+= \
 -x c -mthumb -Os -ffunction-sections -c -std=gnu99  \
--D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3 -D_GNU_SOURCE 
+-D__SAMD21J18A__ -mcpu=cortex-m0plus -MD -MP  --specs=nano.specs -g3 -D_GNU_SOURCE -fanalyzer
 
 ifeq ($(LORA_DEBUG_GPIO),1)
 	CFLAGS += -DUSE_RADIO_DEBUG
@@ -90,6 +91,7 @@ mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin $(OUTPUT_NAME).hex $(BL_
 
 rev: 
 	echo $(REV) > $(BUILD_DIR)/rev.txt
+	echo $(INITIAL_STATION_NUMBER) > $(BUILD_DIR)/initial_station_number.txt
 
 install: 
 	install include/rno-g-control.h $(PREFIX)/include/
@@ -137,10 +139,15 @@ $(BL_OUTPUT_NAME).bin: $(BL_OUTPUT_NAME).elf
         $@ || exit 0
 $.lss: %.elf 
 	$(OC) -h -S $< > $@ 
-  
+
+station_number.mk:  
+	@echo "Creating default station_number.mk" 
+	@echo "INITIAL_STATION_NUMBER=999" > $@
+
+
 config.mk: config.mk.default 
-	@echo "Copying config.mk.default to config.mk" 
-	cp $< $@
+	@echo "Copying config.mk.default to config.mk (backing up old if it exists)" 
+	@cp --backup=t $< $@
 
 $(OUTPUT_NAME).elf: $(APP_OBJS)
 	@echo Building target: $@
@@ -171,6 +178,11 @@ $(BUILD_DIR)/bootloader/%.o: bootloader/%.c Makefile config.mk
 	$(CC) -D_BOOTLOADER_ $(CFLAGS)  $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d)  -MT$(@:%.o=%.o) -o $@ $<
 	@echo Finished building: $<
 
+#special case config block for INIITAL_STATION_NUMBER (only on application?)
+$(BUILD_DIR)/shared/config_block.o: shared/config_block.c Makefile config.mk station_number.mk
+	@echo Building file: $<
+	$(CC) $(CFLAGS) -DINITIAL_STATION_NUMBER=$(INITIAL_STATION_NUMBER) $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o) -o $@ $<
+	@echo Finished building: $<
 
 
 # Compiler targets
