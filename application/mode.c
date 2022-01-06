@@ -15,7 +15,10 @@ void mode_init()
   {
     the_mode = RNO_G_LOW_POWER_MODE; 
     low_power_mode_enter(); 
+
+#ifdef _RNO_G_REV_D
     low_power_mon_off(); 
+#endif 
   }
   else
   {

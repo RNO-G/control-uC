@@ -1,6 +1,7 @@
 #include "application/i2cbus.h" 
 #include "application/monitors.h" 
 #include "shared/driver_init.h" 
+#include "application/lowpower.h" 
 #include "hal_adc_sync.h" 
 #include "hpl_calendar.h" 
 #include "shared/printf.h" 
@@ -207,6 +208,7 @@ int monitor_fill(rno_g_report_v2_t * r, int navg)
 #else
   const int max = 5; 
   r->analog_delta_when = when - r->when; 
+  if (low_power_mode) monitor_init(); 
 #endif
 
   for (i = 0; i < max; i++) 
@@ -251,13 +253,18 @@ int monitor_fill(rno_g_report_v2_t * r, int navg)
 #ifdef _RNO_G_REV_D
       m->i_sbc5v = monitor(MON_SBC_5V, navg); 
 #else
-      r->i_sbc_div4 = monitor(MON_SBC_5V,navg) >> 4; 
+      r->i_sbc_div4 = monitor(MON_SBC_5V,navg) >> 2; 
 #endif 
       monitor_select(MON_DOWN_3V1); 
     }
     if ( i < max-1) 
       delay_us(3000); 
   }
+
+#ifndef _RNO_G_REV_D
+
+  if (low_power_mode) monitor_deinit(); 
+#endif
   return 0; 
 }
 

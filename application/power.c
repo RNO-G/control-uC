@@ -125,7 +125,7 @@ void update_ltc_if_ready(struct ltc2992_ctx * c)
 {
 
   //check status on power system 
-  i2c_task_t check= {.addr= c->addr, .reg=LTC2992_ADC_STATUS, .write = 0 }; 
+  i2c_task_t check= {.addr= c->addr, .reg=LTC2992_ADC_STATUS, .write = 0, .data = 0}; 
   i2c_enqueue(&check); 
   while (!check.done); 
   if ( (check.data & LTC2992_MASK_READY) == LTC2992_MASK_READY) //both ADC and IADC ready 

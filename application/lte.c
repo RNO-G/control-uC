@@ -305,7 +305,7 @@ int lte_turn_off(int force)
 static void lte_finish_reset_cb(const struct timer_task  *const  task) 
 {
   (void) task; 
-  gpio_set_pin_direction(LTE_NRST,GPIO_DIRECTION_OFF); 
+  gpio_set_pin_level(LTE_NRST,true); 
   lte_state = LTE_ON; // ??? 
 }
 
@@ -334,7 +334,6 @@ int lte_reset(rno_g_lte_reset_type_t type)
 #else 
     lte_state = LTE_RESETTING; 
     gpio_set_pin_level(LTE_NRST,0); 
-    gpio_set_pin_direction(LTE_NRST,GPIO_DIRECTION_OUT); 
     timer_add_task(&SHARED_TIMER, &lte_reset_task); 
 #endif
   }

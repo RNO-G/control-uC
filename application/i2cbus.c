@@ -210,6 +210,7 @@ void i2c_queue_flush()
 
 #endif
 
+static uint8_t internal_bitset[16]; 
 
 int i2c_detect(uint8_t start_addr, uint8_t end_addr, uint8_t *bitset) 
 {
@@ -218,6 +219,7 @@ int i2c_detect(uint8_t start_addr, uint8_t end_addr, uint8_t *bitset)
   uint8_t end = end_addr >= 0x78 ? 0x77 : end_addr; 
 
   if (bitset) memset(bitset,0,16); 
+  else memset(internal_bitset,0,16); 
 
   uint8_t dummy = 0; 
   for (uint8_t addr = start ; addr <= end; addr++) 
@@ -232,6 +234,7 @@ int i2c_detect(uint8_t start_addr, uint8_t end_addr, uint8_t *bitset)
       }
       else 
       {
+        internal_bitset[addr >> 3] |= (1 << (addr & 0x7)); 
         printf("#I2C-DETECT %x  (val(0)=%x)\n", addr, dummy); 
       }
     }

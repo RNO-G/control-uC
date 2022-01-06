@@ -259,9 +259,9 @@ typedef struct rno_g_report_v2
   //16 bytes
   uint16_t i_lt_div1p786 : 12; //  low threshold board, 12 bits,  mA conversion is 125/70, max is 7.3 A. 
   uint16_t i_radiant_div1p786 : 12; //  low threshold board, 12 bits,  mA conversion is 125/70, max is 7.3 A
-  int8_t  V_radiant_div25; // 
+  uint8_t  V_radiant_div25; // 
   //20 bytes
-  int8_t  V_lt_div25; // 
+  uint8_t  V_lt_div25; // 
   int8_t  digi_delta_when; 
   int8_t power_delta_when; 
   int8_t temp_delta_when;
@@ -305,6 +305,7 @@ typedef struct rno_g_report_v2
   r->T_micro_times16/16., \
   r->when + r->analog_delta_when, r->when + r->digi_delta_when, r->when + r->power_delta_when, r->when + r->temp_delta_when, \
   RNO_G_POWER_STATE_JSON_VALS(r->power_state)
+
 
 
 typedef struct rno_g_lte_stats

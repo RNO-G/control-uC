@@ -1,6 +1,7 @@
 #include "application/lowpower.h" 
 #include "application/i2cbus.h" 
 #include "application/sbc.h" 
+#include "application/lte.h" 
 #include "hal_calendar.h" 
 #include "shared/driver_init.h" 
 #include "application/monitors.h" 
@@ -15,9 +16,9 @@ volatile int waiting_for_sbc = 0;
 static volatile int woke=0; 
 static volatile int vicor_state = 1; 
 
+#ifdef _RNO_G_REV_D
 int low_power_mon_on() 
 {
-#ifdef _RNO_G_REV_D
 
   if (!low_power_mode) return 0; 
   if (!vicor_state) 
@@ -28,15 +29,14 @@ int low_power_mon_on()
     vicor_state = 1; 
     delay_ms(15); //wait a bit for things to stabilize 
   }
-#endif
   return 0; 
 }
+#endif
 
 
-
+#ifdef _RNO_G_REV_D
 int low_power_mon_off() 
 {
-#ifdef _RNO_G_REV_D
   if (!low_power_mode) return 0; 
 
   //Don't turn off the vicor if the SBC is still on!!! 
@@ -47,19 +47,30 @@ int low_power_mon_off()
     vicor_state = 0; 
     monitor_deinit(); 
   }
-#endif
   return 0;
 }
+#endif
 
 
-
+int low_power_process() 
+{
+  if (!low_power_mode) return 0; 
+#ifndef _RNO_G_REV_D
+  // on the rev d, the mon_off/mon_on stuff takes care of this instead. 
+  if (vicor_state && sbc_get_state() == SBC_OFF && lte_get_state() == LTE_OFF)
+  {
+    gpio_set_pin_level(VICOR_EN, false); 
+    gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_IN); 
+    vicor_state = 0; 
+    monitor_deinit(); 
+  }
+#endif
+  return 0; 
+}
 
 int low_power_mode_enter() 
 {
-#ifndef _RNO_G_REV_D
-  i2c_busmux_quick_select(I2C_BUSMUX_WINTER); 
-  gpio_set_pin_level(VICOR_EN, false); 
-#else
+#ifdef _RNO_G_REV_D
   low_power_mon_off(); 
 #endif
   low_power_mode =1; 
@@ -74,8 +85,15 @@ int low_power_mode_exit()
   low_power_mon_on(); 
   i2c_unstick(10); //just in case? 
 #else
-  gpio_set_pin_level(VICOR_EN, true); 
-  i2c_busmux_quick_select(I2C_BUSMUX_BOTH); 
+  if (!vicor_state) 
+  {
+    gpio_set_pin_level(VICOR_EN, true); 
+    gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_OUT); 
+    i2c_busmux_quick_select(I2C_BUSMUX_BOTH); 
+    monitor_init(); 
+    vicor_state = 1; 
+    delay_ms(15); 
+  }
 #endif
   low_power_mode=0; 
 

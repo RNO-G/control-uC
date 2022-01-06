@@ -577,8 +577,8 @@ void system_init(void)
 
 
 #ifndef _RNO_G_REV_D
-  gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_IN); 
-  gpio_set_pin_pull_mode(LTE_NRST, GPIO_PULL_OFF); 
+  gpio_set_pin_level(LTE_NRST,true); 
+  gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_OUT); 
   gpio_set_pin_function(LTE_NRST, GPIO_PIN_FUNCTION_OFF); 
 
   gpio_set_pin_direction(I2C_NRST, GPIO_DIRECTION_IN); 

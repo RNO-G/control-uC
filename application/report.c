@@ -57,6 +57,7 @@ const RNO_G_REPORT_T * report_process(int up, uint32_t * extrawake)
     monitor_fill(&report.analog_monitor,report_scheduled_navg ?: 20); 
 #else
     report.when = get_time(); //have ot fill this to get delta_t right
+    report.analog_delta_when = -64; 
     monitor_fill(&report,report_scheduled_navg ?: 20); 
 #endif
 
@@ -86,6 +87,9 @@ const RNO_G_REPORT_T * report_process(int up, uint32_t * extrawake)
     if (new_analog_delta_when < -128) new_analog_delta_when = -128; 
     report.analog_delta_when = new_analog_delta_when; 
     report.when = new_time; 
+    report.digi_delta_when = -64;
+    report.power_delta_when = -64;
+    report.temp_delta_when = -64;
 
     power_monitor_fill(&report); 
 
@@ -122,6 +126,8 @@ const RNO_G_REPORT_T * report_get()
   report.power_state.lte_power = lte_get_state() != LTE_OFF; 
   report.power_state.dh_amp_power = exp.dh_amps; 
   report.power_state.surf_amp_power = exp.surface_amps; 
+  report.power_state.j29_power = exp.j29; 
+  report.power_state.output_bus_enable = exp.ext_bus; 
   report.mode = mode_query(); 
   report.lte_state = lte_get_state(); 
   report.sbc_state = sbc_get_state(); 

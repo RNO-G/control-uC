@@ -15,6 +15,7 @@
 #include "hal_i2c_m_sync.h" 
 #include "application/lte.h" 
 #include "application/i2cbus.h" 
+#include "application/i2cbusmux.h" 
 #include "application/power.h" 
 #include "application/lowpower.h" 
 #include "application/report.h" 
@@ -86,6 +87,9 @@ int main(void)
   /* Initialize i2c */ 
   i2c_bus_init(); 
 
+  i2c_busmux_init(); 
+
+
   //persist previous state
   get_gpio_expander_state(0,0); 
 
@@ -154,7 +158,7 @@ int main(void)
     // Service any messages from the SBC
     sbc_process(up);
 
-
+    low_power_process(); 
  
     if (!low_power_mode) 
     {
@@ -256,8 +260,11 @@ int main(void)
     // See if we can sleep 
     if (!cant_sleep && low_power_mode && (nticks-wokeup_ticks) >= LOW_POWER_AWAKE_TICKS + extra_awake_ticks && sbc_get_state() == SBC_OFF) 
     {
+
+#ifdef _RNO_G_REV_D
       //make sure the vicor is off! 
       low_power_mon_off(); 
+#endif
 
 
       //feed the watchdog before we sleep 
