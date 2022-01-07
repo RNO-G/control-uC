@@ -87,7 +87,9 @@ int main(void)
   /* Initialize i2c */ 
   i2c_bus_init(); 
 
+#ifndef _RNO_G_REV_D
   i2c_busmux_init(); 
+#endif
 
 
   //persist previous state
