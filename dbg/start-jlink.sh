@@ -1,2 +1,2 @@
 #/bin/sh 
-DISPLAY=:notarealdisplay sudo JLinkGDBServer -if SWD -device ATSAMD21J18 
+DISPLAY=:notarealdisplay sudo JLinkGDBServer -if SWD -device ATSAMD21J18 $@
