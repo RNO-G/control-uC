@@ -71,6 +71,7 @@ PREFIX?=$(RNO_G_INSTALL_DIR)
 MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application $(BUILD_DIR)/bootloader  $(BUILD_DIR)/shared $(BUILD_DIR)/bootloader/shared
 OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-main
 BL_OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-bootloader
+COMBO_NAME := $(BUILD_DIR)/rno-G-uC-combined
 
 .PHONY: help install mcu clean rev
 
@@ -87,7 +88,7 @@ help:
 
 
 # MCU 
-mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin $(OUTPUT_NAME).hex $(BL_OUTPUT_NAME).hex rev
+mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin $(OUTPUT_NAME).hex $(BL_OUTPUT_NAME).hex $(COMBO_NAME).bin rev
 
 rev: 
 	echo $(REV) > $(BUILD_DIR)/rev.txt
@@ -129,6 +130,8 @@ $(BL_OUTPUT_NAME).bin: $(BL_OUTPUT_NAME).elf
 	$(OC) --pad-to=0x4000 --gap-fill=0xff -O binary $< $@
 
 
+$(COMBO_NAME).bin: $(BL_OUTPUT_NAME).bin $(OUTPUT_NAME).bin 
+	cat $^ > $@ 
 
 %.hex: %.elf
 	$(OC) -O ihex -R .eeprom -R .fuse -R .lock -R .signature $< $@
