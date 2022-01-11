@@ -226,9 +226,10 @@ release:
 	@ln $(BL_OUTPUT_NAME).bin $(BUILD_DIR)/current_release/`basename $(BL_OUTPUT_NAME)`-`cat $(BUILD_DIR)/release`.bin
 	@ln $(COMBO_NAME).bin $(BUILD_DIR)/current_release/`basename $(COMBO_NAME)`-`cat $(BUILD_DIR)/release`.bin
 	@rm -f $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`.tar.gz 
+	@rm -rf $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`
 	@mv -f $(BUILD_DIR)/current_release  $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`
-	@tar -cvzf $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`.tar.gz $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`
-	@gh release create `cat $(BUILD_DIR)/release` $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release/*`
+	@tar -cvzf $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`.tar.gz $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release` > $(BUILD_DIR)/last_release 
+	@gh release create `cat $(BUILD_DIR)/release` --generate-notes  $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`/*
 
 
 
