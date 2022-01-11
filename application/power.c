@@ -208,10 +208,10 @@ int power_monitor_fill(rno_g_report_v2_t * r)
   r->V_batt_div25 = power_ctx.sense2;
   r->i_batt_div1p25 = power_ctx.delta_sense2;
 
-  r->V_radiant_div25 = digi_ctx.sense1;
-  r->i_radiant_div1p786 = digi_ctx.delta_sense1;
-  r->V_lt_div25 = digi_ctx.sense2;
-  r->i_lt_div1p786 = digi_ctx.delta_sense2;
+  r->V_radiant_div25 = digi_ctx.sense2;
+  r->i_radiant_div1p786 = digi_ctx.delta_sense2;
+  r->V_lt_div25 = digi_ctx.sense1;
+  r->i_lt_div1p786 = digi_ctx.delta_sense1;
 
   r->T_local_times16 = 16 * (((int)last_local_t[1])-64)  + (last_local_t[0] >> 4); 
   r->T_remote_1_times16 = 16 * (((int)last_remote1_t[1])-64)  + (last_remote1_t[0] >> 4); 
