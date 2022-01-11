@@ -21,7 +21,7 @@
 #define APP_REV "REVE"
 #endif
 
-#define APP_VERSION "Chicago.01062022.0-" APP_REV
+#define APP_VERSION "Chicago.01112022.0-" APP_REV
 
 #define MODE_CHANGE_MINTICKS 100
 

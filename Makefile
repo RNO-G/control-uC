@@ -3,6 +3,7 @@
 
 
 
+
 include config.mk 
 include station_number.mk
 
@@ -73,7 +74,7 @@ OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-main
 BL_OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-bootloader
 COMBO_NAME := $(BUILD_DIR)/rno-G-uC-combined
 
-.PHONY: help install mcu clean rev
+.PHONY: help install mcu clean rev release
 
 help: 
 	@echo "Targets: " 
@@ -209,6 +210,27 @@ $(BUILD_DIR)/%.o: %.S
 
 $(BUILD_DIR)/test_base64: shared/base64.c | $(BUILD_DIR) 
 	gcc -o $@ -Os -D_TEST_ -D_HOST_ $<  -I./
+
+release: 
+	@echo "#include \"config/config.h\" "> $(BUILD_DIR)/release.c
+	@echo "#include <stdio.h> ">> $(BUILD_DIR)/release.c
+	@echo "int main(void) { puts(APP_VERSION \"\\n\"); return 0;}  " >> $(BUILD_DIR)/release.c
+	@gcc -I. -o $(BUILD_DIR)/release.exe $(BUILD_DIR)/release.c 
+	@$(BUILD_DIR)/release.exe > $(BUILD_DIR)/release
+	@echo Version is `cat $(BUILD_DIR)/release`
+	@rm -rf $(BUILD_DIR)/current_release
+	@mkdir -p $(BUILD_DIR)/current_release
+	@ln $(OUTPUT_NAME).hex $(BUILD_DIR)/current_release/`basename $(OUTPUT_NAME)`-`cat $(BUILD_DIR)/release`.hex
+	@ln $(OUTPUT_NAME).bin $(BUILD_DIR)/current_release/`basename $(OUTPUT_NAME)`-`cat $(BUILD_DIR)/release`.bin
+	@ln $(BL_OUTPUT_NAME).hex $(BUILD_DIR)/current_release/`basename $(BL_OUTPUT_NAME)`-`cat $(BUILD_DIR)/release`.hex
+	@ln $(BL_OUTPUT_NAME).bin $(BUILD_DIR)/current_release/`basename $(BL_OUTPUT_NAME)`-`cat $(BUILD_DIR)/release`.bin
+	@ln $(COMBO_NAME).bin $(BUILD_DIR)/current_release/`basename $(COMBO_NAME)`-`cat $(BUILD_DIR)/release`.bin
+	@rm -f $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`.tar.gz 
+	@mv -f $(BUILD_DIR)/current_release  $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`
+	@tar -cvzf $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`.tar.gz $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release`
+	@gh release create `cat $(BUILD_DIR)/release` $(BUILD_DIR)/release-`cat $(BUILD_DIR)/release/*`
+
+
 
 
 $(MKDIRS):
