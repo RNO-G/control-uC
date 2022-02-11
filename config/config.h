@@ -3,6 +3,9 @@
 
 #define USE_SYNCHRONOUS_I2C 1 
 
+//uncomment if you don't want to autoprobe GPIO expanders 
+#define I2C_EXPANDER_AUTOPROBE
+
 // the loop delay time, when not in low power mode
 #define DELAY_MS 1 
 
@@ -32,5 +35,6 @@
 
 #define ENABLE_WATCHDOG 1 
 #define ENABLE_WATCHDOG_EW 1 
+
 
 #endif

@@ -1,5 +1,6 @@
 #include "application/gpio_expander.h" 
 #include "application/i2cbus.h" 
+#include "config/config.h" 
 
 
 #define I2C_EXPANDER_CONFIGURE_REGISTER 0x3
@@ -14,6 +15,45 @@ enum i2c_expander_dir
   I2C_DIR_IN
 };
 
+#ifdef I2C_EXPANDER_AUTOPROBE
+static uint8_t autoprobe_addr_expander[4]; 
+static uint8_t autoprobe_addr_expander_success; 
+const uint8_t autoprobe_addr_expander_options[4][2] = 
+  {{ 0x20, 0x38 }, 
+   { 0x22, 0x3A }, 
+   { 0x24, 0x3C }, 
+   { 0x27, 0x3F }}; 
+
+const uint8_t autoprobe_min = 0x20; 
+const uint8_t autoprobe_max = 0x3f; 
+
+static void autoprobe_i2c_expander(void) 
+{
+  uint8_t probe[16]; 
+  i2c_detect(autoprobe_min, autoprobe_max, probe); 
+
+  for (unsigned iexp = 0; iexp < sizeof(autoprobe_addr_expander); iexp++) 
+  {
+    for (unsigned iaddr = 0; iaddr < sizeof(autoprobe_addr_expander_options[iexp]); iaddr++)
+    {
+      autoprobe_addr_expander[iexp] = autoprobe_addr_expander_options[iexp][iaddr]; 
+      uint8_t addr = autoprobe_addr_expander[iexp]; 
+      if (probe[addr >> 3] & (1 << (addr & 0x7)))
+      {
+        autoprobe_addr_expander_success |=  1 << iexp; 
+        break; 
+      }
+    }
+  }
+}
+
+#define I2C_EXPANDER_A (autoprobe_addr_expander[0])
+#define I2C_EXPANDER_B (autoprobe_addr_expander[1])
+#define I2C_EXPANDER_C (autoprobe_addr_expander[2])
+#define I2C_EXPANDER_D (autoprobe_addr_expander[3])
+
+//not probing
+#else
 #ifdef _RNO_G_REV_D
 #define I2C_EXPANDER_A 0x38
 #define I2C_EXPANDER_B 0x3A
@@ -24,6 +64,9 @@ enum i2c_expander_dir
 #define I2C_EXPANDER_B 0x22
 #define I2C_EXPANDER_C 0x24 
 #define I2C_EXPANDER_D 0x27
+#endif
+
+//not probing
 #endif
 
 #define I2C_EXPANDER_SURF_AMP_3_BIT 0
@@ -49,26 +92,26 @@ enum i2c_expander_dir
 
 //these keep the state 
 
-static i2c_task_t A_state  = { .addr = I2C_EXPANDER_A, .write =1, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0xff, .done = 1}; 
-static i2c_task_t B_state  = { .addr = I2C_EXPANDER_B, .write =1, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0xff, .done = 1}; 
+static i2c_task_t A_state  = { .addr = 0, .write =1, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0xff, .done = 1}; 
+static i2c_task_t B_state  = { .addr = 0, .write =1, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0xff, .done = 1}; 
 
 //this is used to actually perform a query. We query the direction, which will be out if on, in if not in all cases (even if polarity is inverted) 
-static i2c_task_t A_query_dir  = { .addr = I2C_EXPANDER_A, .write =0, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 1}; 
-static i2c_task_t B_query_dir  = { .addr = I2C_EXPANDER_B, .write =0, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 1}; 
+static i2c_task_t A_query_dir  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 1}; 
+static i2c_task_t B_query_dir  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 1}; 
 
-static i2c_task_t A_query_state  = { .addr = I2C_EXPANDER_A, .write =0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0x0, .done = 1}; 
-static i2c_task_t B_query_state  = { .addr = I2C_EXPANDER_B, .write =0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0x0, .done = 1}; 
+static i2c_task_t A_query_state  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0x0, .done = 1}; 
+static i2c_task_t B_query_state  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0x0, .done = 1}; 
 
 
 
 //used to set direction
-static i2c_task_t A_dir = { .addr = I2C_EXPANDER_A, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
-static i2c_task_t B_dir = { .addr = I2C_EXPANDER_B, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
+static i2c_task_t A_dir = { .addr = 0, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
+static i2c_task_t B_dir = { .addr = 0, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
 
 
 //these are only used for reads
-static i2c_task_t C =  { .addr = I2C_EXPANDER_C, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ;
-static i2c_task_t D = { .addr = I2C_EXPANDER_C, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ; 
+static i2c_task_t C =  { .addr = 0, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ;
+static i2c_task_t D = { .addr = 0, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ; 
 
 
 static const uint8_t surf_amp_map[6] = {
@@ -90,6 +133,19 @@ static const uint8_t dh_amp_map[3] = {
 
 int gpio_expander_init() 
 {
+#ifdef I2C_EXPANDER_AUTOPROBE
+  autoprobe_i2c_expander(); 
+#endif
+
+  A_state.addr = I2C_EXPANDER_A;
+  A_query_dir.addr = I2C_EXPANDER_A;
+  A_query_state.addr = I2C_EXPANDER_A;
+  B_state.addr = I2C_EXPANDER_B;
+  B_query_dir.addr = I2C_EXPANDER_B;
+  B_query_state.addr = I2C_EXPANDER_B;
+  C.addr = I2C_EXPANDER_C;
+  D.addr = I2C_EXPANDER_D;
+
   return get_gpio_expander_state(0,0); 
 }
 
