@@ -139,9 +139,11 @@ int gpio_expander_init()
 
   A_state.addr = I2C_EXPANDER_A;
   A_query_dir.addr = I2C_EXPANDER_A;
+  A_dir.addr = I2C_EXPANDER_A;
   A_query_state.addr = I2C_EXPANDER_A;
   B_state.addr = I2C_EXPANDER_B;
   B_query_dir.addr = I2C_EXPANDER_B;
+  B_dir.addr = I2C_EXPANDER_B;
   B_query_state.addr = I2C_EXPANDER_B;
   C.addr = I2C_EXPANDER_C;
   D.addr = I2C_EXPANDER_D;
