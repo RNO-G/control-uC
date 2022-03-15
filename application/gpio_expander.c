@@ -24,24 +24,21 @@ const uint8_t autoprobe_addr_expander_options[4][2] =
    { 0x24, 0x3C }, 
    { 0x27, 0x3F }}; 
 
-const uint8_t autoprobe_min = 0x20; 
-const uint8_t autoprobe_max = 0x3f; 
 
 static void autoprobe_i2c_expander(void) 
 {
-  uint8_t probe[16]; 
-  i2c_detect(autoprobe_min, autoprobe_max, probe); 
-
-  for (unsigned iexp = 0; iexp < sizeof(autoprobe_addr_expander); iexp++) 
+  i2c_task_t probe = {.addr = 0, .write = 0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0, .done = 1}; 
+  for (unsigned i = 0; i < 4; i++) 
   {
-    for (unsigned iaddr = 0; iaddr < sizeof(autoprobe_addr_expander_options[iexp]); iaddr++)
+    for (unsigned j = 0; j < 2; j++) 
     {
-      autoprobe_addr_expander[iexp] = autoprobe_addr_expander_options[iexp][iaddr]; 
-      uint8_t addr = autoprobe_addr_expander[iexp]; 
-      if (probe[addr >> 3] & (1 << (addr & 0x7)))
+      probe.addr = autoprobe_addr_expander_options[i][j]; 
+      i2c_enqueue(&probe); 
+      i2c_queue_flush(); 
+      if (probe.done > 0) 
       {
-        autoprobe_addr_expander_success |=  1 << iexp; 
-        break; 
+        autoprobe_addr_expander_success |=  1 << i; 
+        autoprobe_addr_expander[i] = probe.addr; 
       }
     }
   }
