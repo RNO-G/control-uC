@@ -84,16 +84,10 @@ int main(void)
     wdt_enable(&INTERNAL_WATCHDOG); 
   }
  
-  /* Initialize i2c */ 
+  /* Initialize i2c (also initializes busmux, gpio expanders
+   * and gets the state of the gpio expanders */ 
   i2c_bus_init(); 
 
-#ifndef _RNO_G_REV_D
-  i2c_busmux_init(); 
-#endif
-
-
-  //persist previous state
-  get_gpio_expander_state(0,0); 
 
   /* Initialize SPI flash */ 
   spi_flash_init(); 

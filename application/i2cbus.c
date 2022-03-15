@@ -1,4 +1,5 @@
 #include "application/i2cbus.h" 
+#include "application/i2cbusmux.h" 
 #include "shared/driver_init.h" 
 #include "hal_i2c_m_async.h" 
 #include "application/gpio_expander.h" 
@@ -9,6 +10,11 @@
 
 static void init_i2c_devices()
 {
+
+#ifndef _RNO_G_REV_D
+  i2c_busmux_init(); 
+#endif
+
   //make sure the gpio expander state is correct
   gpio_expander_init(); 
 }
@@ -33,6 +39,11 @@ int i2c_queue_size() { return 0; }
 
 int i2c_enqueue(i2c_task_t * task) 
 {
+  if (!task->addr) 
+  {
+    task->done = -1; 
+    return -1; 
+  }
   task->done = 0; 
   i2c_m_sync_set_slaveaddr(&I2C, task->addr, I2C_M_SEVEN); 
 
