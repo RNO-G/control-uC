@@ -24,8 +24,8 @@ extern "C"
  **/ 
 typedef enum sbc_boot_mode
 {
-  SBC_BOOT_INTERNAL = 0,
-  SBC_BOOT_SDCARD = 1
+  SBC_BOOT_INTERNAL = 0, //boot off internal MMC
+  SBC_BOOT_SDCARD = 1    //boot off SD card
 }sbc_boot_mode_t; 
 
 #define SBC_BOOT_MODE_STR(m)  ( m == SBC_BOOT_INTERNAL ? "INTERNAL" : m == SBC_BOOT_SDCARD ? "SDCARD" : "INVALID" )
@@ -34,7 +34,7 @@ typedef enum sbc_boot_mode
 /** The overarching mode of the station */ 
 typedef enum rno_g_station_mode 
 {
-  RNO_G_INIT = 0,  
+  RNO_G_INIT = 0,   // while init
   RNO_G_NORMAL_MODE = 1,  // SBC on, LTE turned on (but can be cycled by SBC).  RADIANT / LT controlled by SBC 
   RNO_G_SBC_ONLY_MODE = 2, // only SBC on, LTE forced off  (can be used to forcibly remotely cycle LTE... the SBC won't be able to turn it back on though!)) 
   RNO_G_SBC_OFF_MODE = 3, // micro not in lower power mode, but SBC turned off. Can be used to forcibly cycle SBC. 
@@ -55,8 +55,8 @@ typedef struct rno_g_power_state
   uint8_t lte_power : 1; 
   uint8_t radiant_power : 1; 
   uint8_t lowthresh_power : 1; 
-  uint8_t dh_amp_power : 3; 
-  uint8_t surf_amp_power : 6; 
+  uint8_t dh_amp_power : 3; //3 downhole strings power
+  uint8_t surf_amp_power : 6;  // the in-daqbox amps, includes both the optical receivers (0x1d for all 4) and the actual surface amplifiers (0x22 for the two of them).
   uint8_t j29_power : 1;  /* MIGHT BE GARBAGE FOR REV_D. Safe to extend due to padding, I think */
   uint8_t output_bus_enable : 1; /* MIGHT BE GARBAGE FOR REV_D. Safe to extend due to padding, I think */
 } rno_g_power_state_t; 
@@ -98,17 +98,17 @@ typedef struct rno_g_power_state
 
 
 /** voltages, temperatures, etc. recorded by the MCU ADC 
- *  Disused with RevD. 
+ *  Not used in RevE. 
  *
  * */ 
 typedef struct rno_g_monitor
 {
-  uint32_t when; 
-  int16_t temp_cC; 
-  int16_t i_surf3v[6]; 
-  int16_t i_down3v[3]; 
-  int16_t i_sbc5v; 
-  int16_t i_5v[2]; 
+  uint32_t when; //time of analog measurments
+  int16_t temp_cC;  //temperature, in centicelsius from analog monitor
+  int16_t i_surf3v[6];  // currents from in-daqbox amps, in mA (see rno_g_power_state for mapping)
+  int16_t i_down3v[3]; // downhole strings  mA. 
+  int16_t i_sbc5v; //SBC current
+  int16_t i_5v[2];  //RADIANT and LT board currents (RADIANT = 0, LT = 1) 
 } rno_g_monitor_t;
 
 #define RNO_G_MONITOR_JSON_FMT "{\"when\": %u, \"temp_C\": %f, \"I_surf3V_mA\":[%d,%d,%d,%d,%d,%d],"\
@@ -124,27 +124,27 @@ typedef struct rno_g_monitor
 
 
 /** Monitoring from the power board 
- * Disused with RevD. 
+ * Disused with RevE. 
  * */ 
 typedef struct power_system_monitor
 {
-  uint32_t when_power;
+  uint32_t when_power;  // time of LTTC measurement
 
-  uint16_t PVv_cV; 
-  uint16_t PVi_mA; 
+  uint16_t PVv_cV;  //PV voltage, centivolts
+  uint16_t PVi_mA;  //PV current, mA
 
-  uint16_t BATv_cV; 
-  uint16_t BATi_mA;  //
+  uint16_t BATv_cV; //Battery voltage, centivolts
+  uint16_t BATi_mA;  // Batteyr current
 
-  uint32_t when_temp;
+  uint32_t when_temp; // time of TMP432 measurement
 
-  int8_t local_T_C; //celsius
-  int8_t remote1_T_C; //celsius
-  int8_t remote2_T_C; //celsius
+  int8_t local_T_C; //sensor local to TMP432, in celsius
+  int8_t remote1_T_C; //sensor on AMP boxes, celsius
+  int8_t remote2_T_C; //sensor in vault, celsius
 
-  uint8_t local_T_sixteenth_C : 4; 
-  uint8_t remote1_T_sixteenth_C : 4; 
-  uint8_t remote2_T_sixteenth_C : 4; 
+  uint8_t local_T_sixteenth_C : 4; // fractional part of local
+  uint8_t remote1_T_sixteenth_C : 4; // fractional part of remote1 
+  uint8_t remote2_T_sixteenth_C : 4;  //fractoinal part of remote2
 
 } rno_g_power_system_monitor_t;
 
@@ -213,14 +213,14 @@ enum rno_g_msg_type
 
 typedef struct rno_g_report
 {
-  uint32_t when; 
-  uint8_t mode;  
-  uint8_t lte_state;
-  uint8_t sbc_state; 
-  uint8_t sbc_boot_mode;
-  rno_g_monitor_t analog_monitor; 
-  rno_g_power_system_monitor_t power_monitor; 
-  rno_g_power_state_t power_state; 
+  uint32_t when;  // time report is sent
+  uint8_t mode;  // see rno_g_mode_t
+  uint8_t lte_state; // see lte_state_t
+  uint8_t sbc_state;  //see sbc_state_t
+  uint8_t sbc_boot_mode; //see sbc_boot_mode_t
+  rno_g_monitor_t analog_monitor;  // see rno_g_monitor_t
+  rno_g_power_system_monitor_t power_monitor; // see rno_power_monitor_t
+  rno_g_power_state_t power_state; // see rno_g_power_state_t
 }rno_g_report_t; 
 
 #define RNO_G_REPORT_JSON_FMT "{\"when\":%u,\"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\,\"sbc_boot_mode\":\"%s\""\
@@ -235,52 +235,64 @@ typedef struct rno_g_report
 
 
 
-/** More tightly packed version of report,
- * with more information, but not split up into structs.
+/** More tightly packed version of report for revE. 
  *
- * All currents in milliamps, all voltages in amps, but heed the _div suffixes which means that the value is divied by that much (and should be multiplied by that amount to get it back)!  
+ * This is under development and subject to change.
+ * 
+ * This has more information but with fewer bits and not split up into structs.
+ *
+ * All currents in milliamps, all voltages in millivolts, but heed the _div suffixes 
+ * which means that the value is divied by that much (and should be multiplied 
+ * by that amount to get it back)!  
+ *
  **/ 
+
 typedef struct rno_g_report_v2
 {
-  int when; 
+  int when; //Time report is generated
   //4 bytes
-  uint8_t mode : 3;
-  uint8_t lte_state : 3;
-  uint8_t sbc_state : 2;
+  uint8_t mode : 3; // see rno_g_mode_t
+  uint8_t lte_state : 3; // see lte_state_t
+  uint8_t sbc_state : 2; // see sbc_state_t
   //5 bytes
-  uint8_t sbc_boot_mode : 1; 
-  int8_t analog_delta_when : 7;  // seconds difference between analog and when 
+  uint8_t sbc_boot_mode : 1;  //see sbc_boot_mode_t
+  int8_t analog_delta_when : 7;  // seconds difference between analog measurements and time report is generated 
   //6 bytes 
-  uint8_t i_sbc_div4;  // use 8 bits for SBC, divided by 4 so max is about 1 A with 4 mA resolution
+  uint8_t i_sbc_div4;  // use 8 bits for SBC current, divided by 4 so max is about 1 A with 4 mA resolution. 
+                       // This is an analog measurement.
   //7 bytes 
-  uint8_t i_surf_div4[6]; // surface receivers, 8 bits, divided by 4 so max is about 1 A with 4 mA resolution
+  uint8_t i_surf_div4[6]; // surface amplifier chain component currents
+                          // ([0],[2],[3],[4] are optical receivers, [1] and [5] are surface amps), 
+                          // 8 bits, divided by 4 so max is about 1 A with 4 mA resolution. 
+                          // This is an analog measurement
   // 13 bytes
-  uint8_t i_dh_div4[3]; // downhole receivers, 8 bits, divided by 4 so max is about 1 A with 4 mA resolution
+  uint8_t i_dh_div4[3]; // downhole string currents, 8 bits, divided by 4 so max is about 1 A with 4 mA resolution. 
+                        // This is an analog measurement
   //16 bytes
-  uint16_t i_lt_div1p786 : 12; //  low threshold board, 12 bits,  mA conversion is 125/70, max is 7.3 A. 
-  uint16_t i_radiant_div1p786 : 12; //  low threshold board, 12 bits,  mA conversion is 125/70, max is 7.3 A
-  uint8_t  V_radiant_div25; // 
+  uint16_t i_lt_div1p786 : 12; //  low threshold board current, 12 bits,  mA conversion is 125/70, max is 7.3 A.  This is a digital measurement.
+  uint16_t i_radiant_div1p786 : 12; //  radiant board current, 12 bits,  mA conversion is 125/70, max is 7.3 A. This is a digital measurement
+  uint8_t  V_radiant_div25; //  radiant voltage, 8 bits, resolution is 25 mV, allowing for 6.4V range.  This is a digital measurement.
   //20 bytes
-  uint8_t  V_lt_div25; // 
-  int8_t  digi_delta_when; 
-  int8_t power_delta_when; 
-  int8_t temp_delta_when;
+  uint8_t  V_lt_div25; //low threshold board voltage, 8 bits, resolution is 25 mV, allowing for 6.4 V range. this is a digital measruement.
+  int8_t  digi_delta_when; //time difference in seconds between digital measurements and when;
+  int8_t power_delta_when;  //time difference in seconds between power measurements and when 
+  int8_t temp_delta_when; //time difference in seconds between  temp measurements and when
   //24 bytes 
-  uint16_t i_pv_div2p5 : 12 ; //  RANGE TBD
-  uint16_t V_pv_div25 : 12 ;  
-  uint16_t i_batt_div1p25 : 12 ; //  
-  uint16_t V_batt_div25 : 12 ; // 
-  int16_t T_local_times16 : 12;   
-  int16_t T_remote_1_times16 : 12;   
-  int16_t T_remote_2_times16 : 12;   
-  int16_t T_micro_times16 : 12;   
+  uint16_t i_pv_div2p5 : 12 ; // PV current in mA, divided by 2.5, so 2.5 mA resolution, 10.24 A max. This is a power measurement.
+  uint16_t V_pv_div25 : 12 ; // PV voltage in mV, divided by 25, 25 mV resolution, 102.4 V max. This is a power measurement.
+  uint16_t i_batt_div1p25 : 12 ; // Battery current in mA, divided by 1.25, so 1.25 mA resolution, 5.12 A max. This is a power measurement.
+  uint16_t V_batt_div25 : 12 ; // Battery current in mV, divided by 25, so 25 mV resolution, 102.4 V max. This is a power measurement. 
+  int16_t T_local_times16 : 12;  // This is the ``local temperature'' of the TMP432 on the controller board in C, multiplied by 16. This is a temperature measurement.
+  int16_t T_remote_1_times16 : 12; // This is the probe on the amp boxes in C,  multiplied by 16. This is a temperature measurement.   
+  int16_t T_remote_2_times16 : 12;  // This is the probe in the vault in C,  multiplied by 16. This is a temperature measurement.     
+  int16_t T_micro_times16 : 12;    // This is the temperature of the control microcontroller in C,  multiplied by 16. This is an analog measurement.   
   //36 bytes
-  rno_g_power_state_t power_state; 
+  rno_g_power_state_t power_state;  //see rno_g_power_state
   //38 bytes 
-  int16_t V_5_div1p5 : 12; 
+  int16_t V_5_div1p5 : 12;  // measurement of 5V rail
   uint8_t reserved : 4; 
-  int8_t V_lte_div16; 
-  int8_t V_33_div16; 
+  int8_t V_lte_div16; //measurement of LTE rail
+  int8_t V_33_div16; //measurement of 3.3 V rail
   //42 bytes, probably. At most
 }rno_g_report_v2_t; 
 
@@ -310,41 +322,41 @@ typedef struct rno_g_report_v2
 
 typedef struct rno_g_lte_stats
 {
-  uint32_t when;
-  int16_t mcc;
-  int16_t mnc; 
-  uint16_t earfcn; 
-  int8_t rsrp; 
-  int8_t rssi; 
-  uint8_t neg_rsrq_x10; 
-  uint8_t tx_power; 
-  uint8_t band : 6; 
-  uint8_t service_domain : 2; 
-  uint8_t parsed_ok; 
+  uint32_t when; //time this was reported
+  int16_t mcc; //country code (should be 290 for greenland)
+  int16_t mnc;  // operator coude (should be 999, though we don't officially have it)
+  uint16_t earfcn; // frequency code 
+  int8_t rsrp; // LTE reference signal received power (~signal strength)
+  int8_t rssi;  // LTE Residisual Signal Strenght Indiciator (~total power in band) 
+  uint8_t neg_rsrq_x10; // - (Reference Signal Quality Received) * 10 
+  uint8_t tx_power; // sadly not reported by our modem :(
+  uint8_t band : 6; // service band (should be 8) 
+  uint8_t service_domain : 2;  // 3 =  good
+  uint8_t parsed_ok;  // number of fields parsed ok from modem 
 }rno_g_lte_stats_t; 
 
 
 typedef struct rno_g_lora_stats
 {
-  uint32_t when;
-  uint32_t uptime;
-  uint32_t rx; 
-  uint32_t tx; 
-  uint32_t tx_dropped;
-  uint32_t rx_dropped;
-  int last_recv; 
-  int last_sent; 
-  int last_check; 
-  int join_time; 
-  short rssi; 
-  short snr; 
+  uint32_t when; //time this was reported
+  uint32_t uptime; //number of seconds micro isup 
+  uint32_t rx;  // number of LoRa packets received (can be used to see if command went through) 
+  uint32_t tx;  // number of  LoRa packets transmitted
+  uint32_t tx_dropped; // how many tx dropped (if buffer full)
+  uint32_t rx_dropped; // how many rx dropped (if buffer full)
+  int last_recv; //last time a message was received
+  int last_sent;  // last itme a message was sent
+  int last_check;  //lsat link check
+  int join_time;  //last join time
+  short rssi;  // rssi of last received message
+  short snr;  // snr of last received mesage
 } rno_g_lora_stats_t; 
 
 
 typedef struct rno_g_sbc_msg
 {
-  uint32_t when; 
-  char msg[40]; 
+  uint32_t when; //when 
+  char msg[40];  // what is it 
 } rno_g_sbc_msg_t; 
 
 enum rno_g_msg_size
