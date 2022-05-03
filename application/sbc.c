@@ -668,6 +668,10 @@ static int sbc_io_process()
           printf("JOINING\r\n"); 
         }
       }
+      else if (!strcmp(in,"VERSION"))
+      {
+        printf("#VERSION: %s\r\n", APP_VERSION); 
+      }
 
       if (!valid) 
       {
