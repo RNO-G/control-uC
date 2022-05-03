@@ -269,8 +269,8 @@ typedef struct rno_g_report_v2
   uint8_t i_dh_div4[3]; // downhole string currents, 8 bits, divided by 4 so max is about 1 A with 4 mA resolution. 
                         // This is an analog measurement
   //16 bytes
-  uint16_t i_lt_div1p786 : 12; //  low threshold board current, 12 bits,  mA conversion is 125/70, max is 7.3 A.  This is a digital measurement.
-  uint16_t i_radiant_div1p786 : 12; //  radiant board current, 12 bits,  mA conversion is 125/70, max is 7.3 A. This is a digital measurement
+  uint16_t i_lt_div3p125 : 12; //  low threshold board current, 12 bits,  mA conversion is 125/40, max is 12.8 A.  This is a digital measurement.
+  uint16_t i_radiant_div3p125 : 12; //  radiant board current, 12 bits,  mA conversion is 125/40, max is 12.8 A. This is a digital measurement
   uint8_t  V_radiant_div25; //  radiant voltage, 8 bits, resolution is 25 mV, allowing for 6.4V range.  This is a digital measurement.
   //20 bytes
   uint8_t  V_lt_div25; //low threshold board voltage, 8 bits, resolution is 25 mV, allowing for 6.4 V range. this is a digital measruement.
@@ -278,9 +278,9 @@ typedef struct rno_g_report_v2
   int8_t power_delta_when;  //time difference in seconds between power measurements and when 
   int8_t temp_delta_when; //time difference in seconds between  temp measurements and when
   //24 bytes 
-  uint16_t i_pv_div2p5 : 12 ; // PV current in mA, divided by 2.5, so 2.5 mA resolution, 10.24 A max. This is a power measurement.
+  uint16_t i_pv_div4p167 : 12 ; // PV current in mA. mA converstion is 125/30, so 17.1 A max. This is a power measurement.
   uint16_t V_pv_div25 : 12 ; // PV voltage in mV, divided by 25, 25 mV resolution, 102.4 V max. This is a power measurement.
-  uint16_t i_batt_div1p25 : 12 ; // Battery current in mA, divided by 1.25, so 1.25 mA resolution, 5.12 A max. This is a power measurement.
+  uint16_t i_batt_div3p125 : 12 ; // Battery current in mA, ma conversion is 125/50, 12.8 A max. This is a power measurement.
   uint16_t V_batt_div25 : 12 ; // Battery current in mV, divided by 25, so 25 mV resolution, 102.4 V max. This is a power measurement. 
   int16_t T_local_times16 : 12;  // This is the ``local temperature'' of the TMP432 on the controller board in C, multiplied by 16. This is a temperature measurement.
   int16_t T_remote_1_times16 : 12; // This is the probe on the amp boxes in C,  multiplied by 16. This is a temperature measurement.   
@@ -309,7 +309,7 @@ typedef struct rno_g_report_v2
   r->when, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
   r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4, r->i_surf_div4[3]*4,r->i_surf_div4[4]*4, r->i_surf_div4[5]*4,\
   r->i_dh_div4[0]*4, r->i_dh_div4[1]*4,r->i_dh_div4[2]*4,\
-  r->i_lt_div1p786 * (125/70.),r->i_radiant_div1p786 * (125/70.), r->i_batt_div1p25 * 1.25,r->i_pv_div2p5 * 2.5, \
+  r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div3p125 * (125/40.),r->i_pv_div4p167* (125/30.), \
   r->V_lt_div25*25, r->V_radiant_div25*25, r->V_5_div1p5 * 1.5, r->V_33_div16 * 15, r->V_lte_div16 * 16,  r->V_batt_div25*25, r->V_pv_div25*25,\
   r->T_local_times16/16., \
   r->T_remote_1_times16/16., \
