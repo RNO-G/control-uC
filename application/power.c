@@ -206,7 +206,7 @@ int power_monitor_fill(rno_g_report_v2_t * r)
   r->V_pv_div25 = power_ctx.sense1;
   r->i_pv_div4p167 = power_ctx.delta_sense1;
   r->V_batt_div25 = power_ctx.sense2;
-  r->i_batt_div3p125 = power_ctx.delta_sense2;
+  r->i_batt_div1p25 = power_ctx.delta_sense2;
 
   r->V_radiant_div25 = digi_ctx.sense2;
   r->i_radiant_div3p125 = digi_ctx.delta_sense2;
