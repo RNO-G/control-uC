@@ -671,7 +671,15 @@ static int sbc_io_process()
       else if (!strcmp(in,"VERSION"))
       {
         printf("#VERSION: %s\r\n", APP_VERSION); 
+        valid =1; 
       }
+
+      else if (!strcmp(in,"REV"))
+      {
+        printf("#REV: %s\r\n", APP_REV); 
+        valid =1; 
+      }
+
 
       if (!valid) 
       {
