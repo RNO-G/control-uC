@@ -10,6 +10,8 @@
 #include "application/power.h" 
 #include "shared/spi_flash.h"
 #include "config/config.h" 
+#include "hal_gpio.h" 
+#include "shared/driver_init.h" 
 #include <limits.h> 
 
 #define REPORT_SIZE sizeof(RNO_G_REPORT_T) 
@@ -116,6 +118,8 @@ const RNO_G_REPORT_T * report_get()
 {
 #ifdef _RNO_G_REV_D
   report.when = get_time(); 
+#else
+  report.heater = gpio_get_pin_level(HEATER_FET_CNTRL); 
 #endif
   i2c_gpio_expander_t exp; 
   get_gpio_expander_state(&exp,1); 
