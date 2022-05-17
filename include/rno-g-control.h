@@ -63,19 +63,20 @@ typedef struct rno_g_power_state
 
 #define STRBL(x) (x) ? "true" : "false"
 
-#ifdef _RNO_G_REV_D
-#define STRBL_OR_NA(x)  "N/A"
-#else
-#define STRBL_OR_NA(x) STRBL(x) 
-#endif
+
+#define RNO_G_POWER_STATE_JSON_FMT_V1 \
+  "{\"low_power_mode\": %s,\"sbc_power\":%s,"\
+  "\"lte_power\": %s,\"radiant_power\":%s,"\
+  "\"lowthresh_power\":%s,\"dh_amp_power\":[%s,%s,%s],"\
+  "\"surf_amp_power:\":[%s,%s,%s,%s,%s,%s] }" 
 
 
-
-#define RNO_G_POWER_STATE_JSON_FMT "{\"low_power_mode\": %s,\"sbc_power\":%s,"\
-                                   "\"lte_power\": %s,\"radiant_power\":%s,"\
-                                   "\"lowthresh_power\":%s,\"dh_amp_power\":[%s,%s,%s],"\
-                                   "\"surf_amp_power:\":[%s,%s,%s,%s,%s,%s]," \
-                                   "\"j29_power\": %s, \"output_bus_enable\": %s }"  
+#define RNO_G_POWER_STATE_JSON_FMT_V2 \
+  "{\"low_power_mode\": %s,\"sbc_power\":%s,"\
+  "\"lte_power\": %s,\"radiant_power\":%s,"\
+  "\"lowthresh_power\":%s,\"dh_amp_power\":[%s,%s,%s],"\
+  "\"surf_amp_power:\":[%s,%s,%s,%s,%s,%s], "\
+  ", \"j29_power\": %s, \"output_bus_enable\": %s }"  
 
 #define RNO_G_POWER_STATE_JSON_VALS(ps) \
   STRBL(ps.low_power_mode),\
@@ -91,9 +92,12 @@ typedef struct rno_g_power_state
   STRBL(ps.surf_amp_power & 4),\
   STRBL(ps.surf_amp_power & 8),\
   STRBL(ps.surf_amp_power & 16),\
-  STRBL(ps.surf_amp_power & 32),\
-  STRBL_OR_NA(ps.j29_power),\
-  STRBL_OR_NA(ps.output_bus_enable)
+  STRBL(ps.surf_amp_power & 32)
+
+#define RNO_G_POWER_STATE_JSON_VALS_V2(ps) \
+  RNO_G_POWER_STATE_JSON_VALS(ps), \
+  STRBL(ps.j29_power),\
+  STRBL(ps.output_bus_enable)
 
 
 
@@ -226,7 +230,7 @@ typedef struct rno_g_report
 #define RNO_G_REPORT_JSON_FMT "{\"when\":%u,\"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\,\"sbc_boot_mode\":\"%s\""\
                               "\"analog\":" RNO_G_MONITOR_JSON_FMT\
                               "\"power_monitor\":" RNO_G_POWER_SYSTEM_MONITOR_JSON_FMT\
-                              "\"power_state\":" RNO_G_POWER_SYSTEM_MONITOR_JSON_FMT "}" 
+                              "\"power_state\":" RNO_G_POWER_SYSTEM_MONITOR_JSON_FMT_V1 "}" 
 
 #define RNO_G_REPORT_JSON_VALS(r) \
   r.when, RNO_G_MODE_STR(r.mode), LTE_STATE_STR(r.lte_state), SBC_STATE_STR(r.sbc_state), SBC_BOOT_MODE_STR(r.sbc_boot_mode),\
@@ -302,7 +306,7 @@ typedef struct rno_g_report_v2
                               "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %0.3f, \"3.3v\": %0.3f, \"lte\":  \"batt\": %d, \"pv\": %d }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
                               "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, "\
-                              "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT "}" 
+                              "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V2 "}" 
 
 
 #define RNO_G_REPORT_V2_JSON_VALS(r) \
@@ -316,7 +320,7 @@ typedef struct rno_g_report_v2
   r->T_remote_2_times16/16., \
   r->T_micro_times16/16., \
   r->when + r->analog_delta_when, r->when + r->digi_delta_when, r->when + r->power_delta_when, r->when + r->temp_delta_when, \
-  RNO_G_POWER_STATE_JSON_VALS(r->power_state)
+  RNO_G_POWER_STATE_JSON_VALS_V2(r->power_state)
 
 
 
