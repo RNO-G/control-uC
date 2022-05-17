@@ -351,6 +351,27 @@ static int sbc_io_process()
         set_gpio_expander_state(turn_off_lt, turn_off_lt_mask); 
         printf("#LOWTHRESH-OFF: ACK\r\n"); 
       }
+        else if (!strcmp(in,"HEATER-ON"))
+      {
+#ifndef _RNO_G_REV_D
+        valid=1; 
+        gpio_set_pin_level(HEATER_FET_CNTRL, true);
+        printf("#HEATER-ON: ACK\r\n"); 
+#else
+        printf("#ERR: No heater in RevD\r\n"); 
+#endif
+      }
+
+      else if (!strcmp(in,"HEATER-OFF") )
+      {
+#ifndef _RNO_G_REV_D
+        valid=1;
+        gpio_set_pin_level(HEATER_FET_CNTRL, false);
+        printf("#HEATER-OFF: ACK\r\n"); 
+#else
+        printf("#ERR: No heater in RevD \r\n"); 
+#endif
+      }
  
       else if (prefix_matches(in,"AMPS-SET"))
       {
@@ -668,6 +689,18 @@ static int sbc_io_process()
           printf("JOINING\r\n"); 
         }
       }
+      else if (!strcmp(in,"VERSION"))
+      {
+        printf("#VERSION: %s\r\n", APP_VERSION); 
+        valid =1; 
+      }
+
+      else if (!strcmp(in,"REV"))
+      {
+        printf("#REV: %s\r\n", APP_REV); 
+        valid =1; 
+      }
+
 
       if (!valid) 
       {

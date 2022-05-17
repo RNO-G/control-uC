@@ -273,8 +273,8 @@ typedef struct rno_g_report_v2
   uint8_t i_dh_div4[3]; // downhole string currents, 8 bits, divided by 4 so max is about 1 A with 4 mA resolution. 
                         // This is an analog measurement
   //16 bytes
-  uint16_t i_lt_div1p786 : 12; //  low threshold board current, 12 bits,  mA conversion is 125/70, max is 7.3 A.  This is a digital measurement.
-  uint16_t i_radiant_div1p786 : 12; //  radiant board current, 12 bits,  mA conversion is 125/70, max is 7.3 A. This is a digital measurement
+  uint16_t i_lt_div3p125 : 12; //  low threshold board current, 12 bits,  mA conversion is 125/40, max is 12.8 A.  This is a digital measurement.
+  uint16_t i_radiant_div3p125 : 12; //  radiant board current, 12 bits,  mA conversion is 125/40, max is 12.8 A. This is a digital measurement
   uint8_t  V_radiant_div25; //  radiant voltage, 8 bits, resolution is 25 mV, allowing for 6.4V range.  This is a digital measurement.
   //20 bytes
   uint8_t  V_lt_div25; //low threshold board voltage, 8 bits, resolution is 25 mV, allowing for 6.4 V range. this is a digital measruement.
@@ -282,9 +282,9 @@ typedef struct rno_g_report_v2
   int8_t power_delta_when;  //time difference in seconds between power measurements and when 
   int8_t temp_delta_when; //time difference in seconds between  temp measurements and when
   //24 bytes 
-  uint16_t i_pv_div2p5 : 12 ; // PV current in mA, divided by 2.5, so 2.5 mA resolution, 10.24 A max. This is a power measurement.
+  uint16_t i_pv_div4p167 : 12 ; // PV current in mA. mA converstion is 12.5 uV/3 mohms, so 17.1 A max. This is a power measurement.
   uint16_t V_pv_div25 : 12 ; // PV voltage in mV, divided by 25, 25 mV resolution, 102.4 V max. This is a power measurement.
-  uint16_t i_batt_div1p25 : 12 ; // Battery current in mA, divided by 1.25, so 1.25 mA resolution, 5.12 A max. This is a power measurement.
+  uint16_t i_batt_div1p25 : 12 ; // Battery current in mA, ma conversion is 12.5 uV /10 mohms, 5.12 A max. This is a power measurement.
   uint16_t V_batt_div25 : 12 ; // Battery current in mV, divided by 25, so 25 mV resolution, 102.4 V max. This is a power measurement. 
   int16_t T_local_times16 : 12;  // This is the ``local temperature'' of the TMP432 on the controller board in C, multiplied by 16. This is a temperature measurement.
   int16_t T_remote_1_times16 : 12; // This is the probe on the amp boxes in C,  multiplied by 16. This is a temperature measurement.   
@@ -294,7 +294,8 @@ typedef struct rno_g_report_v2
   rno_g_power_state_t power_state;  //see rno_g_power_state
   //38 bytes 
   int16_t V_5_div1p5 : 12;  // measurement of 5V rail
-  uint8_t reserved : 4; 
+  uint8_t reserved : 3; 
+  int8_t heater; // heater on/off  
   int8_t V_lte_div16; //measurement of LTE rail
   int8_t V_33_div16; //measurement of 3.3 V rail
   //42 bytes, probably. At most
@@ -303,9 +304,9 @@ typedef struct rno_g_report_v2
 
 #define RNO_G_REPORT_V2_JSON_FMT "{\"when\":%d,\"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
                               "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d]\", \"dh\": [%d,%d,%d], \"lt\": %0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f }, "\
-                              "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %0.3f, \"3.3v\": %0.3f, \"lte\":  \"batt\": %d, \"pv\": %d }, "\
+                              "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %0.3f, \"3.3v\": %d, \"lte\": %d,  \"batt\": %d, \"pv\": %d }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
-                              "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, "\
+                              "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
                               "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V2 "}" 
 
 
@@ -313,13 +314,13 @@ typedef struct rno_g_report_v2
   r->when, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
   r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4, r->i_surf_div4[3]*4,r->i_surf_div4[4]*4, r->i_surf_div4[5]*4,\
   r->i_dh_div4[0]*4, r->i_dh_div4[1]*4,r->i_dh_div4[2]*4,\
-  r->i_lt_div1p786 * (125/70.),r->i_radiant_div1p786 * (125/70.), r->i_batt_div1p25 * 1.25,r->i_pv_div2p5 * 2.5, \
-  r->V_lt_div25*25, r->V_radiant_div25*25, r->V_5_div1p5 * 1.5, r->V_33_div16 * 15, r->V_lte_div16 * 16,  r->V_batt_div25*25, r->V_pv_div25*25,\
+  r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), \
+  r->V_lt_div25*25, r->V_radiant_div25*25, r->V_5_div1p5 * 1.5, r->V_33_div16 * 16, r->V_lte_div16 * 16,  r->V_batt_div25*25, r->V_pv_div25*25,\
   r->T_local_times16/16., \
   r->T_remote_1_times16/16., \
   r->T_remote_2_times16/16., \
   r->T_micro_times16/16., \
-  r->when + r->analog_delta_when, r->when + r->digi_delta_when, r->when + r->power_delta_when, r->when + r->temp_delta_when, \
+  r->when + r->analog_delta_when, r->when + r->digi_delta_when, r->when + r->power_delta_when, r->when + r->temp_delta_when, r->heater, \
   RNO_G_POWER_STATE_JSON_VALS_V2(r->power_state)
 
 

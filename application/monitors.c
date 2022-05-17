@@ -203,15 +203,13 @@ int monitor_fill(rno_g_report_v2_t * r, int navg)
 
 
 #ifdef _RNO_G_REV_D
-  const int max = 6; 
   m->when = when; 
 #else
-  const int max = 5; 
   r->analog_delta_when = when - r->when; 
   if (low_power_mode) monitor_init(); 
 #endif
 
-  for (i = 0; i < max; i++) 
+  for (i = 0; i < 6; i++) 
   {
 #ifdef _RNO_G_REV_D
     m->i_surf3v[i] = monitor(surf_map[i], navg); 
@@ -257,8 +255,6 @@ int monitor_fill(rno_g_report_v2_t * r, int navg)
 #endif 
       monitor_select(MON_DOWN_3V1); 
     }
-    if ( i < max-1) 
-      delay_us(3000); 
   }
 
 #ifndef _RNO_G_REV_D
