@@ -68,15 +68,15 @@ typedef struct rno_g_power_state
   "{\"low_power_mode\": %s,\"sbc_power\":%s,"\
   "\"lte_power\": %s,\"radiant_power\":%s,"\
   "\"lowthresh_power\":%s,\"dh_amp_power\":[%s,%s,%s],"\
-  "\"surf_amp_power:\":[%s,%s,%s,%s,%s,%s] }" 
+  "\"surf_amp_power\":[%s,%s,%s,%s,%s,%s] }" 
 
 
 #define RNO_G_POWER_STATE_JSON_FMT_V2 \
   "{\"low_power_mode\": %s,\"sbc_power\":%s,"\
   "\"lte_power\": %s,\"radiant_power\":%s,"\
   "\"lowthresh_power\":%s,\"dh_amp_power\":[%s,%s,%s],"\
-  "\"surf_amp_power:\":[%s,%s,%s,%s,%s,%s], "\
-  ", \"j29_power\": %s, \"output_bus_enable\": %s }"  
+  "\"surf_amp_power\":[%s,%s,%s,%s,%s,%s], "\
+  "\"j29_power\": %s, \"output_bus_enable\": %s }"  
 
 #define RNO_G_POWER_STATE_JSON_VALS(ps) \
   STRBL(ps.low_power_mode),\
@@ -303,7 +303,7 @@ typedef struct rno_g_report_v2
 
 
 #define RNO_G_REPORT_V2_JSON_FMT "{\"when\":%d,\"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
-                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d]\", \"dh\": [%d,%d,%d], \"lt\": %0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f }, "\
+                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lt\": %0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f }, "\
                               "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %0.3f, \"3.3v\": %d, \"lte\": %d,  \"batt\": %d, \"pv\": %d }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
                               "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
