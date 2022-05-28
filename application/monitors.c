@@ -27,6 +27,9 @@ uint8_t surf_map[6] = { MON_SURF3V_1, MON_SURF3V_2, MON_SURF3V_3, MON_SURF3V_4, 
 
 typedef enum mon_b
 {
+  MON_B_RAIL_5V = 0, 
+  MON_B_RAIL_3V = 1, 
+  MON_B_LTE_3V = 3, 
   MON_B_DWN_3V_1 = 4,  
   MON_B_DWN_3V_2 = 6,  
   MON_B_DWN_3V_3 = 5,  
@@ -187,7 +190,13 @@ static void mon_b_select(monitor_t what)
     what == MON_DOWN_3V1 ? MON_B_DWN_3V_1 : 
     what == MON_DOWN_3V2 ? MON_B_DWN_3V_2 : 
     what == MON_DOWN_3V3 ? MON_B_DWN_3V_3 : 
-                           MON_B_SBC5;
+    what == MON_SBC_5V   ? MON_B_SBC5     :
+    what == MON_RAIL_5V  ? MON_B_RAIL_5V  :
+    what == MON_RAIL_3V  ? MON_B_RAIL_3V  :
+    what == MON_LTE_3V   ? MON_B_LTE_3V  : 
+    -1; 
+
+  if (shift < 0) return; 
 
   _mon_select(0x4f,shift); 
 }
@@ -311,6 +320,12 @@ int16_t monitor(monitor_t what, int navg)
       return imon(ADC_MON_5V1,navg,620); 
     case  MON_5V2: 
       return imon(ADC_MON_5V2,navg,620); 
+#else
+    case  MON_5V1: 
+      return imon(ADC_MON_5V1,navg,620); 
+    case  MON_5V2: 
+      return imon(ADC_MON_5V2,navg,620); 
+#
 #endif
     default: 
       return -32768; 
