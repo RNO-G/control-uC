@@ -72,6 +72,8 @@ int low_power_mode_enter()
 {
 #ifdef _RNO_G_REV_D
   low_power_mon_off(); 
+#else
+  i2c_busmux_quick_select(I2C_BUSMUX_WINTER); 
 #endif
   low_power_mode =1; 
   return 0;
