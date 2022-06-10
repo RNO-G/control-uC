@@ -6,6 +6,7 @@
 #include "shared/driver_init.h" 
 #include "application/monitors.h" 
 #include "shared/spi_flash.h" 
+#include "shared/driver_init.h"
 #include "time.h" 
 #include "hal_sleep.h" 
 #include "application/i2cbusmux.h" 
@@ -24,8 +25,8 @@ int low_power_mon_on()
   if (!vicor_state) 
   {
     i2c_unstick(10); 
-    gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_IN);
     monitor_init(); 
+    gpio_set_pin_direction(VICOR_EN, GPIO_DIRECTION_IN);
     vicor_state = 1; 
     delay_ms(15); //wait a bit for things to stabilize 
   }
@@ -62,7 +63,6 @@ int low_power_process()
     gpio_set_pin_level(VICOR_EN, false); 
     gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_IN); 
     vicor_state = 0; 
-    monitor_deinit(); 
   }
 #endif
   return 0; 
@@ -73,7 +73,15 @@ int low_power_mode_enter()
 #ifdef _RNO_G_REV_D
   low_power_mon_off(); 
 #endif
+  monitor_deinit(); 
   low_power_mode =1; 
+
+  //turn off ports going to SBC 
+
+  SBC_UART_CONSOLE_PORT_deinit();
+  SBC_UART_PORT_deinit(); 
+
+
   return 0;
 } 
 
@@ -90,11 +98,13 @@ int low_power_mode_exit()
     gpio_set_pin_level(VICOR_EN, true); 
     gpio_set_pin_direction(LTE_NRST, GPIO_DIRECTION_OUT); 
     i2c_busmux_quick_select(I2C_BUSMUX_BOTH); 
-    monitor_init(); 
     vicor_state = 1; 
     delay_ms(15); 
   }
 #endif
+  monitor_init(); 
+  SBC_UART_CONSOLE_PORT_init();
+  SBC_UART_PORT_init(); 
   low_power_mode=0; 
 
   return 0;
