@@ -67,13 +67,15 @@ extern struct i2c_m_async_desc I2C;
  * Initialize stuff
  */
 void system_init(void);
+
+void SBC_UART_PORT_init(); 
+void SBC_UART_PORT_deinit(); 
+
 #ifdef _BOOTLOADER_
 void system_deinit(void);
 #else
 void I2C_init(void); 
 void I2C_deinit(void); 
-void SBC_UART_PORT_init(); 
-void SBC_UART_PORT_deinit(); 
 void SBC_UART_CONSOLE_PORT_init(); 
 void SBC_UART_CONSOLE_PORT_deinit(); 
 #endif
