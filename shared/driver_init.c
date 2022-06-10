@@ -152,7 +152,7 @@ static void SBC_UART_CLOCK_init()
  *
  * Set each required pin to USART functionality
  */
-static void SBC_UART_PORT_init()
+void SBC_UART_PORT_init()
 {
 
 	gpio_set_pin_function(SBC_UART_TX, PINMUX_PA06D_SERCOM0_PAD2);
@@ -288,13 +288,19 @@ static void SBC_UART_CONSOLE_CLOCK_init()
  *
  * Set each required pin to USART functionality
  */
-static void SBC_UART_CONSOLE_PORT_init()
+void SBC_UART_CONSOLE_PORT_init()
 {
-
 	gpio_set_pin_function(SBC_UART_CONSOLE_TX, PINMUX_PA20D_SERCOM3_PAD2);
-
 	gpio_set_pin_function(SBC_UART_CONSOLE_RX, PINMUX_PA21D_SERCOM3_PAD3);
 }
+
+void SBC_UART_CONSOLE_PORT_deinit()
+{
+	gpio_set_pin_function(SBC_UART_CONSOLE_TX, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(SBC_UART_CONSOLE_RX, GPIO_PIN_FUNCTION_OFF);
+}
+
+
 
 /**
  * \brief USART initialization function
@@ -658,6 +664,12 @@ void system_init(void)
 #endif
 }
 
+void SBC_UART_PORT_deinit(void) 
+{
+	gpio_set_pin_function(SBC_UART_TX, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(SBC_UART_RX, GPIO_PIN_FUNCTION_OFF);
+
+}
 
 #ifdef _BOOTLOADER_
 
@@ -674,10 +686,10 @@ static void SBC_UART_deinit(void)
 {
 	_pm_disable_bus_clock(PM_BUS_APBC, SERCOM0);
 	usart_async_deinit(&SBC_UART); 
-	gpio_set_pin_function(SBC_UART_TX, GPIO_PIN_FUNCTION_OFF);
-	gpio_set_pin_function(SBC_UART_RX, GPIO_PIN_FUNCTION_OFF);
-
+  SBC_UART_PORT_deinit(); 
 }
+
+
 
 static void FLASH_deinit(void)
 {
