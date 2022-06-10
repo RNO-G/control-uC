@@ -76,7 +76,7 @@ static inline int abs(int v)
 static void do_release_boot(const struct timer_task * const task)
 {
     (void) task; 
-    gpio_set_pin_direction(SBC_BOOT_SDCARD, GPIO_DIRECTION_IN); 
+    gpio_set_pin_direction(SBC_BOOT_CONTROL, GPIO_DIRECTION_OFF); 
 }
 
 static struct timer_task sbc_release_boot_task = { .cb  = do_release_boot, .interval = 500, .mode = TIMER_TASK_ONE_SHOT }; 
@@ -106,8 +106,8 @@ int sbc_turn_on(sbc_boot_mode_t boot_mode)
 
   if (boot_mode == SBC_BOOT_SDCARD) 
   {
-    gpio_set_pin_direction(SBC_BOOT_SDCARD, GPIO_DIRECTION_OUT); 
-    gpio_set_pin_level(SBC_BOOT_SDCARD, 0); 
+    gpio_set_pin_direction(SBC_BOOT_CONTROL, GPIO_DIRECTION_OUT); 
+    gpio_set_pin_level(SBC_BOOT_CONTROL, 0); 
     the_sbc_state = SBC_TURNING_ON; 
     up_turning_on = uptime(); 
   }
@@ -778,7 +778,7 @@ sbc_state_t sbc_get_state() { return the_sbc_state; }
 static void do_turn_off(const struct timer_task * const task)
 {
   (void) task;
-  gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_IN); 
+  gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OFF); 
   up_turning_off = uptime(); 
 }
 

@@ -202,6 +202,7 @@ static void LTE_UART_PORT_init()
 	gpio_set_pin_function(LTE_UART_CTS, PINMUX_PA19C_SERCOM1_PAD3);
 }
 
+
 /**
  * \brief USART initialization function
  *
@@ -601,11 +602,11 @@ void system_init(void)
 //	gpio_set_pin_direction(LED_GREEN, GPIO_DIRECTION_OUT);
 //	gpio_set_pin_function(LED_GREEN, GPIO_PIN_FUNCTION_OFF);
 
-	gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_IN);
+	gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OFF);
 	gpio_set_pin_pull_mode(SBC_SOFT_RESET,GPIO_PULL_OFF); 
 	gpio_set_pin_function(SBC_SOFT_RESET, GPIO_PIN_FUNCTION_OFF);
 
-	gpio_set_pin_direction(SBC_BOOT_CONTROL, GPIO_DIRECTION_IN);
+	gpio_set_pin_direction(SBC_BOOT_CONTROL, GPIO_DIRECTION_OFF);
 	gpio_set_pin_pull_mode(SBC_BOOT_CONTROL, GPIO_PULL_OFF);
 	gpio_set_pin_function(SBC_BOOT_CONTROL, GPIO_PIN_FUNCTION_OFF);
 
