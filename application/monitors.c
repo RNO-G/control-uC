@@ -295,11 +295,11 @@ int monitor_fill(rno_g_report_v2_t * r, int navg)
         break; 
       case 3: 
         r->i_sbc_div4 = monitor(MON_SBC_5V, navg) >> 2; 
-        monitor_select(MON_B_RAIL_5V); 
+        monitor_select(MON_RAIL_5V); 
         break;
       case 4: 
         r->V_5_div1p5 = monitor(MON_RAIL_5V, navg) / 1.5; 
-        monitor_select(MON_B_RAIL_3V); 
+        monitor_select(MON_RAIL_3V); 
         break;
       case 5: 
         r->V_33_div16 = monitor(MON_RAIL_3V, navg) >>4; 
