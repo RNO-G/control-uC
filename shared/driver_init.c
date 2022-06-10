@@ -594,7 +594,7 @@ void system_init(void)
 
   //Is it better to be high-Z or low? Not sure it makes a difference in terms of power consumption... since there should be no current flowing either way? 
 	gpio_set_pin_level(HEATER_FET_CNTRL, false);
-	gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OUT);
+	gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OFF);
 	gpio_set_pin_function(HEATER_FET_CNTRL, GPIO_PIN_FUNCTION_OFF);
 
 	gpio_set_pin_level(LED_GREEN, false);
