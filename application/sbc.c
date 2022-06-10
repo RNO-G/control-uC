@@ -355,6 +355,7 @@ static int sbc_io_process()
       {
 #ifndef _RNO_G_REV_D
         valid=1; 
+        gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OUT); 
         gpio_set_pin_level(HEATER_FET_CNTRL, true);
         printf("#HEATER-ON: ACK\r\n"); 
 #else
@@ -367,6 +368,7 @@ static int sbc_io_process()
 #ifndef _RNO_G_REV_D
         valid=1;
         gpio_set_pin_level(HEATER_FET_CNTRL, false);
+        gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OFF); 
         printf("#HEATER-OFF: ACK\r\n"); 
 #else
         printf("#ERR: No heater in RevD \r\n"); 
