@@ -597,9 +597,9 @@ void system_init(void)
 	gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OFF);
 	gpio_set_pin_function(HEATER_FET_CNTRL, GPIO_PIN_FUNCTION_OFF);
 
-	gpio_set_pin_level(LED_GREEN, false);
-	gpio_set_pin_direction(LED_GREEN, GPIO_DIRECTION_OUT);
-	gpio_set_pin_function(LED_GREEN, GPIO_PIN_FUNCTION_OFF);
+//	gpio_set_pin_level(LED_GREEN, false);
+//	gpio_set_pin_direction(LED_GREEN, GPIO_DIRECTION_OUT);
+//	gpio_set_pin_function(LED_GREEN, GPIO_PIN_FUNCTION_OFF);
 
 	gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_IN);
 	gpio_set_pin_pull_mode(SBC_SOFT_RESET,GPIO_PULL_OFF); 
