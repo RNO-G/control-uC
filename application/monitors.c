@@ -78,6 +78,7 @@ static uint16_t read_adc(int chan, int navg)
 int monitor_init()
 {
 	adc_sync_init(&ANALOGIN, ADC, (void *)NULL);
+  // do we need to wait a little bit here? 
   return 0; 
 }
 
@@ -149,7 +150,6 @@ static float monitor_temperature(int navg)
   return T;
 }
 
-
 #endif
 
 
@@ -158,6 +158,13 @@ int16_t imon(int input, int navg, int R)
   uint16_t raw = read_adc (input, navg); 
   double v = raw * (3.3/4096); //3.3 V effective reference
   return v / (276e-9*R) ;   //276 uA/A) 
+}
+
+int16_t vmon(int input, int navg, float div) 
+{
+  uint16_t raw = read_adc(input, navg); 
+  double v = raw * (3.3/4096)*div; 
+  return v *1000; 
 }
 
 
@@ -201,77 +208,114 @@ static void mon_b_select(monitor_t what)
   _mon_select(0x4f,shift); 
 }
 
-#ifdef _RNO_G_REV_D
+
+
+#ifdef RNO_G_REV_D
+
 int monitor_fill(rno_g_monitor_t * m, int navg)
-#else
-int monitor_fill(rno_g_report_v2_t * r, int navg)
-#endif
 {
   int i;
-  int when = get_time() ; 
+  m->when = get_time() ; 
 
-
-#ifdef _RNO_G_REV_D
-  m->when = when; 
-#else
-  r->analog_delta_when = when - r->when; 
-  if (low_power_mode) monitor_init(); 
-#endif
 
   for (i = 0; i < 6; i++) 
   {
-#ifdef _RNO_G_REV_D
     m->i_surf3v[i] = monitor(surf_map[i], navg); 
-#else
-    r->i_surf_div4[i] = monitor(surf_map[i], navg) >> 2; 
-#endif
     monitor_select(surf_map[ (i+1) % 6] ); 
     delay_us(3000); 
 
-    //alternate between the two to avoid capacitance issues
-    if (i < 3) 
+    //ping pong between A and B
+    switch(i) 
     {
-#ifdef _RNO_G_REV_D
-      m->i_down3v[i] = monitor(dh_map[i], navg); 
-#else
-      r->i_dh_div4[i] = monitor(dh_map[i], navg) >> 2; 
-#endif
-      if (i < 2) monitor_select(dh_map[i+1]); 
-      else monitor_select(MON_SBC_5V); 
-    }
-    else if (i==3) 
-    {
-#ifdef _RNO_G_REV_D
-     m->temp_cC = monitor(MON_TEMPERATURE,navg); 
-#else
-     float T = monitor_temperature(navg); 
-     r->T_local_times16 = 16*T; 
-#endif
-    }
-#ifdef _RNO_G_REV_D
-    else if (i==5) 
-    {
-     m->i_5v[0] = monitor(MON_5V1, navg);
-     m->i_5v[1] = monitor(MON_5V2, navg);
-    }
-#endif
-    else if (i == 4) 
-    {
-#ifdef _RNO_G_REV_D
-      m->i_sbc5v = monitor(MON_SBC_5V, navg); 
-#else
-      r->i_sbc_div4 = monitor(MON_SBC_5V,navg) >> 2; 
-#endif 
-      monitor_select(MON_DOWN_3V1); 
+      case 0: 
+      case 1: 
+        m->i_down3v[i] = monitor(dh_map[i], navg); 
+        monitor_select(dh_map[i+1]); 
+        break;
+      case 2: 
+        m->i_down3v[i] = monitor(dh_map[i], navg); 
+        monitor_select(MON_SBC_5V); 
+        break;
+      case 3: 
+        m->temp_cC = monitor(MON_TEMPERATURE,navg); 
+        break;
+      case 4: 
+        m->i_sbc5v = monitor(MON_SBC_5V, navg); 
+        monitor_select(MON_DOWN_3V1); 
+        break; 
+      case 5: 
+       m->i_5v[0] = monitor(MON_5V1, navg);
+       m->i_5v[1] = monitor(MON_5V2, navg);
     }
   }
 
-#ifndef _RNO_G_REV_D
-
-  if (low_power_mode) monitor_deinit(); 
-#endif
   return 0; 
 }
+
+#else
+
+int monitor_fill(rno_g_report_v2_t * r, int navg)
+{
+  int i;
+  int when = get_time() ; 
+  r->analog_delta_when = when - r->when; 
+
+  if (low_power_mode)
+  {
+    monitor_init(); 
+    delay_ms(10); //adjust as needed... 
+  }
+
+  for (i = 0; i < 7; i++) 
+  {
+    //first 6 iterations, we'll read monA 
+    if (i < 6) 
+    {
+      r->i_surf_div4[i] = monitor(surf_map[i], navg) >> 2; 
+      monitor_select(surf_map[ (i+1) % 6] ); 
+    }
+    else
+    {
+      //try to measure the MCU temperature? 
+       float T = monitor_temperature(navg); 
+       r->T_local_times16 = 16*T; 
+
+    }
+
+    delay_us(3000); 
+
+    //mon B
+    switch(i) 
+    {
+      case 0: 
+      case 1: 
+      case 2: 
+        r->i_dh_div4[i] = monitor(dh_map[i], navg) >> 2; 
+        monitor_select(i < 2 ? (dh_map[i+1]) : (MON_SBC_5V)); 
+        break; 
+      case 3: 
+        r->i_sbc_div4 = monitor(MON_SBC_5V, navg) >> 2; 
+        monitor_select(MON_B_RAIL_5V); 
+        break;
+      case 4: 
+        r->V_5_div1p5 = monitor(MON_RAIL_5V, navg) / 1.5; 
+        monitor_select(MON_B_RAIL_3V); 
+        break;
+      case 5: 
+        r->V_33_div16 = monitor(MON_RAIL_3V, navg) >>4; 
+        monitor_select(MON_LTE_3V); 
+        break; 
+      case 6: 
+        r->V_lte_div16 = monitor(MON_LTE_3V, navg) >> 4; 
+        monitor_select(dh_map[0]); 
+        break;
+    }
+  }
+  if (low_power_mode) monitor_deinit(); 
+
+  return 0; 
+}
+#endif
 
 void monitor_select(monitor_t what)
 {
@@ -289,6 +333,11 @@ void monitor_select(monitor_t what)
     case MON_DOWN_3V1: 
     case MON_DOWN_3V2: 
     case MON_DOWN_3V3: 
+#ifndef _RNO_G_REV_D
+    case MON_RAIL_5V: 
+    case MON_RAIL_3V: 
+    case MON_LTE_3V: 
+#endif
       mon_b_select(what); 
     default: 
       break; 
@@ -314,18 +363,19 @@ int16_t monitor(monitor_t what, int navg)
     case MON_DOWN_3V1: 
     case MON_DOWN_3V2: 
     case MON_DOWN_3V3: 
-      return imon(ADC_MONB,navg,1400); 
+     return imon(ADC_MONB,navg,1400); 
 #ifdef _RNO_G_REV_D
     case  MON_5V1: 
       return imon(ADC_MON_5V1,navg,620); 
     case  MON_5V2: 
       return imon(ADC_MON_5V2,navg,620); 
-#else
-    case  MON_5V1: 
-      return imon(ADC_MON_5V1,navg,620); 
-    case  MON_5V2: 
-      return imon(ADC_MON_5V2,navg,620); 
-#
+#ifndef _RNO_G_REV_D
+    case MON_RAIL_5V: 
+    case MON_RAIL_3V: 
+    case MON_LTE_3V: 
+      return vmon(ADC_MONB, navg, 2); 
+#endif
+ 
 #endif
     default: 
       return -32768; 
