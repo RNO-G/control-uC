@@ -198,9 +198,11 @@ static void mon_b_select(monitor_t what)
     what == MON_DOWN_3V2 ? MON_B_DWN_3V_2 : 
     what == MON_DOWN_3V3 ? MON_B_DWN_3V_3 : 
     what == MON_SBC_5V   ? MON_B_SBC5     :
+#ifndef _RNO_G_REV_D
     what == MON_RAIL_5V  ? MON_B_RAIL_5V  :
     what == MON_RAIL_3V  ? MON_B_RAIL_3V  :
     what == MON_LTE_3V   ? MON_B_LTE_3V  : 
+#endif
     -1; 
 
   if (shift < 0) return; 
@@ -210,7 +212,7 @@ static void mon_b_select(monitor_t what)
 
 
 
-#ifdef RNO_G_REV_D
+#ifdef _RNO_G_REV_D
 
 int monitor_fill(rno_g_monitor_t * m, int navg)
 {
