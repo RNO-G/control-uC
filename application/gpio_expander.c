@@ -192,7 +192,7 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
 #ifndef _RNO_G_REV_D
     if (mask.j29) 
     {
-      GPIO_EXPANDER_SET_INV_OUTPUT(A, I2C_EXPANDER_J29_BIT, value.j29)
+      GPIO_EXPANDER_SET_OUTPUT(A, I2C_EXPANDER_J29_BIT, value.j29)
     }
     if (mask.ext_bus)
     {
