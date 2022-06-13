@@ -21,8 +21,10 @@ ifeq ($(DEBUG_FLAG),1)
 endif
 
 REV=rev_E
+VERSION_FLAGS=
 ifeq ($(BUILD_FOR_REV_D),1)
 	CFLAGS += -D_RNO_G_REV_D
+	VERSION_FLAGS += -D_RNO_G_REV_D
 	REV=rev_D 
 endif
 
@@ -215,7 +217,7 @@ release:
 	@echo "#include \"config/config.h\" "> $(BUILD_DIR)/release.c
 	@echo "#include <stdio.h> ">> $(BUILD_DIR)/release.c
 	@echo "int main(void) { puts(APP_VERSION \"\\n\"); return 0;}  " >> $(BUILD_DIR)/release.c
-	@gcc -I. -o $(BUILD_DIR)/release.exe $(BUILD_DIR)/release.c 
+	@gcc $(VERSION_FLAGS) -I. -o $(BUILD_DIR)/release.exe $(BUILD_DIR)/release.c 
 	@$(BUILD_DIR)/release.exe > $(BUILD_DIR)/release
 	@echo Version is `cat $(BUILD_DIR)/release`
 	@rm -rf $(BUILD_DIR)/current_release
