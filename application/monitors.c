@@ -371,14 +371,13 @@ int16_t monitor(monitor_t what, int navg)
       return imon(ADC_MON_5V1,navg,620); 
     case  MON_5V2: 
       return imon(ADC_MON_5V2,navg,620); 
-#ifndef _RNO_G_REV_D
+#else
     case MON_RAIL_5V: 
     case MON_RAIL_3V: 
     case MON_LTE_3V: 
       return vmon(ADC_MONB, navg, 2); 
 #endif
  
-#endif
     default: 
       return -32768; 
   }

@@ -293,18 +293,18 @@ typedef struct rno_g_report_v2
   //36 bytes
   rno_g_power_state_t power_state;  //see rno_g_power_state
   //38 bytes 
-  int16_t V_5_div1p5 : 12;  // measurement of 5V rail
+  uint16_t V_5_div1p5 : 12;  // measurement of 5V rail
   uint8_t reserved : 3; 
   int8_t heater; // heater on/off  
-  int8_t V_lte_div16; //measurement of LTE rail
-  int8_t V_33_div16; //measurement of 3.3 V rail
+  uint8_t V_lte_div16; //measurement of LTE rail
+  uint8_t V_33_div16; //measurement of 3.3 V rail
   //42 bytes, probably. At most
 }rno_g_report_v2_t; 
 
 
 #define RNO_G_REPORT_V2_JSON_FMT "{\"when\":%d,\"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
                               "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lt\": %0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f }, "\
-                              "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %0.3f, \"3.3v\": %d, \"lte\": %d,  \"batt\": %d, \"pv\": %d }, "\
+                              "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %d, \"3.3v\": %d, \"lte\": %d,  \"batt\": %d, \"pv\": %d }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
                               "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
                               "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V2 "}" 
