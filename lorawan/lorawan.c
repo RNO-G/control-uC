@@ -873,7 +873,7 @@ int lorawan_process(int up)
    {
      int have_time = get_time() > 1000000000; 
      should_request_time = 1; 
-     int delay_in_secs = have_time ? config_block()->app_cfg.timesync_interval :  low_power_mode ?  60 : 15; 
+     int delay_in_secs = have_time ? config_block()->app_cfg.timesync_interval :  low_power_mode ?  300 : 60; 
      time_check+= delay_in_secs ;
      cant_sleep=1; 
    }
