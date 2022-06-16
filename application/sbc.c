@@ -684,7 +684,7 @@ static int sbc_io_process()
 
           rno_g_lora_stats_t stats; 
           lorawan_stats(&stats); 
-          printf("tx=%d/%d, rx=%d/%d\r\n", stats.tx, stats.tx+stats.tx_dropped, stats.rx, stats.rx+stats.rx_dropped);
+          printf("tx=%d/%d, rx=%d/%d", stats.tx, stats.tx+stats.tx_dropped, stats.rx, stats.rx+stats.rx_dropped);
         }
         else
         {
