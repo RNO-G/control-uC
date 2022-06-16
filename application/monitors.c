@@ -49,7 +49,7 @@ enum ADC_CHANNELS
   ADC_MON_5V1 = 15,
   ADC_MON_5V2 = 14, 
 #endif
-  ADC_MON_ITEMP = 0x18
+  ADC_MON_ITEMP = 0x18 
 };
 
 
@@ -112,6 +112,10 @@ static float monitor_temperature(int navg)
 static float monitor_temperature(int navg) 
 {
 
+
+
+  // this is referenced wrong, but changing the reference is annoying 
+  // so instead we'll also measure the band gap (1.1 V)
   uint16_t raw = read_adc(ADC_MON_ITEMP, navg); 
 
   static uint64_t calib = 0; 
@@ -137,13 +141,18 @@ static float monitor_temperature(int navg)
     room_V = room_val * room_1V / 4095.;
     hot_V = hot_val * hot_1V / 4095.;
   }
+
   float est_1V =1 ; 
+
+  //ok, we're not using the right reference are we? 
+  //so let's just guestimate this adjustment
+  float adj = 3.3/2; 
 
   float T = 0;
   for (int i = 0; i < 2; i++) 
   {
-     T = ( raw  * est_1V/ 4095. - room_V) * (hot_T - room_T) / ( hot_V - room_V); 
-     if (i == 1) break; 
+     T =  room_T + ( raw  *adj* est_1V/ 4095. - room_V) * (hot_T - room_T) / ( hot_V - room_V); 
+     if (i == 2) break; 
      est_1V = room_1V + ( hot_1V - room_1V) * (T - room_T) / (hot_T - room_T); 
   }
 
@@ -280,7 +289,7 @@ int monitor_fill(rno_g_report_v2_t * r, int navg)
     {
       //try to measure the MCU temperature? 
        float T = monitor_temperature(navg); 
-       r->T_local_times16 = 16*T; 
+       r->T_micro_times16 = 16*T; 
 
     }
 
