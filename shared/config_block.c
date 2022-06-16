@@ -33,8 +33,13 @@ static  application_cfg_t dflt_ac =
      .lte_stats_interval = 60, 
      .lora_stats_interval = 60, 
      .lora_stats_interval_low_power_mode = 600, 
+#ifdef _RNO_REV_D
      .turnon_voltage = 13, 
      .turnoff_voltage = 12 
+#else
+     .turnon_voltage = 30, 
+     .turnoff_voltage = 20 
+#endif 
 
    }; 
 
@@ -92,6 +97,13 @@ int verify_app_cfg(application_cfg_t* ac)
     ac->turnoff_voltage = dflt_ac.turnoff_voltage; 
     changed++; 
   }
+#ifndef _RNO_G_REV_D
+  if (ac->turnon_voltage < 20) 
+  {
+    ac->turnon_voltage = 30; 
+    changed++; 
+  }
+#endif
   if (ac->timesync_interval == -1) 
   {
     ac->timesync_interval = 4*3600; 
