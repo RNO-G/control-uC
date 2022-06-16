@@ -855,6 +855,11 @@ int lorawan_process(int up)
       
     } // end of switch
 
+   //check if lora stats need to be sooner (i.e. we just got out of low power mode) 
+   if (joined && !low_power_mode && (next_lora_stats - up)  > 2*config_block()->app_cfg.lora_stats_interval)
+   {
+     next_lora_stats = up + config_block()->app_cfg.lora_stats_interval; 
+   }
 
     //see if we need to sent lora stas
    if (joined && (up > next_lora_stats) && have_tx_capacity(sizeof(rno_g_lora_stats_t)))
@@ -874,7 +879,7 @@ int lorawan_process(int up)
      int have_time = get_time() > 1000000000; 
      should_request_time = 1; 
      int delay_in_secs = have_time ? config_block()->app_cfg.timesync_interval :  low_power_mode ?  300 : 60; 
-     time_check+= delay_in_secs ;
+     time_check = up + delay_in_secs ;
      cant_sleep=1; 
    }
 
