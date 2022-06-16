@@ -36,11 +36,12 @@
 #ifdef _RNO_G_REV_D
 #define LORAWAN_DEFAULT_DATARATE                    DR_2
 #else
-#define LORAWAN_DEFAULT_DATARATE                    DR_1
+#define LORAWAN_DEFAULT_DATARATE                    DR_2
 #endif
 #define LORAWAN_ADR_ON                              0
 
-#define LORAWAN_RX_ERROR  250 
+//TODO make this configurable and automatically increasing!
+#define LORAWAN_RX_ERROR  350 
 
 #define LORAWAN_MAX_FAILED_LINK_CHECKS 3
 
