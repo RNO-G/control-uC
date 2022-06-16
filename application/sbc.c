@@ -688,8 +688,9 @@ static int sbc_io_process()
         }
         else
         {
-          printf("JOINING\r\n"); 
+          printf("JOINING"); 
         }
+        printf(". LAST_RECV: %d\r\n", lorawan_last_recv()); 
       }
       else if (!strcmp(in,"VERSION"))
       {

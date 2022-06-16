@@ -61,6 +61,8 @@ int lorawan_rx_peek(uint8_t * len, uint8_t * port, uint8_t **msg, uint8_t *flags
 /** Pop the message off the queue */ 
 int lorawan_rx_pop(); 
 
+int lorawan_last_recv(); 
+
 void lorawan_stats(rno_g_lora_stats_t * stats); 
 
 

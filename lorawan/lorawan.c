@@ -1294,3 +1294,9 @@ int lorawan_reset()
   return lorawan_init(0); 
 }
 
+
+int lorawan_last_recv() 
+{
+  return last_received; 
+
+}
