@@ -24,7 +24,7 @@
 #define APP_REV "REVE"
 #endif
 
-#define APP_VERSION "Summit.061622.1-" APP_REV
+#define APP_VERSION "Summit.061622.2-" APP_REV
 
 #define MODE_CHANGE_MINTICKS 100
 
