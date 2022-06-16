@@ -33,11 +33,7 @@
 #define LORAWAN_PUBLIC_NETWORK true 
 
 
-#ifdef _RNO_G_REV_D
 #define LORAWAN_DEFAULT_DATARATE                    DR_2
-#else
-#define LORAWAN_DEFAULT_DATARATE                    DR_2
-#endif
 #define LORAWAN_ADR_ON                              0
 
 //TODO make this configurable and automatically increasing!
