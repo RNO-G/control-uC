@@ -661,6 +661,28 @@ static int sbc_io_process()
         printf("#GET-STATION: %d\r\n", config_block()->app_cfg.station_number); 
         valid = 1; 
       }
+      else if (!strcmp(in,"GET-TIMESYNC-INTERVAL"))
+      {
+        printf("#GET-TIMESYNC-INTERVAL: %d\r\n", config_block()->app_cfg.timesync_interval); 
+        valid = 1; 
+      }
+      else if (prefix_matches(in,"SET-TIMESYNC-INTERVAL"))
+      {
+        const char * nxt; 
+        int interval; 
+        if (!parse_int(in+sizeof("SET-TIMESYNC-INTERVAL"), &nxt,&interval))
+        {
+          printf("#SET-TIMESYNC-INTERVAL %d\r\n", interval); 
+          config_block()->app_cfg.timesync_interval = interval; 
+          need_sync = 1; 
+          valid = 1; 
+        }
+        else
+        {
+          printf("#ERR: trouble parsing int\r\n"); 
+        }
+      }
+ 
       else if (!strcmp(in,"FLUSH"))
       {
         flush_buffers(); 
