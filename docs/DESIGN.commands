@@ -190,3 +190,84 @@ MONITOR
 B64MON
 - Get a summary report of the DAQ in BASE-64 format
     - The report will be outputted as a single encoded string
+
+SET-BATT-MILLIVS <TURNOFF> <TURNON>
+- Set the threshold battery voltage for when to enter/exit low power mode
+
+GET-BATT-MILLIVS
+- Get the current threshold battery voltage for when to enter/exit low power mode
+
+MODE-GET
+- Get the current power mode of the station
+    - INIT: The station is initializing
+    - NORMAL: The SBC and LTE are on, and the LTE can be cycled by the SBC.
+              RADIANT / LT are controlled by the SBC
+    - SBC_ONLY: The SBC is on and LTE is forced off
+        - Can be used to forcibly remote cycle the LTE, but the SBC won't
+          be able to turn it back on though
+    - SBC_OFF: The microcontroller is not in lower power mode and the SBC
+               is turned off
+        - Can be used to forcibly cycle the SBC
+    - LOW_POWER: Everything but the microcontroller in order to operate in
+                 low-power mode
+
+MONITOR-SCHED <TIME>
+- Schedule a Monitor read sometime in the future
+
+I2C-WRITE <VAL> <REG> <ADDR>
+- Write a value to a specified register of an I2C device at a specified address
+
+I2C-READ <ADDR> <REG>
+- Read a value at a specified register of an I2C device at a specified address
+
+I2C-DETECT
+- Detect all I2C devices and query their values
+
+I2C-RESET
+- Reset all I2C devices
+
+I2C-UNSTICK <> <> *
+- *
+
+SYS-RESET <BOOT_OPTION>
+- Reset the system and set the boot option for the upcoming reboot
+    - 0: Boot from the ROM
+    - 1: Boot from flash slot 1
+    - 2: Boot from flash slot 2
+    - 3: Boot from flash slot 3
+    - 4: Boot from flash slot 4
+    - 10: Boot from the bootloader
+
+SET-STATION <ID>
+- Change the station ID number
+
+SET-GPS-OFFSET <OFFSET>
+- Change the GPS offset value
+
+AM-I-BOOTLOADER
+- Check if the station booted off of the bootloader (never)
+
+GET-STATION
+- Get the current station number
+
+GET-TIMESYNC-INTERVAL
+- Get the current timesync interval
+
+SET-TIMESYNC-INTERVAL <INTERVAL>
+- Set the timesync interval
+
+FLUSH
+- Flush the UART buffers
+
+LORA-SEND *
+- *
+
+NOW
+- Get the current date and time, the system uptime, and the LoRaWAN status
+
+VERSION
+- Get the version of the DAQ software that is currently running on the station
+
+REV
+- Get the model version of the controller board that is currently used by the
+  station
