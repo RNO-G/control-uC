@@ -1,8 +1,192 @@
-/////////////////////////////////////////////////////////
-/// RNO-G Microcontroller Commands  Interface
-//
-////////////////////////////////////////////////////////
+RNO-G Microcontroller Commands Interface
 
+Commands are issued to the Microcontroller from the SBC (BeagleBone Black)
 
+Commands must be prefixed with a '#' symbol
 
+'*' denotes that documentation is incomplete for that command
 
+####################
+# LIST OF COMMANDS #
+####################
+
+LTE-ON
+- Turn on the LTE modem
+
+LTE-ON!
+- Force Turn on the LTE modem
+
+LTE-OFF
+- Turn off the LTE modem
+
+LTE-OFF!
+- Force Turn off the LTE modem
+
+LTE-FACTORY-RESET
+- Runs a factory reset of the LTE modem
+
+LTE-SOFT-RESET
+- Runs a soft-reset of the LTE modem
+
+LTE-HARD-RESET
+- Runs a hard-reset of the LTE modem
+    - This is different from a soft reset in that it uses the periodic reset
+      command on the modem with a period of only once (so no recurring reboot)
+      and a delay of zero (instant)
+
+LTE-POWER-CYCLE
+- Runs a hard-reset of the LTE modem via power-cycling
+    - This is different from the prior two commands in that the prior two
+      commands use a UART signal to send the reboot command. This command will
+      instead manually cut power to the modem before restoring power after a delay
+
+LTE-STATE
+- Query the state of the LTE modem (returns a number)
+    - 0: The modem is initializing
+    - 1: The modem is off
+    - 2: The modem is turning on
+    - 3: The modem is on
+    - 4: The modem is turning off
+    - 5: The modem is resetting
+
+LTE-STATS
+- Query the stats of the LTE modem
+    - when: The time at which the request for stats was made
+    - mcc: The country code (290 for Greenland)
+    - mnc: The operator code (999 unofficially)
+    - earfcn: The frequency code
+    - rsrp: The LTE reference signal received power
+    - rssi: The LTE residual signal strength indicator
+    - rsrqx10: The reference signal quality received (multipled a factor of 10)
+    - band: The service band (8)
+    - svcdom: The service domain (3)
+    - prseok: The number of fields that were correctly parsed from the modem
+
+RADIANT-ON
+- Turn on the RADIANT digitizer board
+
+RADIANT-OFF
+- Turn off the RADIANT digitizer board
+
+J29-ON *
+- Turn on the J29 port
+
+J29-OFF *
+- Turn off the J29 port
+
+EXTBUS-ON *
+- Turn on the wind turbine interface
+
+EXTBUS-OFF *
+- Turn off the wind turbine interface
+
+LOWTHRESH-ON
+- Turn on the low-threshold digitizer board (FLOWER)
+
+LOWTHRESH-OFF
+- Turn off the low-threshold digitizer board
+
+HEATER-ON
+- Turn on the heater
+
+HEATER-OFF
+- Turn off the heater
+
+AMPS-SET <MASK1> <MASK2>
+- Turn on the amplifiers for station devices (i.e. antennae)
+    - Takes two hexadecimal bitmasks
+    - #AMPS-SET 3f 7 to turn on all amplifiers
+    - #AMPS-SET 22 0 to turn on amplifiers to surface devices
+    - #AMPS-SET 1d 7 to turn on amplifiers to downhole devices
+    - #AMPS-SET 0 0 to turn off all amplifiers
+
+EXPANDER-STATE
+- Query the on/off status of the connected devices via the GPIO Expander
+    - surf: The surface amplifiers
+    - dh: The downhole amplifiers
+    - radiant: The RADIANT digitizer board
+    - lt: The low-threshold (FLOWER) digitizer board
+    - sbc: The sbc (BeagleBone Black)
+    - j29: The J29 *
+    - ext_bus: The wind turbine interface *
+
+FAULT-STATE *
+- Query the fault status of the connected devices via the GPIO Expander
+    - surf: The surface amplifiers
+    - dh: The downhole amplifiers
+    - radiant: The RADIANT digitizer board
+    - lt: The low-threshold (FLOWER) digitizer board
+    - sbc: The sbc (BeagleBone Black)
+
+MONITOR
+- Get a summary report of the DAQ in JSON format
+    - when: The time at which the report was made
+    - mode: The mode at which the station is running
+        - INIT: The station is initializing
+        - NORMAL: The SBC and LTE are on, and the LTE can be cycled by the SBC.
+                  RADIANT / LT are controlled by the SBC
+        - SBC_ONLY: The SBC is on and LTE is forced off
+            - Can be used to forcibly remote cycle the LTE, but the SBC won't
+              be able to turn it back on though
+        - SBC_OFF: The microcontroller is not in lower power mode and the SBC
+                   is turned off
+            - Can be used to forcibly cycle the SBC
+        - LOW_POWER: Everything but the microcontroller in order to operate in
+                     low-power mode
+    - lte_state: The state of the LTE
+        - INIT: The LTE is initializing
+        - OFF: The LTE is off
+        - TURNING_ON: The LTE is turning on
+        - ON: The LTE is on
+        - TURNING_OFF: The LTE is off
+        - RESETTING: The LTE is resetting
+    - sbc_state: The state of the SBC
+        - OFF: The SBC is off
+        - ON: The SBC is on
+        - TURNING_ON: The SBC is turning on
+        - TURNING_OFF: The SBC is turning off
+    - sbc_boot_mode: The boot mode of the SBC
+        - INTERNAL: The SBC has booted off of the onboard multi-media-card
+        - SDCARD: The SBC has booted off of the SD Card
+    - currents: The current values for station components
+        - sbc: The current of the SBC
+        - surf: The current of the surface amplifiers
+        - dh: The current of the downhole amplifiers
+        - lt: The current of the low-threshold digitizer
+        - radiant: The current of the RADIANT digitizer
+        - batt: The current of the battery
+        - pv: The current of the photovoltaic panel
+    - voltages: The voltage values for station components
+        - lt: The voltage of the low-threshold digitizer
+        - radiant: The voltage of the RADIANT digitizer
+        - 5v: The voltage of the 5-volt rail
+        - 3.3v: The voltage of the 3.3-volt rail
+        - lte: The voltage of the LTE rail
+        - batt: The voltage of the battery
+        - pv: The voltage of the photovoltaic panel
+    - temps: The temperature values of station components
+        - local: The temperature measured by the TMP432 sensor on the
+                 controller board
+        - remote_1: The temperature measured by the probe on the amplifier box
+        - remote_2: The temperature measured by the probe on the vault
+        - micro: The temperature measured by the microcontroller
+    - when_analog: The time at which all analog sensor measurments were taken
+    - when_digi: The time at which all digital sensor measurements were taken
+    - when_power: The time at which all power measurements were taken
+    - when_temp: The time at which all temperature measurements were taken
+    - heater: The on/off status of the heater
+    - power_state: The power status of station components (true/false)
+        - low_power_mode: Whether or not the station is running on low power
+                          mode
+        - sbc_power: Whether or not the SBC is on
+        - lte_power: Whether or not the LTE is on
+        - radiant_power: Whether or not the RADIANT digitizer is on
+        - lowthresh_power: Whether or not the low-threshold digitizer is on
+        - dh_amp_power: Whether or not each downhole amplifier is on
+        - surf_amp_power: Whether or not each surface amplifier is on
+        - j29_power: Whether or not the J29 is on
+        - output_bus_enable: Whether or not the output bus is on *
+
+B64MON
+- Get a summary report of the DAQ in BASE-64 format
+    - The report will be outputted as a single encoded string
