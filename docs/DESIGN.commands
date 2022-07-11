@@ -226,8 +226,9 @@ I2C-DETECT
 I2C-RESET
 - Reset all I2C devices
 
-I2C-UNSTICK <> <> *
-- *
+I2C-UNSTICK <CYCLES>
+- Unstick the I2C bus if it has gotten stuck by running a given number of clock
+  cycles
 
 SYS-RESET <BOOT_OPTION>
 - Reset the system and set the boot option for the upcoming reboot
@@ -260,7 +261,7 @@ FLUSH
 - Flush the UART buffers
 
 LORA-SEND *
-- *
+- Send an LTE uplink command to the microcontroller via LoRaWAN if LTE is down
 
 NOW
 - Get the current date and time, the system uptime, and the LoRaWAN status
