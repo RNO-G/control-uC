@@ -1,20 +1,29 @@
 #include "rno-g-shell.h"
 
 int main() {
-    size_t buf_size = 512;
+    size_t buf_size = 0; // initial value is 0 so getline will adjust it
     size_t len;
-    char * buf = (char *) malloc(sizeof(char) * buf_size);
+    char * buf = NULL; // initial value is NULL so getline will malloc
     
     while(true) {
-        printf("shell > ");
+        printf("rno-g-shell > ");
         len = getline(&buf, &buf_size, stdin);
-        printf("%s", buf);
-        printf("%d\n", strlen(buf));
+        
         if (!strcmp(buf, "quit\n")) {
+            free(buf);
+            buf = NULL;
+            buf_size = 0;
             break;
         }
+        else {
+            parse_cmd(buf);
+        }
+
+        free(buf);
+        buf = NULL;
+        buf_size = 0;
+
     }
 
-    free(buf);
     return 0;
 }
