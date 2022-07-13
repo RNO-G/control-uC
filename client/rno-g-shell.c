@@ -12,7 +12,6 @@ int main() {
         
         if (!strcmp(buf, "QUIT\n")) {
             run = false;
-            break;
         }
         else {
             parse_cmd(buf);
@@ -21,7 +20,6 @@ int main() {
         free(buf);
         buf = NULL;
         buf_size = 0;
-
     }
 
     return 0;
