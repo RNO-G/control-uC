@@ -1,204 +1,39 @@
 #include "rno-g-client.h"
 
-int send_cmd(char * raw_cmd) {
-    int network_socket = socket(AF_INET, SOCK_STREAM, 0);
+int init_client(int * network_socket) {
+    *network_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(9999);
     server_address.sin_addr.s_addr = INADDR_ANY;
 
-    int connection_status = connect(network_socket, 
-                                    (struct sockaddr *) &server_address, 
-                                    sizeof(server_address));
+    return connect(*network_socket,
+                   (struct sockaddr *) &server_address,
+                   sizeof(server_address));
+}
+
+int format_input(char * cmd) {
+    size_t len = strlen(cmd);
     
-    if (connection_status) {
-        return connection_status;
+    if (len == 1) {
+        return -1;
     }
 
-    write(network_socket, raw_cmd, strlen(raw_cmd));
-
-    char ack[1024];
-    read(network_socket, ack, sizeof(ack));
-
-    printf("%s\n", ack);
-
-    close(network_socket);
+    cmd[len - 1] = '\0';
 
     return 0;
 }
 
-bool parse_args(char * raw_cmd, int num_args) {
-    char * cmd_copy = (char *) malloc(sizeof(char) * (strlen(raw_cmd) + 1));
-    strcpy(cmd_copy, raw_cmd);
+int get_num_args(char * cmd) {
     
-    char * rest = NULL;
-    char * cmd = strtok_r(cmd_copy, " ", &rest);
-
-    bool valid = false;
-    
-    if (num_args == 0) {
-        if (!strcmp(cmd, "LTE-ON")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-ON!")) {
-            valid = true; 
-        }
-        else if (!strcmp(cmd, "LTE-OFF")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-OFF!")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-FACTORY-RESET")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-SOFT-RESET")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-HARD-RESET")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-POWER-CYCLE")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-STATE")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LTE-STATS")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "RADIANT-ON")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "RADIANT-OFF")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "J29-ON")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "J29-OFF")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "EXTBUS-ON")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "EXTBUS-OFF")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LOWTHRESH-ON")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LOWTHRESH-OFF")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "HEATER-ON")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "HEATER-OFF")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "EXPANDER-STATE")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "FAULT-STATE")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "MONITOR")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "B64MON")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "GET-BATT-MILLIVS")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "MODE-GET")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "I2C-DETECT")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "I2C-RESET")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "AM-I-BOOTLOADER")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "GET-STATION")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "GET-TIMESYNC-INTERVAL")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "FLUSH")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "LORA-SEND")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "NOW")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "VERSION")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "REV")) {
-            valid = true;
-        }
-    }
-    else if (num_args == 1) {
-        if (!strcmp(cmd, "MONITOR-SCHED")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "I2C-UNSTICK")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "SYS-RESET")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "SET-STATION")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "SET-GPS-OFFSET")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "SET-TIMESYNC-INTERVAL")) {
-            valid = true;
-        }
-    }
-    else if (num_args == 2) {
-        if (!strcmp(cmd, "AMPS-SET")) {
-            long arg1 = strtol(strtok_r(NULL, " ", &rest), NULL, 16);
-            long arg2 = strtol(strtok_r(NULL, " ", &rest), NULL, 16);
-            valid = (arg1 >= 0x0 && arg1 <= 0x3f && 
-                     arg2 >= 0x0 && arg2 <= 0x7);
-        }
-        else if (!strcmp(cmd, "SET-BATT-MILLIVS")) {
-            valid = true;
-        }
-        else if (!strcmp(cmd, "I2C-READ")) {
-            valid = true;
-        }
-    }
-    else if (num_args == 3) {
-        if (!strcmp(cmd, "I2C-WRITE")) {
-            valid = true;
-        }
-    }
-
-    free(cmd_copy);
-
-    return valid;
-}
-
-int get_num_args(char * raw_cmd) {
     // make a copy of the raw command string since strtok_r will be used
-    char * cmd_copy = (char *) malloc(sizeof(char) * (strlen(raw_cmd) + 1));
-    strcpy(cmd_copy, raw_cmd);
+    char cmd_copy[BUF_SIZE];
+    strcpy(cmd_copy, cmd);
     
     // set num_args to -1 to avoid counting the command itself
     int num_args = -1;
+
     char * rest = NULL;
     char * token = strtok_r(cmd_copy, " ", &rest);    
     
@@ -207,51 +42,234 @@ int get_num_args(char * raw_cmd) {
         num_args += 1;
     }
     
-    free(cmd_copy);
-    
     return num_args;
 }
 
-void parse_cmd(char * raw_cmd) {
-    int num_args = get_num_args(raw_cmd);
+int check_args(char * cmd, int num_args) {
+    char cmd_copy[BUF_SIZE];
+    strcpy(cmd_copy, cmd);
     
-    if (num_args >= 0) {
-        int valid_args = parse_args(raw_cmd, num_args);
+    char * rest = NULL;
+    char * pfx = strtok_r(cmd_copy, " ", &rest);
 
-        if (valid_args) {
-            send_cmd(raw_cmd);
+    int valid = 0;
+    
+    if (num_args == 0) {
+        if (!strcmp(pfx, "LTE-ON")) {
+            valid = 1;
         }
-        else {
-            fprintf(stderr, "INVALID COMMAND\n");
+        else if (!strcmp(pfx, "LTE-ON!")) {
+            valid = 1; 
+        }
+        else if (!strcmp(pfx, "LTE-OFF")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LTE-OFF!")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LTE-FACTORY-RESET")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LTE-SOFT-RESET")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LTE-HARD-RESET")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LTE-POWER-CYCLE")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LTE-STATE")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LTE-STATS")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "RADIANT-ON")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "RADIANT-OFF")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "J29-ON")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "J29-OFF")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "EXTBUS-ON")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "EXTBUS-OFF")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LOWTHRESH-ON")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LOWTHRESH-OFF")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "HEATER-ON")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "HEATER-OFF")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "EXPANDER-STATE")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "FAULT-STATE")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "MONITOR")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "B64MON")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "GET-BATT-MILLIVS")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "MODE-GET")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "I2C-DETECT")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "I2C-RESET")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "AM-I-BOOTLOADER")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "GET-STATION")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "GET-TIMESYNC-INTERVAL")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "FLUSH")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "LORA-SEND")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "NOW")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "VERSION")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "REV")) {
+            valid = 1;
         }
     }
-    else {
-        fprintf(stderr, "INVALID NUMBER OF ARGS\n");
+    else if (num_args == 1) {
+        if (!strcmp(pfx, "MONITOR-SCHED")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "I2C-UNSTICK")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "SYS-RESET")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "SET-STATION")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "SET-GPS-OFFSET")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "SET-TIMESYNC-INTERVAL")) {
+            valid = 1;
+        }
     }
+    else if (num_args == 2) {
+        if (!strcmp(pfx, "AMPS-SET")) {
+            long arg1 = strtol(strtok_r(NULL, " ", &rest), NULL, 16);
+            long arg2 = strtol(strtok_r(NULL, " ", &rest), NULL, 16);
+            valid = (arg1 >= 0x0 && arg1 <= 0x3f && 
+                     arg2 >= 0x0 && arg2 <= 0x7);
+        }
+        else if (!strcmp(pfx, "SET-BATT-MILLIVS")) {
+            valid = 1;
+        }
+        else if (!strcmp(pfx, "I2C-READ")) {
+            valid = 1;
+        }
+    }
+    else if (num_args == 3) {
+        if (!strcmp(pfx, "I2C-WRITE")) {
+            valid = 1;
+        }
+    }
+
+    return valid;
 }
 
-int main() {
-    size_t buf_size = 0; // initial value is 0 so getline will adjust it
-    size_t len;
-    int run = true;
-    char * buf = NULL; // initial value is NULL so getline will malloc
+int send_cmd(char * cmd, char * ack, int network_socket) {
+    if (write(network_socket, cmd, BUF_SIZE) == -1) {
+        return -1;
+    }
     
-    while(run) {
-        printf("rno-g-shell > ");
-        len = getline(&buf, &buf_size, stdin);
-        buf[len - 1] = '\0';
-        
-        if (!strcmp(buf, "QUIT")) {
-            run = false;
-        }
-        else {
-            parse_cmd(buf);
-        }
-
-        free(buf);
-        buf = NULL;
-        buf_size = 0;
+    if (read(network_socket, ack, BUF_SIZE) == -1) {
+        return -1;
     }
 
+    fputs(ack, stdout);
+
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    char cmd[BUF_SIZE], ack[BUF_SIZE];
+    memset(cmd, 0, sizeof(char) * BUF_SIZE);
+    
+    int num_args;
+    int network_socket;
+
+    if (init_client(&network_socket) != 0) {
+        fputs("UNABLE TO CONNECT TO SERVER\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+        fputs("rno-g-shell > ", stdout);
+
+        if (fgets(cmd, BUF_SIZE, stdin) == NULL) {
+            fputs("COULD NOT READ COMMAND\n", stderr);
+            continue;
+        }
+
+        if (format_input(cmd) == -1) {
+            fputs("COMMAND LENGTH MUST BE GREATER THAN 0\n", stderr);
+            continue;
+        }
+
+        if (!strcmp(cmd, "QUIT")) {
+            break;
+        }
+
+        if ((num_args = get_num_args(cmd)) == -1) {
+            fputs("INVALID NUMBER OF ARGUMENTS\n", stderr);
+            continue;
+        }
+
+        if (!check_args(cmd, num_args)) {
+            fputs("INVALID COMMAND\n", stderr);
+            continue;
+        }
+
+        if (send_cmd(cmd, ack, network_socket) == -1) {
+            fputs("UNABLE TO SEND COMMAND TO SERVER\n", stderr);
+            continue;
+        }
+    }
+
+    if (close(network_socket) == -1) {
+        fputs("UNABLE TO CLOSE CONNECTION TO SERVER\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    return EXIT_SUCCESS;
 }
