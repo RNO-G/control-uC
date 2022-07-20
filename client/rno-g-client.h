@@ -13,6 +13,19 @@
 int init_client(int * network_socket);
 
 /*
+ * function : format_input
+ * -----------------------
+ * format raw input into proper command syntax by removing newline and
+ * excessive whitespace
+ * 
+ * cmd : the command string
+ * 
+ * returns : 0 if the command was properly formatted, -1 if the raw input is
+ *           invalid
+ */
+int format_input(char * cmd);
+
+/*
  * function : get_num_args
  * -----------------------
  * get the number of arguments provided to the command
