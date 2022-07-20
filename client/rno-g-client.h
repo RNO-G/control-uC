@@ -1,16 +1,17 @@
+#include <ctype.h>
+#include <signal.h>
+
 #include "rno-g-console.h"
 
 /*
  * function : init_client
  * ----------------------
  * initialize the client network socket and connect to the server
- * 
- * int * network_socket : the pointer to the network socket file descriptor
- * 
+ *
  * returns : 0 if the client successfully initialized and connected, 
  *           -1 otherwise
  */
-int init_client(int * network_socket);
+int init_client();
 
 /*
  * function : format_input
@@ -56,10 +57,6 @@ int check_args(char * cmd, int num_args);
  * 
  * cmd : the command string
  * 
- * ack : the acknowledgment string
- * 
- * network_socket : the network socket file descriptor
- * 
  * returns : 0 if the command was sent successfully, -1 otherwise
  */
-int send_cmd(char * cmd, char * ack, int network_socket);
+int send_cmd(char * cmd);
