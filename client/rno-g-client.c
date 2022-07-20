@@ -22,11 +22,12 @@ int format_input(char * cmd) {
 
     cmd[len - 1] = '\0';
 
+    // TODO : remove excessive whitespace from the command string
+
     return 0;
 }
 
 int get_num_args(char * cmd) {
-    
     // make a copy of the raw command string since strtok_r will be used
     char cmd_copy[BUF_SIZE];
     strcpy(cmd_copy, cmd);
@@ -163,6 +164,9 @@ int check_args(char * cmd, int num_args) {
         else if (!strcmp(pfx, "REV")) {
             valid = 1;
         }
+        else if (!strcmp(pfx, "DISCONNECT")) {
+            valid = 1;
+        }
     }
     else if (num_args == 1) {
         if (!strcmp(pfx, "MONITOR-SCHED")) {
@@ -246,10 +250,6 @@ int main(int argc, char ** argv) {
             continue;
         }
 
-        if (!strcmp(cmd, "QUIT")) {
-            break;
-        }
-
         if ((num_args = get_num_args(cmd)) == -1) {
             fputs("INVALID NUMBER OF ARGUMENTS\n", stderr);
             continue;
@@ -263,6 +263,10 @@ int main(int argc, char ** argv) {
         if (send_cmd(cmd, ack, network_socket) == -1) {
             fputs("UNABLE TO SEND COMMAND TO SERVER\n", stderr);
             continue;
+        }
+
+        if (!strcmp(cmd, "DISCONNECT")) {
+            break;
         }
     }
 
