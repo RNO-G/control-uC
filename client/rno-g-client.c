@@ -1,14 +1,33 @@
 #include "rno-g-client.h"
 
-int init_client(int * network_socket) {
-    *network_socket = socket(AF_INET, SOCK_STREAM, 0);
+int network_socket;
+char ack[BUF_SIZE];
+
+void signal_handler(int sig) {
+    if (sig == SIGINT) {
+        if (send_cmd("DISCONNECT") == -1) {
+            fputs("UNABLE TO SEND COMMAND TO SERVER\n", stderr);
+            exit(EXIT_FAILURE);
+        }
+
+        if (close(network_socket) == -1) {
+            fputs("UNABLE TO CLOSE CONNECTION TO SERVER\n", stderr);
+            exit(EXIT_FAILURE);
+        }
+
+        exit(EXIT_SUCCESS);
+    }
+}
+
+int init_client() {
+    network_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(9999);
     server_address.sin_addr.s_addr = INADDR_ANY;
 
-    return connect(*network_socket,
+    return connect(network_socket,
                    (struct sockaddr *) &server_address,
                    sizeof(server_address));
 }
@@ -21,8 +40,23 @@ int format_input(char * cmd) {
     }
 
     cmd[len - 1] = '\0';
+    len--;
 
-    // TODO : remove excessive whitespace from the command string
+    int index = 0;
+
+    for (int i = 0; i < len; i++) {
+        if (!isspace(cmd[i]) || (i > 0 && !isspace(cmd[i - 1]))) {
+            cmd[index] = cmd[i];
+            index++;
+        }
+    }
+
+    if (isspace(cmd[index - 1])) {
+        cmd[index - 1] = '\0';
+    }
+    else {
+        cmd[index] = '\0';
+    }
 
     return 0;
 }
@@ -211,7 +245,7 @@ int check_args(char * cmd, int num_args) {
     return valid;
 }
 
-int send_cmd(char * cmd, char * ack, int network_socket) {
+int send_cmd(char * cmd) {
     if (write(network_socket, cmd, BUF_SIZE) == -1) {
         return -1;
     }
@@ -226,16 +260,17 @@ int send_cmd(char * cmd, char * ack, int network_socket) {
 }
 
 int main(int argc, char ** argv) {
-    char cmd[BUF_SIZE], ack[BUF_SIZE];
+    char cmd[BUF_SIZE];
     memset(cmd, 0, sizeof(char) * BUF_SIZE);
     
     int num_args;
-    int network_socket;
-
-    if (init_client(&network_socket) != 0) {
+    
+    if (init_client() != 0) {
         fputs("UNABLE TO CONNECT TO SERVER\n", stderr);
         exit(EXIT_FAILURE);
     }
+
+    signal(SIGINT, signal_handler);
 
     while (1) {
         fputs("rno-g-shell > ", stdout);
@@ -260,7 +295,7 @@ int main(int argc, char ** argv) {
             continue;
         }
 
-        if (send_cmd(cmd, ack, network_socket) == -1) {
+        if (send_cmd(cmd) == -1) {
             fputs("UNABLE TO SEND COMMAND TO SERVER\n", stderr);
             continue;
         }
