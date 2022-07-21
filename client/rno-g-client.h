@@ -3,6 +3,17 @@
 #include "rno-g-console.h"
 
 /*
+ * function : signal_handler
+ * -------------------------
+ * handle system signal recieved by the client
+ * 
+ * sig : the signal
+ * 
+ * returns : nothing
+ */
+void signal_handler(int sig);
+
+/*
  * function : init_client
  * ----------------------
  * initialize the client network socket and connect to the server
