@@ -1,5 +1,67 @@
 #include "rno-g-server.h"
 
+struct cmd_node {
+    char * cmd;
+    struct cmd_node * next;
+    struct cmd_node * prev;
+};
+
+int server_socket;
+int queue_running = 1;
+size_t num_clients = 0;
+cmd_node * head = NULL;
+cmd_node * tail = NULL;
+
+void signal_handler(int sig) {
+    if (sig == SIGINT) {
+        error_check(close(server_socket));
+        exit(EXIT_SUCCESS);
+    }
+}
+
+int cmd_enqueue(char * cmd_str) {
+    cmd_node * node = (cmd_node *) malloc(sizeof(cmd_node));
+
+    node->cmd = (char *) malloc(sizeof(char) * BUF_SIZE);
+    strcpy(node->cmd, cmd_str);
+    
+    if (head == NULL && tail == NULL) {
+        head = node;
+        node->next = NULL;
+        node->prev = NULL;
+    }
+    else {
+        tail->next = node;
+        node->next = NULL;
+        node->prev = tail;
+    }
+
+    tail = node;
+
+    return 0;
+}
+
+int cmd_dequeue() {
+    if (head == NULL && tail == NULL) {
+        return -1;
+    }
+
+    cmd_node * tmp = head->next;
+
+    free(head->cmd);
+    free(head);
+
+    if (tmp == NULL) {
+        head = NULL;
+        tail = NULL;        
+    }
+    else {
+        head = tmp;
+    }
+
+    return 0;
+}
+
 void print_cmd(char * cmd, char * client_address) {
     fputs("RECIEVED {", stdout);
     fputs(cmd, stdout);
@@ -8,96 +70,110 @@ void print_cmd(char * cmd, char * client_address) {
     fputs("}\n", stdout);
 }
 
-int main() {
-    pid_t child_pid;
+void * manage_queue() {
+    while (queue_running) {
+        cmd_node * cur = head;
 
-    struct sockaddr_in client_addr;
-    memset(&client_addr, 0, sizeof(struct sockaddr_in));
+        if (cur) {
+            printf("Scheduler is Processing {%s}\n", cur->cmd);
 
-    socklen_t client_addr_len;
-    memset(&client_addr_len, 0, sizeof(socklen_t));
+            if (!strcmp(cur->cmd, "LTE-OFF")) {
+                while(cur) {
+                    printf("Flushing Queue\n");
+                    cmd_dequeue();
+                    cur = head;
+                }
+
+                queue_running = 0;
+                num_clients = 0;
+            }
+            else {
+                if (!strcmp(cur->cmd, "DISCONNECT")) {
+                    num_clients--;
+                }
+
+                cmd_dequeue();
+            }  
+        }
+
+        sleep(1);
+    }
+
+    pthread_exit(EXIT_SUCCESS);
+}
+
+void * manage_client(void * client_socket_ptr) {
+    int client_socket = *((int *) client_socket_ptr);
+    // free(client_socket_ptr);
+
+    char cmd[BUF_SIZE];
+    char ack[BUF_SIZE] = "Command Recieved\n";
     
-    char client_address[BUF_SIZE], cmd[BUF_SIZE];
-    char ack[BUF_SIZE] = "Command Processed\n";
-
-    int server_socket, client_socket;
-
-    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        fputs("UNABLE TO OPEN SERVER SOCKET\n", stderr);
-        exit(EXIT_FAILURE);
-    }
-
-    struct sockaddr_in server_address;
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(9999);
-    server_address.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) == -1) {
-        fputs("UNABLE TO BIND SERVER SOCKET TO SERVER IP ADDRESS\n", stderr);
-        exit(EXIT_FAILURE);
-    }
-    
-    if (listen(server_socket, 10) == 1) {
-        fputs("UNABLE TO LISTEN TO SERVER SOCKET\n", stderr);
-        exit(EXIT_FAILURE);
-    }
-
     while (1) {
-        if ((client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_len)) == -1) {
-            fputs("UNABLE TO ESTABLISH CONNECTION WITH CLIENT\n", stderr);
-            exit(EXIT_FAILURE);
-        }
+        error_check(read(client_socket, cmd, BUF_SIZE));
 
-        if ((child_pid = fork()) == 0) {
-            if (close(server_socket) == -1) {
-                fputs("UNABLE TO CLOSE PARENT SERVER SOCKET\n", stderr);
-                exit(EXIT_FAILURE);
-            }
-
-            inet_ntop(AF_INET, &client_addr, client_address, BUF_SIZE);
-
-            while (1) {
-                if (read(client_socket, cmd, BUF_SIZE) == -1) {
-                    fputs("UNABLE TO READ DATA FROM CLIENT\n", stderr);
-                    exit(EXIT_FAILURE);
-                }
-        
-                print_cmd(cmd, client_address);
-
-                if (write(client_socket, ack, BUF_SIZE) == -1) {
-                    fputs("UNABLE TO WRITE DATA TO CLIENT\n", stderr);
-                    exit(EXIT_FAILURE);
-                }
-
-                if (!strcmp(cmd, "DISCONNECT")) {
-                    break;
-                }
-            }
-
-            if (close(client_socket) == -1) {
-                fputs("UNABLE TO CLOSE CONNECTION TO CLIENT\n", stderr);
-                exit(EXIT_FAILURE);
-            }
-
-            exit(EXIT_SUCCESS);
-        }
-        else if (child_pid == -1) {
-            fputs("UNABLE TO FORK FROM PARENT PROCESS\n", stderr);
-            exit(EXIT_FAILURE);
+        if (queue_running) {
+            cmd_enqueue(cmd);
         }
         else {
-            if (close(client_socket) == -1) {
-                fputs("UNABLE TO CLOSE CONNECTION TO CLIENT\n", stderr);
-                exit(EXIT_FAILURE);
-            }
+            fputs("SERVER ASLEEP\n", stdout);
+        }
+
+        // print_cmd(cmd, client_address);
+
+        error_check(write(client_socket, ack, BUF_SIZE));
+
+        if (!strcmp(cmd, "DISCONNECT")) {
+            break;
         }
     }
-    
 
-    if (close(server_socket) == -1) {
-        fputs("UNABLE TO CLOSE SERVER SOCKET\n", stderr);
-        exit(EXIT_FAILURE);
+    error_check(close(client_socket));
+    pthread_exit(EXIT_SUCCESS);
+}
+
+int main(int argc, char ** argv) {
+    int client_socket;
+    
+    int * client_socket_ptr;
+    
+    pthread_t thread;
+    pthread_attr_t attr;
+    
+    struct sockaddr_in server_addr;
+    
+    cmd_node * cur;
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    error_check(server_socket = socket(AF_INET, SOCK_STREAM, 0));
+    error_check(bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)));
+    error_check(listen(server_socket, CLIENT_LIM));
+
+    signal(SIGINT, signal_handler);
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, 1);
+    pthread_create(&thread, &attr, manage_queue, NULL);
+    pthread_attr_destroy(&attr);
+
+    while (1) {
+        error_check(client_socket = accept(server_socket, (struct sockaddr *) NULL, NULL));
+        
+        // client_socket_ptr = (int *) malloc(sizeof(int));
+        // *client_socket_ptr = client_socket;
+        
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, 1);
+        pthread_create(&thread, &attr, manage_client, &client_socket);
+        pthread_attr_destroy(&attr);
+
+        num_clients++;
     }
+    
+    error_check(close(server_socket));
 
     return EXIT_SUCCESS;
 }
