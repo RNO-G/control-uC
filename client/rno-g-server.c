@@ -62,6 +62,21 @@ int cmd_dequeue() {
     return 0;
 }
 
+int cmd_flush() {
+    if (head == NULL && tail == NULL) {
+        return -1;
+    }
+
+    cmd_node * cur = head;
+    
+    while(cur) {
+        cmd_dequeue();
+        cur = head;
+    }
+
+    return 0;
+}
+
 void print_cmd(char * cmd, char * client_address) {
     fputs("RECIEVED {", stdout);
     fputs(cmd, stdout);
@@ -75,14 +90,13 @@ void * manage_queue() {
         cmd_node * cur = head;
 
         if (cur) {
-            printf("Scheduler is Processing {%s}\n", cur->cmd);
+            fputs("Scheduler is Processing {", stdout);
+            fputs(cur->cmd, stdout);
+            fputs("}\n", stdout);
 
             if (!strcmp(cur->cmd, "LTE-OFF")) {
-                while(cur) {
-                    printf("Flushing Queue\n");
-                    cmd_dequeue();
-                    cur = head;
-                }
+                fputs("Flushing Queue\n", stdout);
+                cmd_flush();
 
                 queue_running = 0;
                 num_clients = 0;
