@@ -4,7 +4,6 @@
 #include "rno-g-console.h"
 
 #define CLIENT_LIM 10
-#define PORT 9999
 
 typedef struct cmd_node cmd_node;
 

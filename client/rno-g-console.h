@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #define BUF_SIZE 1024
+#define PORT 1056
 
 void error_check(int func_return) {
     if (func_return == -1) {
