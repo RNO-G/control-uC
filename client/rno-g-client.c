@@ -5,15 +5,8 @@ char ack[BUF_SIZE];
 
 void signal_handler(int sig) {
     if (sig == SIGINT) {
-        if (send_cmd("DISCONNECT") == -1) {
-            fputs("UNABLE TO SEND COMMAND TO SERVER\n", stderr);
-            exit(EXIT_FAILURE);
-        }
-
-        if (close(network_socket) == -1) {
-            fputs("UNABLE TO CLOSE CONNECTION TO SERVER\n", stderr);
-            exit(EXIT_FAILURE);
-        }
+        error_check(send_cmd("DISCONNECT"));
+        error_check(close(network_socket));
 
         exit(EXIT_SUCCESS);
     }
@@ -265,10 +258,7 @@ int main(int argc, char ** argv) {
     
     int num_args;
     
-    if (init_client() != 0) {
-        fputs("UNABLE TO CONNECT TO SERVER\n", stderr);
-        exit(EXIT_FAILURE);
-    }
+    error_check(init_client());
 
     signal(SIGINT, signal_handler);
 
@@ -305,10 +295,7 @@ int main(int argc, char ** argv) {
         }
     }
 
-    if (close(network_socket) == -1) {
-        fputs("UNABLE TO CLOSE CONNECTION TO SERVER\n", stderr);
-        exit(EXIT_FAILURE);
-    }
+    error_check(close(network_socket));
 
     return EXIT_SUCCESS;
 }
