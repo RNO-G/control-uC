@@ -3,7 +3,8 @@
 
 #include "rno-g-console.h"
 
-#define CLIENT_LIM 10
+#define CLI_LIM 10
+#define CMD_LIM 32
 
 typedef struct cmd_node cmd_node;
 
@@ -19,14 +20,60 @@ typedef struct cmd_node cmd_node;
 void signal_handler(int sig);
 
 /*
- * function : print_cmd
- * --------------------
- * print the recieved command and the client address
+ * function : cmd_enqueue
+ * ----------------------
+ * add a command to the queue
  * 
  * cmd : the command string
  * 
- * client address: the IP address of the client
+ * returns : 0 if the command was successfully added, -1 if the queue is full
+ */
+int cmd_enqueue(char * cmd);
+
+/*
+ * function : cmd_dequeue
+ * ----------------------
+ * remove a command from the front of the queue
+ * 
+ * returns : 0 if the command was successfully removed, -1 if the queue is
+ *           already empty
+ */
+int cmd_dequeue();
+
+/*
+ * function : cmd_flush
+ * --------------------
+ * flush the command queue
+ * 
+ * returns : 0 if the queue was successfully emptied
+ */
+int cmd_flush();
+
+/*
+ * function : print_cmd_queue
+ * --------------------------
+ * print the command queue
  * 
  * returns : nothing
  */
-void print_cmd(char * cmd, char * client_address);
+void print_cmd_queue();
+
+/*
+ * function : manage_cmd_queue
+ * ---------------------------
+ * thread function to manage the command queue
+ * 
+ * returns : nothing
+ */
+void * manage_cmd_queue();
+
+/*
+ * function : manage_client
+ * ------------------------
+ * thread function to manage a client connection to the server
+ * 
+ * client_socket_ptr : the pointer corresponding to the client socket
+ * 
+ * returns : nothing
+ */
+void * manage_client(void * client_socket_ptr);
