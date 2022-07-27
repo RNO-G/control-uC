@@ -26,8 +26,8 @@ void signal_handler(int sig) {
             int_flag = 1;
         }
 
-        error_check(pthread_mutex_unlock(&num_clients_mutex));
         error_check(pthread_mutex_unlock(&int_flag_mutex));
+        error_check(pthread_mutex_unlock(&num_clients_mutex));
     }
 }
 
@@ -78,10 +78,6 @@ void print_cmd_queue() {
 
 void * manage_cmd_queue() {
     char * cmd;
-
-    sigset_t set;
-    error_check(sigemptyset(&set));
-    error_check(pthread_sigmask(SIG_BLOCK, &set, NULL));
     
     while (cmd_queue_running) {
         pthread_mutex_lock(&cmd_queue_mutex);
@@ -110,10 +106,6 @@ void * manage_cmd_queue() {
 
 void * manage_client(void * client_socket_ptr) {
     int client_socket = *((int *) client_socket_ptr);
-
-    sigset_t set;
-    error_check(sigemptyset(&set));
-    error_check(pthread_sigmask(SIG_BLOCK, &set, NULL));
 
     char cmd[BUF_SIZE];
     char ack[BUF_SIZE] = "Command Recieved\n";
@@ -166,7 +158,7 @@ int main(int argc, char ** argv) {
     struct sockaddr_in server_addr;
     
     struct sigaction act;
-    // sigset_t set;
+    sigset_t set;
 
     memset(cmd_queue, 0, sizeof(char) * CMD_LIM * BUF_SIZE);    
 
@@ -183,28 +175,28 @@ int main(int argc, char ** argv) {
     error_check(listen(server_socket, CLI_LIM));
     
     error_check(sigaction(SIGINT, &act, NULL));
-    // error_check(sigemptyset(&set));
-    // error_check(pthread_sigmask(SIG_BLOCK, &set, NULL));
+    error_check(sigemptyset(&set));
+    error_check(pthread_sigmask(SIG_BLOCK, &set, NULL));
     
     error_check(pthread_mutex_init(&cmd_queue_mutex, NULL));
     error_check(pthread_mutex_init(&num_clients_mutex, NULL));
     error_check(pthread_mutex_init(&int_flag_mutex, NULL));
     
     error_check(pthread_create(&cmd_queue_manager, NULL, manage_cmd_queue, NULL));
-    // error_check(pthread_sigmask(SIG_UNBLOCK, &set, NULL));
+    error_check(pthread_sigmask(SIG_UNBLOCK, &set, NULL));
 
-    while (cmd_queue_running) {
+    while (1) {
         client_socket = accept(server_socket, (struct sockaddr *) NULL, NULL);
         
         if (client_socket == -1) {
-            if (!cmd_queue_running) {
-                break;
-            }
-            else if (int_flag)  {
+            if (int_flag)  {
                 error_check(pthread_mutex_lock(&int_flag_mutex));
                 int_flag = 0;
                 error_check(pthread_mutex_unlock(&int_flag_mutex));
                 continue;
+            }
+            else if (!cmd_queue_running) {
+                break;
             }
             else {
                 fputs("UNABLE TO CONNECT TO CLIENT\n", stderr);
@@ -212,17 +204,13 @@ int main(int argc, char ** argv) {
             }
         }
         else {
+            error_check(pthread_sigmask(SIG_BLOCK, &set, NULL));
             error_check(pthread_attr_init(&attr));
             error_check(pthread_attr_setdetachstate(&attr, 1));
             error_check(pthread_create(&client, &attr, manage_client, &client_socket));
             error_check(pthread_attr_destroy(&attr));
+            error_check(pthread_sigmask(SIG_UNBLOCK, &set, NULL));
         }
-        
-        // error_check(pthread_sigmask(SIG_BLOCK, &set, NULL));
-        
-        
-        
-        // error_check(pthread_sigmask(SIG_UNBLOCK, &set, NULL));
     }
     
     error_check(close(server_socket));
