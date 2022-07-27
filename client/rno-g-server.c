@@ -119,6 +119,10 @@ void * manage_client(void * client_socket_ptr) {
     while (1) {
         error_check(read(client_socket, cmd, BUF_SIZE));
 
+        if (!strcmp(cmd, "DISCONNECT")) {
+            break;
+        }
+
         if (cmd_queue_running) {
             error_check(pthread_mutex_lock(&cmd_queue_mutex));
             
@@ -133,10 +137,6 @@ void * manage_client(void * client_socket_ptr) {
         }
 
         error_check(write(client_socket, ack, BUF_SIZE));
-
-        if (!strcmp(cmd, "DISCONNECT")) {
-            break;
-        }
     }
 
     error_check(pthread_mutex_lock(&num_clients_mutex));
