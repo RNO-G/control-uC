@@ -102,12 +102,15 @@ install:
 
 client-build: 
 	$(MAKE) -C client
+	$(MAKE) -C loader
 
 client-install: 
 	$(MAKE) -C client install
+	$(MAKE) -C loader install
 
 client-uninstall: 
 	$(MAKE) -C client uninstall
+	$(MAKE) -C loader uninstall
 
 
 
