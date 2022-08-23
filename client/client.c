@@ -245,18 +245,27 @@ int send_cmd(int client_socket, char * cmd, char * ack) {
 }
 
 int main() {
+    int client_socket;
+    int num_args;
     char cmd[BUF_SIZE];
     char ack[BUF_SIZE];
-    
+    struct sigaction ign, sig;
+
     memset(cmd, 0, sizeof(char) * BUF_SIZE);
     memset(ack, 0, sizeof(char) * BUF_SIZE);
     
-    int client_socket;
-    int num_args;
-
-    signal(SIGINT, signal_handler);
-    signal(SIGPIPE, SIG_IGN);
+    memset(&ign, 0, sizeof(struct sigaction));
+    memset(&sig, 0, sizeof(struct sigaction));
     
+    ign.sa_flags = 0;
+    ign.sa_handler = SIG_IGN;
+
+    sig.sa_flags = 0;
+    sig.sa_handler = signal_handler;
+
+    errno_check(sigaction(SIGPIPE, &ign, NULL), "sigaction");
+    errno_check(sigaction(SIGINT, &sig, NULL), "sigaction");
+
     connect_to_server(&client_socket);
 
     while (running) {
