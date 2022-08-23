@@ -1,3 +1,6 @@
 build 
 config.mk*
 station_number.mk
+client/client
+client/server
+client/error.o
