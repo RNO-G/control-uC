@@ -1,6 +1,4 @@
 #include "server.h"
-#include "constants.h"
-#include "error.h"
 
 int num_clients, num_cmd;
 int client_queue[QUEUED_CLIENT_LIM];
