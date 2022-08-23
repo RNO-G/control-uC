@@ -5,6 +5,7 @@ int running = 1;
 void signal_handler(int sig) {
     if (sig == SIGINT) {
         running = 0;
+        printf("\n");
     }
 }
 
