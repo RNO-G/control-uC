@@ -1,12 +1,17 @@
 #include "server.h"
-#include <stdlib.h>
-#include <string.h>
+#include "constants.h"
+#include <pthread.h>
+
+struct thread_status {
+    int client_running;
+    int thread_running;
+};
 
 int num_clients, num_cmd;
 int client_queue[QUEUED_CLIENT_LIM];
 char cmd_queue[CMD_LIM][BUF_SIZE];
-int thread_running[ACTIVE_CLIENT_LIM];
 pthread_t thread_pool[ACTIVE_CLIENT_LIM];
+thread_status thread_pool_status[ACTIVE_CLIENT_LIM];
 pthread_mutex_t client_queue_mutex, cmd_queue_mutex;
 
 int cmd_queue_running = 1;
@@ -15,6 +20,17 @@ int server_running = 1;
 void signal_handler(int sig) {
     if (sig == SIGINT) {
         server_running = 0;
+    }
+    else if (sig == SIGUSR1) {
+        pthread_t tid = pthread_self();
+        int i;
+        for (i = 0; i < ACTIVE_CLIENT_LIM; i++) {
+            if (pthread_equal(thread_pool[i], tid)) {
+                break;
+            }
+        }
+        thread_pool_status[i].client_running = 0;
+        thread_pool_status[i].thread_running = 0;
     }
 }
 
@@ -36,7 +52,7 @@ int client_queue_dequeue() {
 }
 
 void cmd_queue_enqueue(char * cmd) {
-    strcpy(cmd, cmd_queue[num_cmd]);
+    strcpy(cmd_queue[num_cmd], cmd);
     num_cmd++;
 }
 
@@ -66,19 +82,19 @@ void * cmd_queue_manager() {
         errno_check(pthread_mutex_unlock(&cmd_queue_mutex), "pthread_mutex_unlock");
     }
 
-    return EXIT_SUCCESS;
+    pthread_exit(EXIT_SUCCESS);
 }
 
-void manage_client(int client_socket) {
+void manage_client(void * run_status, int client_socket) {
     char cmd[BUF_SIZE];
     char ack[BUF_SIZE];
     
     memset(cmd, 0, sizeof(char) * BUF_SIZE);
     memset(ack, 0, sizeof(char) * BUF_SIZE);
 
-    while (1) {
+    while (((thread_status *) run_status)->client_running) {
         if (read(client_socket, cmd, BUF_SIZE) < 1) {
-            break;
+            ((thread_status *) run_status)->client_running = 0;
         }
         else {
             errno_check(pthread_mutex_lock(&cmd_queue_mutex), "pthread_mutex_lock");
@@ -96,20 +112,29 @@ void manage_client(int client_socket) {
         }
         
         if (write(client_socket, ack, BUF_SIZE) < 1) {
-            break;
+            ((thread_status *) run_status)->client_running = 0;
         }
     }
 }
 
-void * manage_thread(void * running) {
+void * manage_thread(void * run_status) {
     int client_socket;
+    struct sigaction sig;
 
-    while (*((int *) running)) {
+    memset(&sig, 0, sizeof(struct sigaction));
+
+    sig.sa_flags = 0;
+    sig.sa_handler = signal_handler;
+
+    errno_check(sigaction(SIGUSR1, &sig, NULL), "sigaction");
+
+    while (((thread_status *) run_status)->thread_running) {
         errno_check(pthread_mutex_lock(&client_queue_mutex), "pthread_mutex_lock");
         if (num_clients > 0) {
             client_socket = client_queue_dequeue();
             errno_check(pthread_mutex_unlock(&client_queue_mutex), "pthread_mutex_unlock");
-            manage_client(client_socket);
+            ((thread_status *) run_status)->client_running = 1;
+            manage_client(run_status, client_socket);
         }
         else {
             errno_check(pthread_mutex_unlock(&client_queue_mutex), "pthread_mutex_unlock");
@@ -131,8 +156,8 @@ int main() {
 
     memset(client_queue, 0, sizeof(int) * QUEUED_CLIENT_LIM);
     memset(cmd_queue, 0, sizeof(char) * CMD_LIM * BUF_SIZE);
-    memset(thread_running, 0, sizeof(int) * ACTIVE_CLIENT_LIM);
     memset(thread_pool, 0, sizeof(pthread_t) * ACTIVE_CLIENT_LIM);
+    memset(thread_pool_status, 0, sizeof(thread_status) * ACTIVE_CLIENT_LIM);
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
@@ -153,10 +178,14 @@ int main() {
     errno_check(pthread_create(&cmd_queue_manager_thread, NULL, cmd_queue_manager, NULL), "pthread_create");
 
     for (int i = 0; i < ACTIVE_CLIENT_LIM; i++) {
-        thread_running[i] = 1;
-        errno_check(pthread_create(&thread_pool[i], NULL, manage_thread, (void *) &thread_running[i]), "pthread_create");
+        thread_pool_status[i].client_running = 1;
+        thread_pool_status[i].thread_running = 1;
+        errno_check(pthread_create(&thread_pool[i], NULL, manage_thread, (void *) &thread_pool_status[i]), "pthread_create");
     }
 
+    errno_check(sigemptyset(&set), "sigemptyset");
+    errno_check(sigaddset(&set, SIGINT), "sigaddset");
+    errno_check(sigaddset(&set, SIGPIPE), "sigaddset");
     errno_check(pthread_sigmask(SIG_UNBLOCK, &set, NULL), "pthread_sigmask");
     
     memset(&ign, 0, sizeof(struct sigaction));
@@ -169,6 +198,7 @@ int main() {
     sig.sa_handler = signal_handler;
 
     errno_check(sigaction(SIGPIPE, &ign, NULL), "sigaction");
+    errno_check(sigaction(SIGUSR1, &ign, NULL), "sigaction");
     errno_check(sigaction(SIGINT, &sig, NULL), "sigaction");
 
     while(server_running) {
@@ -191,11 +221,13 @@ int main() {
     pthread_join(cmd_queue_manager_thread, NULL);
 
     for (int i = 0; i < ACTIVE_CLIENT_LIM; i++) {
-        thread_running[i] = 0;
+        thread_pool_status[i].client_running = 0;
+        thread_pool_status[i].thread_running = 0;
+        pthread_kill(thread_pool[i], SIGUSR1);
         pthread_join(thread_pool[i], NULL);
     }
 
-    for (int i = 0; i < QUEUED_CLIENT_LIM; i++) {
+    for (int i = 0; i < num_clients; i++) {
         errno_check(close(client_queue[i]), "close");
     }
 

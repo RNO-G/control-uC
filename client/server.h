@@ -11,6 +11,8 @@
 
 #include "error.h"
 
+typedef struct thread_status thread_status;
+
 /*
  * function : signal_handler
  * -------------------------
@@ -82,7 +84,7 @@ void * cmd_queue_manager();
  *
  * returns : nothing
  */
-void manage_client(int client_socket);
+void manage_client(void * run_status, int client_socket);
 
 /*
  * function : manage_thread
@@ -93,6 +95,6 @@ void manage_client(int client_socket);
  *
  * returns : thread exit status
  */
-void * manage_thread(void * running);
+void * manage_thread(void * run_status);
 
 #endif
