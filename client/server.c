@@ -1,5 +1,6 @@
 #include "server.h"
 #include "constants.h"
+#include "error.h"
 
 int num_clients, num_cmd;
 int client_queue[QUEUED_CLIENT_LIM];
@@ -73,6 +74,7 @@ void * cmd_queue_manager() {
         }
 
         errno_check(pthread_mutex_unlock(&cmd_queue_mutex), "pthread_mutex_unlock");
+        sleep(1);
     }
 
     pthread_exit(EXIT_SUCCESS);
@@ -130,6 +132,7 @@ void * manage_thread(void * running) {
         }
         else {
             errno_check(pthread_mutex_unlock(&client_queue_mutex), "pthread_mutex_unlock");
+            sleep(1);
         }
     }
 
@@ -194,6 +197,16 @@ int main() {
 
     while(server_running) {
         client_socket = accept(server_socket, NULL, NULL);
+        
+        if (client_socket == -1) {
+            if (!server_running) {
+                break;
+            } 
+            else {
+                errno_check(client_socket, "accept");
+            }
+        }
+
         errno_check(pthread_mutex_lock(&client_queue_mutex), "pthread_mutex_lock");
         
         if (num_clients == QUEUED_CLIENT_LIM) {
