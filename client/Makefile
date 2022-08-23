@@ -3,7 +3,7 @@ CFLAGS=-Wall -O3 -g -Wextra
 
 default: error
 	$(CC) $(CFLAGS) error.o -o client client.c
-	$(CC) $(CFLAGS) error.o -o server server.c
+	$(CC) $(CFLAGS) -pthread error.o -o server server.c
 
 error:
 	$(CC) $(CFLAGS) -c error.c
