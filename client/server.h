@@ -12,15 +12,61 @@
 #include "error.h"
 
 /*
- * function : signal_handler
- * -------------------------
- * handle system signals recieved by the server
+ * struct : cli_status
+ * -------------------
+ * a structure to contain the run status and condition for a client
+ * thread
+ *
+ * thread_running : the run status
+ *
+ * thread_cond : the condition
+ */
+typedef struct cli_status cli_status;
+
+/*
+ * struct : cmd
+ * ------------
+ * a structure to contain a command string and the client
+ * thread that issued the command
+ *
+ * cmd : the command string
+ *
+ * cli_tid : the client thread id
+ */
+typedef struct cmd cmd;
+
+/*
+ * function : main_signal_handler
+ * ------------------------------
+ * handle system signals recieved by the main thread
  * 
  * sig : the signal
  * 
  * returns : nothing
  */
-void signal_handler(int sig);
+void main_signal_handler(int sig);
+
+/*
+ * function : cmd_queue_signal_handler
+ * -----------------------------------
+ * handle system signals recieved by the command queue manager thread
+ * 
+ * sig : the signal
+ * 
+ * returns : nothing
+ */
+void cmd_queue_signal_handler(int sig);
+
+/*
+ * function : client_thread_signal_handler
+ * ---------------------------------------
+ * handle system signals recieved by a client thread
+ * 
+ * sig : the signal
+ * 
+ * returns : nothing
+ */
+void client_thread_signal_handler(int sig);
 
 /*
  * function : client_queue_enqueue
