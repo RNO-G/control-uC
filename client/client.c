@@ -51,7 +51,7 @@ int format_cmd(char *cmd) {
 
 int get_num_args(char * cmd) {
     char cmd_copy[BUF_SIZE];
-    strcpy(cmd_copy, cmd);
+    strlcpy(cmd_copy, cmd, BUF_SIZE);
     
     int num_args = -1;
 
@@ -68,7 +68,7 @@ int get_num_args(char * cmd) {
 
 int parse_args(char * cmd, int num_args) {
     char cmd_copy[BUF_SIZE];
-    strcpy(cmd_copy, cmd);
+    strlcpy(cmd_copy, cmd, BUF_SIZE);
     
     char * rest = NULL;
     char * pfx = strtok_r(cmd_copy, " ", &rest);
@@ -252,11 +252,11 @@ int main() {
     char ack[BUF_SIZE];
     struct sigaction ign, sig;
 
-    memset(cmd, 0, sizeof(char) * BUF_SIZE);
-    memset(ack, 0, sizeof(char) * BUF_SIZE);
+    explicit_bzero(cmd, sizeof(char) * BUF_SIZE);
+    explicit_bzero(ack, sizeof(char) * BUF_SIZE);
     
-    memset(&ign, 0, sizeof(struct sigaction));
-    memset(&sig, 0, sizeof(struct sigaction));
+    explicit_bzero(&ign, sizeof(struct sigaction));
+    explicit_bzero(&sig, sizeof(struct sigaction));
     
     ign.sa_flags = 0;
     ign.sa_handler = SIG_IGN;

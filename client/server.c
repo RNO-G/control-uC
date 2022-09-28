@@ -44,15 +44,15 @@ int client_queue_dequeue() {
 }
 
 void cmd_queue_enqueue(char * cmd) {
-    strcpy(cmd_queue[num_cmd], cmd);
+    strlcpy(cmd_queue[num_cmd], cmd, BUF_SIZE);
     num_cmd++;
 }
 
 void cmd_queue_dequeue(char * cmd) {
-    strcpy(cmd, cmd_queue[0]);
+    strlcpy(cmd, cmd_queue[0], BUF_SIZE);
     
     for (int i = 0; i < num_cmd - 1; i++) {
-        strcpy(cmd_queue[i], cmd_queue[i + 1]);
+        strlcpy(cmd_queue[i], cmd_queue[i + 1], BUF_SIZE);
     }
 
     num_cmd--;
@@ -61,7 +61,7 @@ void cmd_queue_dequeue(char * cmd) {
 void * cmd_queue_manager() {
     char cmd[BUF_SIZE];
 
-    memset(cmd, 0, sizeof(char) * BUF_SIZE);
+    explicit_bzero(cmd, sizeof(char) * BUF_SIZE);
 
     while (cmd_queue_running) {
         errno_check(pthread_mutex_lock(&cmd_queue_mutex), "pthread_mutex_lock");
@@ -82,8 +82,8 @@ void manage_client(int client_socket) {
     char cmd[BUF_SIZE];
     char ack[BUF_SIZE];
     
-    memset(cmd, 0, sizeof(char) * BUF_SIZE);
-    memset(ack, 0, sizeof(char) * BUF_SIZE);
+    explicit_bzero(cmd, sizeof(char) * BUF_SIZE);
+    explicit_bzero(ack, sizeof(char) * BUF_SIZE);
 
     while (1) {
         if (read(client_socket, cmd, BUF_SIZE) < 1) {
@@ -93,10 +93,10 @@ void manage_client(int client_socket) {
             errno_check(pthread_mutex_lock(&cmd_queue_mutex), "pthread_mutex_lock");
 
             if (num_cmd == CMD_LIM) {
-                strcpy(ack, "COMMAND QUEUE FULL, TRY AGAIN LATER");
+                strlcpy(ack, "COMMAND QUEUE FULL, TRY AGAIN LATER", BUF_SIZE);
             }
             else {
-                strcpy(ack, "COMMAND RECIEVED");
+                strlcpy(ack, "COMMAND RECIEVED", BUF_SIZE);
                 cmd_queue_enqueue(cmd);
                 num_cmd++;
             }
@@ -114,7 +114,7 @@ void * manage_thread(void * running) {
     int client_socket;
     struct sigaction sig;
 
-    memset(&sig, 0, sizeof(struct sigaction));
+    explicit_bzero(&sig, sizeof(struct sigaction));
 
     sig.sa_flags = 0;
     sig.sa_handler = signal_handler;
@@ -147,10 +147,10 @@ int main() {
     num_clients = 0;
     num_cmd = 0;
 
-    memset(client_queue, 0, sizeof(int) * QUEUED_CLIENT_LIM);
-    memset(cmd_queue, 0, sizeof(char) * CMD_LIM * BUF_SIZE);
-    memset(thread_running, 0, sizeof(int) * ACTIVE_CLIENT_LIM);
-    memset(thread_pool, 0, sizeof(pthread_t) * ACTIVE_CLIENT_LIM);
+    explicit_bzero(client_queue, sizeof(int) * QUEUED_CLIENT_LIM);
+    explicit_bzero(cmd_queue, sizeof(char) * CMD_LIM * BUF_SIZE);
+    explicit_bzero(thread_running, sizeof(int) * ACTIVE_CLIENT_LIM);
+    explicit_bzero(thread_pool, sizeof(pthread_t) * ACTIVE_CLIENT_LIM);
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
@@ -180,8 +180,8 @@ int main() {
     errno_check(sigaddset(&set, SIGPIPE), "sigaddset");
     errno_check(pthread_sigmask(SIG_UNBLOCK, &set, NULL), "pthread_sigmask");
     
-    memset(&ign, 0, sizeof(struct sigaction));
-    memset(&sig, 0, sizeof(struct sigaction));
+    explicit_bzero(&ign, sizeof(struct sigaction));
+    explicit_bzero(&sig, sizeof(struct sigaction));
 
     ign.sa_flags = 0;
     ign.sa_handler = SIG_IGN;
