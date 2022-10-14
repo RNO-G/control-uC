@@ -21,19 +21,7 @@
  *
  * thread_cond : the condition
  */
-typedef struct cli_status cli_status;
-
-/*
- * struct : cmd
- * ------------
- * a structure to contain a command string and the client
- * thread that issued the command
- *
- * cmd : the command string
- *
- * cli_tid : the client thread id
- */
-typedef struct cmd cmd;
+typedef struct thd_status thd_status;
 
 /*
  * function : main_signal_handler
@@ -44,18 +32,7 @@ typedef struct cmd cmd;
  * 
  * returns : nothing
  */
-void main_signal_handler(int sig);
-
-/*
- * function : cmd_queue_signal_handler
- * -----------------------------------
- * handle system signals recieved by the command queue manager thread
- * 
- * sig : the signal
- * 
- * returns : nothing
- */
-void cmd_queue_signal_handler(int sig);
+void main_sig_handler(int sig);
 
 /*
  * function : client_thread_signal_handler
@@ -66,7 +43,7 @@ void cmd_queue_signal_handler(int sig);
  * 
  * returns : nothing
  */
-void client_thread_signal_handler(int sig);
+void cli_sig_handler(int sig);
 
 /*
  * function : client_queue_enqueue
@@ -77,7 +54,7 @@ void client_thread_signal_handler(int sig);
  *
  * returns : nothing
  */
-void client_queue_enqueue(int client_socket);
+void cli_queue_enqueue(int client_socket);
 
 /*
  * function : client_queue_dequeue
@@ -86,38 +63,7 @@ void client_queue_enqueue(int client_socket);
  *
  * returns : the client socket at the head of the queue
  */
-int client_queue_dequeue();
-
-/*
- * function : cmd_queue_enqueue
- * ----------------------------
- * add a pending command to the command queue
- *
- * cmd : the command string
- *
- * returns : nothing
- */
-void cmd_queue_enqueue(char * cmd);
-
-/*
- * function : cmd_queue_dequeue
- * ----------------------------
- * remove the head command from the command queue
- *
- * cmd : the pointer to store the command at the head of the queue
- *
- * returns : nothing
- */
-void cmd_queue_dequeue(char * cmd);
-
-/*
- * function : cmd_queue_manager
- * ----------------------------
- * thread handler function for managing the command queue
- *
- * returns : thread exit status
- */
-void * cmd_queue_manager();
+int cli_queue_dequeue();
 
 /*
  * function : manage_client
@@ -128,7 +74,7 @@ void * cmd_queue_manager();
  *
  * returns : nothing
  */
-void manage_client(int client_socket);
+void manage_cli(int client_socket);
 
 /*
  * function : manage_thread
@@ -139,6 +85,6 @@ void manage_client(int client_socket);
  *
  * returns : thread exit status
  */
-void * manage_thread(void * running);
+void * manage_thd(void * running);
 
 #endif

@@ -19,7 +19,7 @@
  * 
  * returns : nothing
  */
-void signal_handler(int sig);
+void sig_handler(int sig);
 
 /*
  * function : connect
@@ -30,7 +30,7 @@ void signal_handler(int sig);
  *
  * returns : nothing
  */
-void connect_to_server(int * client_socket);
+void connect_to_svr(int * client_socket);
 
 /*
  * function : format_cmd
