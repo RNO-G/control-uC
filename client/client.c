@@ -1,4 +1,5 @@
 #include "client.h"
+#include "constants.h"
 
 int running = 1;
 
@@ -54,204 +55,186 @@ int get_num_args(char * cmd) {
     int len = strlen(cmd);
     
     for (int i = 0; i < len; i++) {
-        if (cmd[i] != ' ' && i > 0 && cmd[i - 1] == ' ') {
+        if (cmd[i] == ' ') {
             num_args++;
         }
     }
-    
+
     return num_args;
 }
 
 int parse_args(char * cmd, int num_args) {
+    char cmd_copy[BUF_SIZE];
+    
     int valid = 0;
     
+    strcpy(cmd_copy, cmd);
+    char * rest = NULL;
+    char * pfx = strtok_r(cmd_copy, " ", &rest);
+    
     if (num_args == 0) {
-        if (!strcmp(cmd, "LTE-ON")) {
+        if (!strcmp(pfx, "LTE-ON")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-ON!")) {
+        else if (!strcmp(pfx, "LTE-ON!")) {
             valid = 1; 
         }
-        else if (!strcmp(cmd, "LTE-OFF")) {
+        else if (!strcmp(pfx, "LTE-OFF")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-OFF!")) {
+        else if (!strcmp(pfx, "LTE-OFF!")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-FACTORY-RESET")) {
+        else if (!strcmp(pfx, "LTE-FACTORY-RESET")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-SOFT-RESET")) {
+        else if (!strcmp(pfx, "LTE-SOFT-RESET")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-HARD-RESET")) {
+        else if (!strcmp(pfx, "LTE-HARD-RESET")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-POWER-CYCLE")) {
+        else if (!strcmp(pfx, "LTE-POWER-CYCLE")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-STATE")) {
+        else if (!strcmp(pfx, "LTE-STATE")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LTE-STATS")) {
+        else if (!strcmp(pfx, "LTE-STATS")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "RADIANT-ON")) {
+        else if (!strcmp(pfx, "RADIANT-ON")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "RADIANT-OFF")) {
+        else if (!strcmp(pfx, "RADIANT-OFF")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "J29-ON")) {
+        else if (!strcmp(pfx, "J29-ON")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "J29-OFF")) {
+        else if (!strcmp(pfx, "J29-OFF")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "EXTBUS-ON")) {
+        else if (!strcmp(pfx, "EXTBUS-ON")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "EXTBUS-OFF")) {
+        else if (!strcmp(pfx, "EXTBUS-OFF")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LOWTHRESH-ON")) {
+        else if (!strcmp(pfx, "LOWTHRESH-ON")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LOWTHRESH-OFF")) {
+        else if (!strcmp(pfx, "LOWTHRESH-OFF")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "HEATER-ON")) {
+        else if (!strcmp(pfx, "HEATER-ON")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "HEATER-OFF")) {
+        else if (!strcmp(pfx, "HEATER-OFF")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "EXPANDER-STATE")) {
+        else if (!strcmp(pfx, "EXPANDER-STATE")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "FAULT-STATE")) {
+        else if (!strcmp(pfx, "FAULT-STATE")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "MONITOR")) {
+        else if (!strcmp(pfx, "MONITOR")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "B64MON")) {
+        else if (!strcmp(pfx, "B64MON")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "GET-BATT-MILLIVS")) {
+        else if (!strcmp(pfx, "GET-BATT-MILLIVS")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "MODE-GET")) {
+        else if (!strcmp(pfx, "MODE-GET")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "I2C-DETECT")) {
+        else if (!strcmp(pfx, "I2C-DETECT")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "I2C-RESET")) {
+        else if (!strcmp(pfx, "I2C-RESET")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "AM-I-BOOTLOADER")) {
+        else if (!strcmp(pfx, "AM-I-BOOTLOADER")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "GET-STATION")) {
+        else if (!strcmp(pfx, "GET-STATION")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "GET-TIMESYNC-INTERVAL")) {
+        else if (!strcmp(pfx, "GET-TIMESYNC-INTERVAL")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "FLUSH")) {
+        else if (!strcmp(pfx, "FLUSH")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "LORA-SEND")) {
+        else if (!strcmp(pfx, "LORA-SEND")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "NOW")) {
+        else if (!strcmp(pfx, "NOW")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "VERSION")) {
+        else if (!strcmp(pfx, "VERSION")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "REV")) {
+        else if (!strcmp(pfx, "REV")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "DISCONNECT")) {
+        else if (!strcmp(pfx, "DISCONNECT")) {
             valid = 1;
             running = 0;
         }
     }
     else if (num_args == 1) {
+
+        char * arg = strtok_r(NULL, " ", &rest);
         
-        char * arg = strchr(cmd, ' ') + 1;
-        
-        if (!strncmp(cmd, "MONITOR-SCHED", 13)) {
+        if (!strcmp(pfx, "MONITOR-SCHED")) {
             valid = 1;
         }
-        else if (!strncmp(cmd, "I2C-UNSTICK", 11)) {
+        else if (!strcmp(pfx, "I2C-UNSTICK")) {
             valid = 1;
         }
-        else if (!strncmp(cmd, "SYS-RESET", 9)) {
+        else if (!strcmp(pfx, "SYS-RESET")) {
             valid = 1;
         }
-        else if (!strncmp(cmd, "SET-STATION", 11)) {
+        else if (!strcmp(pfx, "SET-STATION")) {
             valid = 1;
         }
-        else if (!strncmp(cmd, "SET-GPS-OFFSET", 14)) {
+        else if (!strcmp(pfx, "SET-GPS-OFFSET")) {
             valid = 1;
         }
-        else if (!strncmp(cmd, "SET-TIMESYNC-INTERVAL", 21)) {
+        else if (!strcmp(pfx, "SET-TIMESYNC-INTERVAL")) {
             valid = 1;
         }
     }
     else if (num_args == 2) {
-        char * arg1 = strchr(cmd, ' ') + 1;
-        char * arg2 = strchr(arg1, ' ') + 1;
-        
-        int arg1_end;
-        int arg1_len = strlen(arg1);
-        for (int i = 0; i < arg1_len; i++) {
-            if (arg1[i] == ' ') {
-                arg1_end = i;
-                break;
-            }
-        }
 
-        if (!strncmp(cmd, "AMPS-SET", 8)) {
-            long arg1_val = strtol(arg1, &arg1 + arg1_end, 16);
+        char * arg1 = strtok_r(NULL, " ", &rest);
+        char * arg2 = strtok_r(NULL, " ", &rest);
+
+        if (!strcmp(pfx, "AMPS-SET")) {
+            long arg1_val = strtol(arg1, NULL, 16);
             long arg2_val = strtol(arg2, NULL, 16);
+
             valid = (arg1_val >= 0x0 && arg1_val <= 0x3f && 
                      arg2_val >= 0x0 && arg2_val <= 0x7);
         }
-        else if (!strcmp(cmd, "SET-BATT-MILLIVS")) {
+        else if (!strcmp(pfx, "SET-BATT-MILLIVS")) {
             valid = 1;
         }
-        else if (!strcmp(cmd, "I2C-READ")) {
+        else if (!strcmp(pfx, "I2C-READ")) {
             valid = 1;
         }
     }
     else if (num_args == 3) {
-        char * arg1 = strchr(cmd, ' ') + 1;
-        char * arg2 = strchr(arg1, ' ') + 1;
-        char * arg3 = strchr(arg2, ' ') + 1;
-        
-        int arg1_end;
-        int arg1_len = strlen(arg1);
-        for (int i = 0; i < arg1_len; i++) {
-            if (arg1[i] == ' ') {
-                arg1_end = i;
-                break;
-            }
-        }
-        
-        int arg2_end;
-        int arg2_len = strlen(arg2);
-        for (int i = 0; i < arg2_len; i++) {
-            if (arg2[i] == ' ') {
-                arg2_end = i;
-                break;
-            }
-        }
 
-        if (!strcmp(cmd, "I2C-WRITE")) {
+        char * arg1 = strtok_r(NULL, " ", &rest);
+        char * arg2 = strtok_r(NULL, " ", &rest);
+        char * arg3 = strtok_r(NULL, " ", &rest);
+        
+        if (!strcmp(pfx, "I2C-WRITE")) {
             valid = 1;
         }
     }
@@ -276,21 +259,12 @@ int send_cmd(int cli_sock, char * cmd, char * ack) {
 int main() {
     int cli_sock;
     int num_args;
-    char cmd[BUF_SIZE];
-    char ack[BUF_SIZE];
-    struct sigaction ign, sig;
 
-    explicit_bzero(cmd, sizeof(char) * BUF_SIZE);
-    explicit_bzero(ack, sizeof(char) * BUF_SIZE);
+    char cmd[BUF_SIZE] = {'\0'};
+    char ack[BUF_SIZE] = {'\0'};
     
-    explicit_bzero(&ign, sizeof(struct sigaction));
-    explicit_bzero(&sig, sizeof(struct sigaction));
-    
-    ign.sa_flags = 0;
-    ign.sa_handler = SIG_IGN;
-
-    sig.sa_flags = 0;
-    sig.sa_handler = sig_handler;
+    struct sigaction ign = {.sa_flags = 0, .sa_handler = SIG_IGN};
+    struct sigaction sig = {.sa_flags = 0, .sa_handler = sig_handler};
 
     errno_check(sigaction(SIGPIPE, &ign, NULL), "sigaction");
     errno_check(sigaction(SIGINT, &sig, NULL), "sigaction");
