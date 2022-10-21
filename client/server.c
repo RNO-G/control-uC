@@ -50,12 +50,9 @@ int cli_queue_dequeue() {
 }
 
 void manage_cli(int cli_sock) {
-    char cmd[BUF_SIZE];
-    char ack[BUF_SIZE];
+    char cmd[BUF_SIZE] = {'\0'};
+    char ack[BUF_SIZE] = {'\0'};
     
-    explicit_bzero(cmd, sizeof(char) * BUF_SIZE);
-    explicit_bzero(ack, sizeof(char) * BUF_SIZE);
-
     while (1) {
         if (read(cli_sock, cmd, BUF_SIZE) < 1) {
             break;
@@ -72,12 +69,8 @@ void manage_cli(int cli_sock) {
 
 void * manage_thd(void * status) {
     int cli_sock;
-    struct sigaction sig;
 
-    explicit_bzero(&sig, sizeof(struct sigaction));
-
-    sig.sa_flags = 0;
-    sig.sa_handler = cli_sig_handler;
+    struct sigaction sig = {.sa_flags = 0, .sa_handler = cli_sig_handler};
 
     errno_check(sigaction(SIGUSR1, &sig, NULL), "sigaction");
 
@@ -110,9 +103,6 @@ int main() {
     svr_running = 1;
     num_cli = 0;
 
-    explicit_bzero(cli_queue, sizeof(int) * QUEUED_CLIENT_LIM);
-    explicit_bzero(thd_pool, sizeof(pthread_t) * ACTIVE_CLIENT_LIM);
-    explicit_bzero(thd_pool_status, sizeof(thd_status) * ACTIVE_CLIENT_LIM);
 
     svr_addr.sin_family = AF_INET;
     svr_addr.sin_port = htons(PORT);
