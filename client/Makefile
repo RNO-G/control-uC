@@ -1,4 +1,4 @@
-CC = gcc
+CC = cc
 CFLAGS=-Wall -O3 -g -Wextra
 
 default: error
