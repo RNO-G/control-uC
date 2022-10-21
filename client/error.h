@@ -1,7 +1,6 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-#include <bsd/string.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
