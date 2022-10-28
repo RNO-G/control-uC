@@ -63,26 +63,27 @@ void manage_cli(int cli_sock) {
         }
         else {
             len = strlen(cmd);
-            if (len == BUF_SIZE - 1) {
+            if (len == BUF_SIZE - 2) {
                 strcpy(ack, "COMMAND TOO LONG");
             }
             else {
                 strcpy(cpy, cmd);
-                
+
                 cmd[0] = '#';
+                cmd[len + 1] = '\n';
                 cmd[len + 2] = '\0';
 
-                for (int i = 1; i < len + 1; i++) {
-                    cmd[i] = cpy[i - 1];
+                for (int i = 0; i < len; i++) {
+                    cmd[i + 1] = cpy[i];
                 }
 
-                flock(uart, LOCK_EX);
+                //flock(uart, LOCK_EX);
                 errno_check(write(uart, cmd, BUF_SIZE), "write");
                 errno_check(read(uart, ack, BUF_SIZE), "read");
-                flock(uart, LOCK_UN);
+                //flock(uart, LOCK_UN);
             }
         }
-        
+
         if (write(cli_sock, ack, BUF_SIZE) < 1) {
             break;
         }
