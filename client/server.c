@@ -125,9 +125,9 @@ int main(int argc, char ** argv) {
     svr_running = 1;
     num_cli = 0;
 
-    if (argc == 1) {
-        errno_check(access(argv[0], F_OK), "access");
-        uart = open(argv[0], O_RDWR);
+    if (argc == 2) {
+        errno_check(access(argv[1], F_OK), "access");
+        uart = open(argv[1], O_RDWR);
     }
     else {
         fprintf(stderr, "INVALID NUMBER OF ARGUMENTS");
