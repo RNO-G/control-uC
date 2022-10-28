@@ -8,6 +8,7 @@ struct thd_status {
 
 int svr_running;
 int num_cli;
+int uart;
 int cli_queue[QUEUED_CLIENT_LIM];
 pthread_t thd_pool[ACTIVE_CLIENT_LIM];
 thd_status thd_pool_status[ACTIVE_CLIENT_LIM];
@@ -58,7 +59,10 @@ void manage_cli(int cli_sock) {
             break;
         }
         else {
-            printf("%s\n", cmd);
+            flock(uart, LOCK_EX);
+            errno_check(write(uart, cmd, BUF_SIZE), "write");
+            errno_check(read(uart, ack, BUF_SIZE), "read");
+            flock(uart, LOCK_UN);
         }
         
         if (write(cli_sock, ack, BUF_SIZE) < 1) {
@@ -94,7 +98,7 @@ void * manage_thd(void * status) {
     pthread_exit(EXIT_SUCCESS);
 }
 
-int main() {
+int main(int argc, char ** argv) {
     int cli_sock, svr_sock;
     struct sockaddr_in svr_addr;
     struct sigaction ign, sig;
@@ -103,6 +107,13 @@ int main() {
     svr_running = 1;
     num_cli = 0;
 
+    if (argc == 1) {
+        errno_check(access(argv[0], F_OK), "access");
+        uart = open(argv[0], O_RDWR);
+    }
+    else {
+        fprintf(stderr, "INVALID NUMBER OF ARGUMENTS");
+    }
 
     svr_addr.sin_family = AF_INET;
     svr_addr.sin_port = htons(PORT);
