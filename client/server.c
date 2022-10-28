@@ -1,4 +1,5 @@
 #include "server.h"
+#include "constants.h"
 
 struct thd_status {
     int thd_running;
@@ -51,7 +52,9 @@ int cli_queue_dequeue() {
 }
 
 void manage_cli(int cli_sock) {
+    int len;
     char cmd[BUF_SIZE] = {'\0'};
+    char cpy[BUF_SIZE] = {'\0'};
     char ack[BUF_SIZE] = {'\0'};
     
     while (1) {
@@ -59,10 +62,25 @@ void manage_cli(int cli_sock) {
             break;
         }
         else {
-            flock(uart, LOCK_EX);
-            errno_check(write(uart, cmd, BUF_SIZE), "write");
-            errno_check(read(uart, ack, BUF_SIZE), "read");
-            flock(uart, LOCK_UN);
+            len = strlen(cmd);
+            if (len == BUF_SIZE - 1) {
+                strcpy(ack, "COMMAND TOO LONG");
+            }
+            else {
+                strcpy(cpy, cmd);
+                
+                cmd[0] = '#';
+                cmd[len + 2] = '\0';
+
+                for (int i = 1; i < len + 1; i++) {
+                    cmd[i] = cpy[i - 1];
+                }
+
+                flock(uart, LOCK_EX);
+                errno_check(write(uart, cmd, BUF_SIZE), "write");
+                errno_check(read(uart, ack, BUF_SIZE), "read");
+                flock(uart, LOCK_UN);
+            }
         }
         
         if (write(cli_sock, ack, BUF_SIZE) < 1) {
