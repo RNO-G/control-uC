@@ -133,6 +133,7 @@ int main(int argc, char ** argv) {
     }
     else {
         fprintf(stderr, "INVALID NUMBER OF ARGUMENTS");
+        exit(1);
     }
 
     svr_addr.sin_family = AF_INET;
