@@ -13,7 +13,7 @@ int uart;
 int cli_queue[QUEUED_CLIENT_LIM];
 pthread_t thd_pool[ACTIVE_CLIENT_LIM];
 thd_status thd_pool_status[ACTIVE_CLIENT_LIM];
-pthread_mutex_t cli_queue_mutex;
+pthread_mutex_t cli_queue_mutex, uart_mutex;
 
 void main_sig_handler(int sig) {
     if (sig == SIGINT) {
@@ -77,10 +77,10 @@ void manage_cli(int cli_sock) {
                     cmd[i + 1] = cpy[i];
                 }
 
-                //flock(uart, LOCK_EX);
+                errno_check(pthread_mutex_lock(&uart_mutex), "pthread_mutex_lock");
                 errno_check(write(uart, cmd, BUF_SIZE), "write");
                 errno_check(read(uart, ack, BUF_SIZE), "read");
-                //flock(uart, LOCK_UN);
+                errno_check(pthread_mutex_unlock(&uart_mutex), "pthread_mutex_unlock");
             }
         }
 
@@ -129,6 +129,7 @@ int main(int argc, char ** argv) {
     if (argc == 2) {
         errno_check(access(argv[1], F_OK), "access");
         uart = open(argv[1], O_RDWR);
+        errno_check(flock(uart, LOCK_EX | LOCK_NB), "flock");
     }
     else {
         fprintf(stderr, "INVALID NUMBER OF ARGUMENTS");
@@ -139,6 +140,7 @@ int main(int argc, char ** argv) {
     svr_addr.sin_addr.s_addr = INADDR_ANY;
 
     errno_check(pthread_mutex_init(&cli_queue_mutex, NULL), "pthread_mutex_init");
+    errno_check(pthread_mutex_init(&uart_mutex, NULL), "pthread_mutex_init");
 
     errno_check(svr_sock = socket(AF_INET, SOCK_STREAM, 0), "socket");
     errno_check(bind(svr_sock, (struct sockaddr *) &svr_addr, sizeof(svr_addr)), "bind");
@@ -214,6 +216,7 @@ int main(int argc, char ** argv) {
     }
     
     errno_check(pthread_mutex_destroy(&cli_queue_mutex), "pthread_mutex_destroy");
+    errno_check(pthread_mutex_destroy(&uart_mutex), "pthread_mutex_destroy");
 
     for (int i = 0; i < num_cli; i++) {
         errno_check(close(cli_queue[i]), "close");
