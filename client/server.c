@@ -132,7 +132,7 @@ int main(int argc, char ** argv) {
         errno_check(flock(uart, LOCK_EX | LOCK_NB), "flock");
     }
     else {
-        fprintf(stderr, "INVALID NUMBER OF ARGUMENTS");
+        fprintf(stderr, "INVALID NUMBER OF ARGUMENTS\n");
         exit(1);
     }
 
