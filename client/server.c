@@ -87,6 +87,10 @@ void manage_cli(int cli_sock) {
         if (write(cli_sock, ack, BUF_SIZE) < 1) {
             break;
         }
+
+        memset(cmd, 0, BUF_SIZE);
+        memset(ack, 0, BUF_SIZE);
+
     }
 }
 
