@@ -66,8 +66,8 @@ BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS)
 APP_DEPS := $(APP_OBJS:%.o=%.d)
 BL_DEPS := $(BL_OBJS:%.o=%.d)
 
-RNO_G_INSTALL_DIR?=/rno-g/
-PREFIX?=$(RNO_G_INSTALL_DIR)
+RNO_G_INSTALL_DIR=/rno-g
+PREFIX=$(RNO_G_INSTALL_DIR)
 
 
 
