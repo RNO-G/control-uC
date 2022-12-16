@@ -1,7 +1,7 @@
 CC = cc
 CFLAGS = -Wall -O3 -g -Wextra
 
-RNO_G_INSTALL_DIR=/rno-g
+RNO_G_INSTALL_DIR=/home/rno-g
 PREFIX=$(RNO_G_INSTALL_DIR)
 
 default: error

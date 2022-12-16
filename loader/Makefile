@@ -2,7 +2,7 @@ CFLAGS=-Wall -O3 -g -Wextra
 
 PROGS=rno-g-controller-loader rno-g-controller-extract
 
-RNO_G_INSTALL_DIR=/rno-g
+RNO_G_INSTALL_DIR=/home/rno-g
 PREFIX=$(RNO_G_INSTALL_DIR)
 
 all: $(PROGS) 
