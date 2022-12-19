@@ -211,8 +211,8 @@ MODE-GET
     - LOW_POWER: Everything but the microcontroller in order to operate in
                  low-power mode
 
-MONITOR-SCHED <TIME>
-- Schedule a Monitor read sometime in the future
+MONITOR-SCHED <NAVGS=1>
+- Schedule an read, using NAVGS analog averagas for reading (navgs is an integer defaulting to 10 if not specified). 
 
 I2C-WRITE <VAL> <REG> <ADDR>
 - Write a value to a specified register of an I2C device at a specified address
@@ -226,24 +226,27 @@ I2C-DETECT
 I2C-RESET
 - Reset all I2C devices
 
-I2C-UNSTICK <CYCLES>
-- Unstick the I2C bus if it has gotten stuck by running a given number of clock
-  cycles
+I2C-UNSTICK <CYCLES=9>
+- Attempt to Unstick the I2C bus if it has gotten stuck by running a given number of clock
+  cycles. CYCLES is positive  integer defaulting to 9 if not specified. 
 
-SYS-RESET <BOOT_OPTION>
-- Reset the system and set the boot option for the upcoming reboot
-    - 0: Boot from the ROM
+SYS-RESET <BOOT_OPTION  = 0>
+- Reset the system and set the boot option for the upcoming reboot. This is very dangerous! 
+  BOOT_OPTION (default 0) should be one of these values. 
+    - 0: Boot from the ROM (aka a normal reboot) 
     - 1: Boot from flash slot 1
     - 2: Boot from flash slot 2
     - 3: Boot from flash slot 3
     - 4: Boot from flash slot 4
-    - 10: Boot from the bootloader
+    - 10: Boot from the bootloader (untested!!!) 
 
 SET-STATION <ID>
-- Change the station ID number
+- Change the station ID number. ID is a positive integer, no bigger than 65535. 
 
 SET-GPS-OFFSET <OFFSET>
-- Change the GPS offset value
+- Change the GPS offset value.  OFFSET is the number of seconds between GPS
+  time and UTC time (caused by nefarious leap seconds). Hopefully this shouldj
+  never change again since people realized that this is insane. This offset is 18 seconds in 2021. 
 
 AM-I-BOOTLOADER
 - Check if the station booted off of the bootloader (never)
@@ -254,8 +257,9 @@ GET-STATION
 GET-TIMESYNC-INTERVAL
 - Get the current timesync interval
 
-SET-TIMESYNC-INTERVAL <INTERVAL>
-- Set the timesync interval
+SET-TIMESYNC-INTERVAL <INTERVAL-IN-SECS>
+- Set the LoRA timesync interval in seconds (how often the micro attempts to synchronize time with the base station). The default "factory" value is 1800. 
+
 
 FLUSH
 - Flush the UART buffers
