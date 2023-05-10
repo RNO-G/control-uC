@@ -602,6 +602,14 @@ void system_init(void)
 //	gpio_set_pin_direction(LED_GREEN, GPIO_DIRECTION_OUT);
 //	gpio_set_pin_function(LED_GREEN, GPIO_PIN_FUNCTION_OFF);
 
+
+#ifdef _RNO_G_REV_F
+  gpio_set_pin_direction(USBHUB_RESET, GPIO_DIRECTION_OFF); 
+  gpio_set_pin_pull_mode(USBHUB_RESET, GPIO_PULL_OFF); 
+  gpio_set_pin_level(USBHUB_RESET, 0); 
+  gpio_set_pin_function(USBHUB_RESET, GPIO_PIN_FUNCTION_OFF); 
+#endif
+
 	gpio_set_pin_direction(SBC_SOFT_RESET, GPIO_DIRECTION_OFF);
 	gpio_set_pin_pull_mode(SBC_SOFT_RESET,GPIO_PULL_OFF); 
 	gpio_set_pin_function(SBC_SOFT_RESET, GPIO_PIN_FUNCTION_OFF);

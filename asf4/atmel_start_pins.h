@@ -77,4 +77,9 @@
 #define I2C_SDA GPIO(GPIO_PORTB, 30)
 #define I2C_SCL GPIO(GPIO_PORTB, 31)
 
+
+#ifdef _RNO_G_REV_F
+#define USBHUB_RESET GPIO(GPIO_PORTB, 2)
+#endif
+
 #endif // ATMEL_START_PINS_H_INCLUDED

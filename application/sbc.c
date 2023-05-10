@@ -19,6 +19,7 @@
 #include "application/power.h" 
 #include "application/monitors.h" 
 #include "application/report.h" 
+#include "application/usb.h" 
 #include "lorawan/lorawan.h" 
 
 //these define the maximum line length! 
@@ -666,7 +667,7 @@ static int sbc_io_process()
         printf("#GET-TIMESYNC-INTERVAL: %d\r\n", config_block()->app_cfg.timesync_interval); 
         valid = 1; 
       }
-      else if (prefix_matches(in,"SET-TIMESYNC-INTERVAL"))
+      else if (strcmp(in,"SET-TIMESYNC-INTERVAL"))
       {
         const char * nxt; 
         int interval; 
@@ -724,6 +725,12 @@ static int sbc_io_process()
       {
         printf("#REV: %s\r\n", APP_REV); 
         valid =1; 
+      }
+
+      else if (!strcmp(in,"USBHUB_RESET"))
+      {
+        valid = 1; 
+        usb_reset(); 
       }
 
 
