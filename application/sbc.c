@@ -727,11 +727,13 @@ static int sbc_io_process()
         valid =1; 
       }
 
+#ifdef _RNO_G_REV_F
       else if (!strcmp(in,"USBHUB_RESET"))
       {
         valid = 1; 
         usb_reset(); 
       }
+#endif
 
 
       if (!valid) 
