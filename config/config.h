@@ -18,13 +18,17 @@
 #define ABOUT_A_MINUTE 65535
 
 
-#ifdef _RNO_G_REV_D
+#if defined(_RNO_G_REV_D)
 #define APP_REV "REVD"
-#else
+#elif defined(_RNO_G_REV_E)
 #define APP_REV "REVE"
+#elif defined(_RNO_G_REV_F)
+#define APP_REV "REVF" 
+#else
+#error "Unknown revision!"
 #endif
 
-#define APP_VERSION "Summit.061722.0-" APP_REV
+#define APP_VERSION "Chicago.051023.0-" APP_REV
 
 #define MODE_CHANGE_MINTICKS 100
 

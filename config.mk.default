@@ -5,16 +5,17 @@ LORA_DEBUG_GPIO=0
 
 ENABLE_ASSERTS=1
 
-# The build directory
-BUILD_DIR=build
-
 WARNINGS=-Wall -Wextra -Werror=implicit-function-declaration
 
 # mostly this enables/disables asserts, I think
 DEBUG_FLAG=1
 
-# Build for REV_D instead of REV_E. Will require a make clean, most likely
-BUILD_FOR_REV_D=0
+# Change the revision building for
+# Right now, the default is to have a different build dir different builds
+REV:=F
+
+# The build directory
+BUILD_DIR=build$(REV)
 
 
 #ASF4 prefix (change if you want to experiment with START, maybe) 

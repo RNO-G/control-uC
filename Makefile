@@ -20,13 +20,9 @@ ifeq ($(DEBUG_FLAG),1)
 	CFLAGS += -DDEBUG
 endif
 
-REV=rev_E
-VERSION_FLAGS=
-ifeq ($(BUILD_FOR_REV_D),1)
-	CFLAGS += -D_RNO_G_REV_D
-	VERSION_FLAGS += -D_RNO_G_REV_D
-	REV=rev_D 
-endif
+CFLAGS+=-D_RNO_G_REV_$(REV)
+VERSION_FLAGS+=-D_RNO_G_REV_$(REV)
+
 
 
 CFLAGS+= $(WARNINGS) 
@@ -56,6 +52,9 @@ BL_SHARED_OBJS=$(addprefix $(BUILD_DIR)/bootloader/shared/, $(SHARED_OBJS))
 
 APP_OBJS=$(ASF4_OBJS) $(APP_SHARED_OBJS) $(LORAWAN_OBJS) 
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o monitors.o power.o)
+ifeq ($(REV),F) 
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, usb.o)
+endif
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o time.o reset.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, mode.o lowpower.o commands.o report.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, i2cbusmux.o )
@@ -81,7 +80,7 @@ COMBO_NAME := $(BUILD_DIR)/rno-G-uC-combined
 help: 
 	@echo "Targets: " 
 	@echo "  help:  print this message"
-	@echo "  mcu:  build mcu firwmware (requires cross-compiler)"
+	@echo "  mcu:  build mcu firwmware (requires cross-compiler). Will be built in $(BUILD_DIR). Can specify REV if you want a different revision, e.g. make mcu REV=D "
 	@echo "  client-build:  build client programs / libraries (on SBC)"
 	@echo "  client-install: install client programs /libraries  (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
 	@echo "  client-uninstall: uninstall client  program /libraries (PREFIX is influential, defaults to /rno-g/ or RNO_G_INSTALL_DIR)"
@@ -94,7 +93,7 @@ help:
 mcu: $(MKDIRS) $(OUTPUT_NAME).bin $(BL_OUTPUT_NAME).bin $(OUTPUT_NAME).hex $(BL_OUTPUT_NAME).hex $(COMBO_NAME).bin rev
 
 rev: 
-	echo $(REV) > $(BUILD_DIR)/rev.txt
+	echo REV_$(REV) > $(BUILD_DIR)/rev.txt
 	echo $(INITIAL_STATION_NUMBER) > $(BUILD_DIR)/initial_station_number.txt
 
 install: 
