@@ -1,1 +1,0 @@
-Unlike the rest of the code, the loaders are not meant to be run on the uC but on a computer communicating to the uC either via UART.
