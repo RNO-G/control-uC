@@ -1,7 +1,7 @@
 CC = cc
 CFLAGS = -Wall -O3 -g -Wextra
 
-RNO_G_INSTALL_DIR?=/home/sharada/rno-g/bin
+RNO_G_INSTALL_DIR?=/rno-g
 PREFIX?=$(RNO_G_INSTALL_DIR)
 
 default:
@@ -11,8 +11,8 @@ clean:
 	rm -rf console
 
 install:
-	install console $(PREFIX)
+	install console $(PREFIX)/bin
 
 uninstall:
-	rm -rf $(PREFIX)/console
+	rm -rf $(PREFIX)/bin/console
 
