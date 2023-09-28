@@ -1,0 +1,86 @@
+The general idea of the command API is to store commands as files which are then parsed by the server
+
+The commands are stored in files ending in .cmd (or you can pick another file extension)
+
+The string input sent by a user is checked by this parser to ensure it is valid before sending it to the uart
+
+The commands will be stored in binary trees
+
+There is a binary tree and binary tree node structure for the base commands (built-in to the firmware)
+
+There is a binary tree and binary tree node structure for the custom commands
+
+The syntax for a base command is as such
+
+COMMAND_NAME
+NUM_ARGS
+ARG_X_LOWER_BOUND ARG_X_UPPER_BOUND
+
+There are as many arg-bound lines as there are number of arguments
+
+The syntax for a custom command is as such
+
+COMMAND_NAME
+NUM_ARGS
+ARG_X_LOWER_BOUND ARG_X_UPPER_BOUND
+COMP
+
+There are as many arg-bound lines as there are number of arguments
+
+The COMP refers to the composition of the custom command; an example custom command is provided
+
+AMPS-LEFT-REV
+1
+0 3f
+AMPS-SET x 0 REV
+
+The arguments in a custom command are essentially variables; variables are denoted in the composition with 'x'
+
+The parser will split this composition into a series of commands and send each to the uart one-at-a-time
+
+TODO: cmd_input
+---------------
+This is what the raw string sent by the user is converted to
+
+It stores the name and the argument values
+
+So if I were to send "AMPS-SET 0 0"
+
+The corresponding cmd_input would be {"AMPS-SET", 0, 0}
+
+IMPORTANT: the argument values must be converted from strings to numeric types; don't forget that some commands take hex input, so these need to be converted to numeric types also
+
+TODO: cmd_parser
+----------------
+
+The parser needs to store a base command tree and a custom command tree
+
+The create function for the cmd_parser should take both a base command directory path (char *) and a custom command directory path (char *)
+
+If the base command directory pointer is NULL, than the create function crashes since base commands are required
+
+If the custom command directory pointer is NULL, than the server will run only with base commands
+
+Otherwise, the parser will check each command in the custom command tree to make sure the compositions all contain only base commands
+	- We want to avoid composing custom commands out of custom commands; that can get messy very quickly
+
+The parser will construct the command trees as such
+	- Check to make sure the directories exist
+	- Get a list of all the .cmd files in the directory
+	- Sort this list so that it is alphabetized
+	- Use the file in the middle of this list as the head of the binary tree
+	- Proceed outward from this midpoint towards the ends of the list to construct the rest of the tree (middle-out)
+
+The parser will then have a validate_input function
+
+This function is given a pointer to the raw string sent by the user; it then converts this to a cmd_input
+
+The parser then checks this cmd_input to ensure it corresponds with an entry in the either the base or custom command trees
+
+If the command is valid, it sends the cmd_input to the server and sends the acknowledgement back to the client
+
+IMPORTANT: If the cmd_input is for a custom command, it splits it into a series of base command cmd_input's and sends them one-at-a-time
+
+----------------------
+
+For reference, you can look at csm-rs; I effectively wrote up all the command api in rust prior to finding out that the client-server threading code would not be viable in rust

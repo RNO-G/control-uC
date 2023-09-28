@@ -1,0 +1,15 @@
+TODO: Bug-test this
+
+TODO: periodic thread
+---------------------
+
+For periodic commands like LTE-ON and LORAWAN pings, have the server create a thread dedicated to periodic command pings
+
+This thread can send these pings based on a condition, timer, etc.
+
+TODO: logging
+-------------
+
+If this is made into a systemd unit, have the server print out to stdout so that systemd can log the server
+
+Furthermore, have the server and client data structures consider SIGTERM, since systemd uses that to shutdown units
