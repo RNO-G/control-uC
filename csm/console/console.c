@@ -9,6 +9,7 @@ struct console {
 };
 
 console * console_create(char * addr, char * port, uint8_t * run, void (* sig_handler) (int)) {
+    // check if the address string is properly formatted
     size_t addr_len = strlen(addr);
 
     if (addr_len < 7 && addr_len > 15) {
@@ -41,6 +42,7 @@ console * console_create(char * addr, char * port, uint8_t * run, void (* sig_ha
         return NULL;
     }
 
+    // check if the port string is properly formatted
     for (u_int8_t i = 0; i < port_len; i++) {
         if (!isdigit(port[i])) {
             fprintf(stderr, "console_create: invalid port");
@@ -48,8 +50,10 @@ console * console_create(char * addr, char * port, uint8_t * run, void (* sig_ha
         }
     }
 
+    // create a sockaddr_in struct to hold the address information
     struct sockaddr_in server_addr;
 
+    // set the address of the sockaddr_in struct
     if (inet_pton(AF_INET, addr, &server_addr.sin_addr) <= 0) {
         perror("console_create");
         return NULL;
@@ -58,6 +62,7 @@ console * console_create(char * addr, char * port, uint8_t * run, void (* sig_ha
     unsigned long port_raw;
     errno = 0;
 
+    // convert the port string to a numeric type and make sure it is in the valid port range
     if ((port_raw = strtoul(port, NULL, 10)) == 0 && errno != 0) {
         perror("console_create");
         return NULL;
@@ -68,9 +73,11 @@ console * console_create(char * addr, char * port, uint8_t * run, void (* sig_ha
         return NULL;
     }
 
+    // set the port of the sockaddr_in struct
     server_addr.sin_port = htons((uint16_t) port_raw);
     server_addr.sin_family = AF_INET;
 
+    // check if the run and sig_handler pointers are NULL
     if (run == NULL) {
         fprintf(stderr, "console_create: run status pointer must not be null");
         return NULL;
@@ -80,6 +87,7 @@ console * console_create(char * addr, char * port, uint8_t * run, void (* sig_ha
         fprintf(stderr, "console_create: console signal handler function pointer must not be null");
     }
 
+    // create the socket connection and attempt to connect to the server
     int socket_fd;
 
     if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -102,6 +110,7 @@ console * console_create(char * addr, char * port, uint8_t * run, void (* sig_ha
         return NULL;
     }
 
+    // malloc the instance pointer and initialize the struct members
     console * inst = (console *) malloc(sizeof(console));
 
     if (inst == NULL) {
@@ -126,6 +135,7 @@ console * console_create(char * addr, char * port, uint8_t * run, void (* sig_ha
 }
 
 int console_destroy(console * inst) {
+    // close the socket before freeing the rest of the instance
     if (close(inst->socket)) {
         perror("console_destroy");
         free(inst);
@@ -137,17 +147,20 @@ int console_destroy(console * inst) {
 }
 
 int console_format_cmd(console * inst) {
+    // ensure the length of the buffer string is more than 1 (this would just be a newline character)
     size_t len = strlen(inst->buf);
     
     if (len == 1) {
         return -1;
     }
 
+    // remove the newline character
     inst->buf[len - 1] = '\0';
     len--;
 
     int index = 0;
 
+    // ensure the buffer string contains valid characters whilst also removing unneeded whitespace
     for (size_t i = 0; i < len; i++) {
         if (!isspace(inst->buf[i]) && !isalnum(inst->buf[i]) && inst->buf[i] != '-') {
             return -2;
@@ -159,6 +172,7 @@ int console_format_cmd(console * inst) {
         }
     }
 
+    // set the null terminator in the formatted string
     if (isspace(inst->buf[index - 1])) {
         inst->buf[index - 1] = '\0';
     }
@@ -170,10 +184,12 @@ int console_format_cmd(console * inst) {
 }
 
 int console_send_cmd(console * inst) {
+    // write the buffer string to the server
     if (write(inst->socket, inst->buf, RNO_G_CONSOLE_BUF_SIZE+1) < 1) {
         return -1;
     }
 
+    // recieve the acknowledgement from the server
     if (read(inst->socket, inst->ack, RNO_G_CONSOLE_BUF_SIZE+1) == -1) {
         return -2;
     }
@@ -182,6 +198,7 @@ int console_send_cmd(console * inst) {
 }
 
 int console_run(console * inst) {
+    // assign signals to the signal handlers
     struct sigaction ign = {.sa_flags = 0, .sa_handler = SIG_IGN};
     struct sigaction act = {.sa_flags = 0, .sa_handler = inst->sig_handler};
 
@@ -195,14 +212,17 @@ int console_run(console * inst) {
         return -2;
     }
 
+    // run loop
     while (inst->run) {
         printf("rno-g-shell > ");
 
+        // get user input and write it to the buffer string
         if (fgets(inst->buf, RNO_G_CONSOLE_BUF_SIZE+1, stdin) == NULL) {
             printf("COULD NOT READ COMMAND\n");
             continue;
         }
 
+        // format the user input
         switch (console_format_cmd(inst)) {
             case -1:
                 printf("COMMAND LENGTH MUST BE GREATER THAN 0\n");
@@ -211,6 +231,7 @@ int console_run(console * inst) {
                 printf("COMMAND CONTAINS INVALID CHARACTERS\n");
                 break;
             default:
+                // send the user input to the server
                 switch (console_send_cmd(inst)) {
                     case -1:
                         printf("UNABLE TO SEND COMMAND TO SERVER\n");

@@ -1,13 +1,15 @@
 #include "server.h"
 
 struct server {
+    // these are created by the server (need to be freed)
     int socket;
     int uart;
-    int * run;
     pthread_cond_t client_cond[RNO_G_CLIENT_LIM];
     pthread_mutex_t * uart_mutex;
     client * clients[RNO_G_CLIENT_LIM];
 
+    // these are pointers passed to the server
+    int * run;
     int * client_run;
     int * client_busy;
     pthread_mutex_t * client_mutex;
@@ -26,6 +28,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
                        void (* server_sig_handler) (int), void (* connection_queue_enqueue) (int),
                        void (* client_sig_handler) (int), int (* connection_queue_dequeue) ()) {
 
+    // check if the address string is of proper length
     size_t addr_len = strlen(addr);
 
     if (addr_len < 7 && addr_len > 15) {
@@ -33,6 +36,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // check if the port string is of proper length
     size_t port_len = strlen(port);
 
     if (port_len < 4 && port_len > 5) {
@@ -40,6 +44,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // check if the address string is properly formatted
     u_int8_t num_dots = 0;
 
     for (u_int8_t i = 0; i < addr_len; i++) {
@@ -58,6 +63,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // check if the port string is properly formatted
     for (u_int8_t i = 0; i < port_len; i++) {
         if (!isdigit(port[i])) {
             fprintf(stderr, "server_create : invalid port");
@@ -65,11 +71,13 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         }
     }
 
+    // check if the uart path string corresponds to valid UNIX file
     if (access(uart_path, F_OK)) {
         perror("server_create");
         return NULL;
     }
 
+    // initialize a sockaddr_in struct to store the address
     struct sockaddr_in server_addr;
 
     if (inet_pton(AF_INET, addr, &server_addr.sin_addr) <= 0) {
@@ -80,6 +88,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
     unsigned long port_raw;
     errno = 0;
 
+    // check if the port string can be converted to a numeric type and check if it falls within the valid port range
     if ((port_raw = strtoul(port, NULL, 10)) == 0 && errno != 0) {
         perror("server_create");
         return NULL;
@@ -90,9 +99,11 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // set the port of the sockaddr_in struct
     server_addr.sin_port = htons((uint16_t) port_raw);
     server_addr.sin_family = AF_INET;
 
+    // check if the variable or function pointers are NULL
     if (run == NULL) {
         fprintf(stderr, "server_create: server run status pointer must not be null");
     }
@@ -142,6 +153,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // open the uart file
     int uart;
 
     if ((uart = open(uart_path, O_RDWR)) == -1) {
@@ -154,8 +166,9 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
-    // flock?
+    // do we need an flock on the uart?
 
+    // declare and initialize a mutex for the uart
     pthread_mutex_t uart_mutex;
 
     if (pthread_mutex_init(&uart_mutex, NULL)) {
@@ -168,6 +181,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // check if the thread pool is NULL
     if (thread_pool == NULL) {
         fprintf(stderr, "server_create: thread pool pointer array must not be null");
 
@@ -182,6 +196,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // create the server socket and bind the socket to the server's IP address
     int socket_fd;
 
     if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -220,6 +235,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // set the socket to listen for connections
     if (listen(socket_fd, 0)) {
         perror("console_create");
 
@@ -238,6 +254,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // malloc a server instance and initialize the struct members
     server * inst = (server *) malloc(sizeof(server));
 
     if (inst == NULL) {
@@ -258,6 +275,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         return NULL;
     }
 
+    // create the pthread_cond_t array
     for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
         if (pthread_cond_init(&(inst->client_cond[i]), NULL)) {
             perror("server_create");
@@ -280,6 +298,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
         }
     }
 
+    // create the client data structures
     for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
         inst->clients[i] = client_create(uart, &(client_run[i]), &(client_busy[i]), num_connections_queued,
                                          &(inst->client_cond[i]), &(client_mutex[i]), connection_queue_mutex,
@@ -336,6 +355,7 @@ server * server_create(char * addr, char * port, char * uart_path, int * run,
 }
 
 int server_destroy(server * inst) {
+    // close the server socket
     if (close(inst->socket)) {
         perror("server_destroy");
 
@@ -352,6 +372,7 @@ int server_destroy(server * inst) {
         return EXIT_FAILURE;
     }
 
+    // close the uart
     if (close(inst->uart)) {
         perror("server_destroy");
 
@@ -364,6 +385,7 @@ int server_destroy(server * inst) {
         return EXIT_FAILURE;
     }
 
+    // destroy the clients and the pthread_cond_t array
     for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
         client_destroy(inst->clients[i]);
 
@@ -388,15 +410,18 @@ int server_destroy(server * inst) {
 }
 
 int server_run(server * inst) {
+    // create a sigmask for the threads
     struct sigaction ign = {.sa_flags = 0, .sa_handler = SIG_IGN};
     struct sigaction sig = {.sa_flags = 0, .sa_handler = inst->sig_handler};
     sigset_t set;
 
+    // create an empty sigmask
     if (sigemptyset(&set)) {
         perror("server_run");
         return EXIT_FAILURE;
     }
 
+    // block SIGINT and SIGPIPE for the clients
     if (sigaddset(&set, SIGINT)) {
         perror("server_run");
         return EXIT_FAILURE;
@@ -413,19 +438,23 @@ int server_run(server * inst) {
     }
 
     for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
+        // lock the client mutex
         if (pthread_mutex_lock(&(inst->client_mutex[i]))) {
             perror("server_run");
             return EXIT_FAILURE;
         }
 
+        // set the client to run, but not to be busy
         inst->client_run[i] = 1;
         inst->client_busy[i] = 0;
 
+        // unlock the client mutex
         if (pthread_mutex_unlock(&(inst->client_mutex[i]))) {
             perror("server_run");
             return EXIT_FAILURE;
         }
 
+        // initialize the threads and supply them with the client_run function and the client pointers
         if (pthread_create(&(inst->thread_pool[i]), NULL, client_run, (void *) inst->clients[i])) {
             for (int j = 0; j < i; j++) {
                 pthread_kill(inst->thread_pool[j], SIGUSR1);
@@ -436,6 +465,7 @@ int server_run(server * inst) {
         }
     }
 
+    // re-empty the signal mask and set the server to unblock SIGINT and SIGPIPE
     if (sigemptyset(&set)) {
         perror("server_run");
 
@@ -480,6 +510,7 @@ int server_run(server * inst) {
         return EXIT_FAILURE;
     }
 
+    // the server should ignore SIGPIPE
     if (sigaction(SIGPIPE, &ign, NULL)) {
         perror("server_run");
 
@@ -491,6 +522,7 @@ int server_run(server * inst) {
         return EXIT_FAILURE;
     }
 
+    // the server should ignore SIGUSR1
     if (sigaction(SIGUSR1, &ign, NULL)) {
         perror("server_run");
 
@@ -502,6 +534,7 @@ int server_run(server * inst) {
         return EXIT_FAILURE;
     }
 
+    // the server should NOT ignore SIGINT
     if (sigaction(SIGINT, &sig, NULL)) {
         perror("server_run");
 
@@ -516,17 +549,21 @@ int server_run(server * inst) {
     int client_socket;
 
     while (1) {
+        // wait for a connection request, break if that fails
         if ((client_socket = accept(inst->socket, NULL, NULL)) == -1) {
             break;
         }
 
         printf("socket recieved by server\n");
 
+        // lock the connection queue mutex
         if (pthread_mutex_lock(inst->connection_queue_mutex)) {
             perror("server_run");
             break;
         }
 
+        // break if the number of queued connections is already at maximum (this might need to change; we may not want the server to exit in this case)
+        // add the connection to the queue otherwise
         if (*(inst->num_connections_queued) == RNO_G_CLIENT_LIM) {
             if (close(client_socket)) {
                 perror("server_run");
@@ -538,17 +575,21 @@ int server_run(server * inst) {
             inst->connection_queue_enqueue(client_socket);
         }
 
+        // unlock the connection queue mutex
         if (pthread_mutex_unlock(inst->connection_queue_mutex)) {
             perror("server_run");
             break;
         }
 
+        // check if any of the clients are not busy (and therefore sleeping) so they can handle the new connection
         for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
+            // lock the client mutex
             if (pthread_mutex_lock(&(inst->client_mutex[i]))) {
                 perror("server_run");
                 break;
             }
 
+            // find the first non-busy client and signal it to wake up; unlock the client mutex
             if (inst->client_busy[i] == 0) {
                 if (pthread_cond_signal(&(inst->client_cond[i]))) {
                     perror("server_run");
@@ -568,11 +609,13 @@ int server_run(server * inst) {
             }
         }
 
+        // break the loop if the server should no longer be running
         if (!*(inst->run)) {
             break;
         }
     }
 
+    // signal each client thread to exit
     for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
         pthread_kill(inst->thread_pool[i], SIGUSR1);
         pthread_cond_signal(&(inst->client_cond[i]));

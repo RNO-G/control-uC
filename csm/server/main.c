@@ -11,17 +11,22 @@ pthread_mutex_t client_mutex[RNO_G_CLIENT_LIM];
 
 pthread_t thread_pool[RNO_G_CLIENT_LIM];
 
+
+// server signal handler
 void server_sig_handler(int sig) {
     if (sig == SIGINT) {
         server_run_status = 0;
     }
 }
 
+// client signal handler
 void client_sig_handler(int sig) {
     if (sig == SIGUSR1) {
+        // get the id of the thread that calls this function
         pthread_t tid = pthread_self();
 
         for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
+            // find the thread in the thread pool that matches this ID and tell it to exit
             if (pthread_equal(thread_pool[i], tid)) {
                 if (pthread_mutex_lock(&(client_mutex[i]))) {
                     break;
@@ -40,11 +45,13 @@ void client_sig_handler(int sig) {
     }
 }
 
+// connection queue enqueue function
 void connection_queue_enqueue(int socket_fd) {
     connection_queue[num_connections_queued] = socket_fd;
     num_connections_queued++;
 }
 
+// connection queue dequeue function
 int connection_queue_dequeue() {
     int socket_fd = connection_queue[0];
 
@@ -59,15 +66,18 @@ int connection_queue_dequeue() {
 }
 
 int main(int argc, char ** argv) {
+    // the server IP address, port number, and the uart path must be provided as command-line arguments
     if (argc != 4) {
         return EXIT_FAILURE;
     }
 
+    // initialize the connection queue mutex (this may not need to be a global variable)
     if (pthread_mutex_init(&connection_queue_mutex, NULL)) {
         perror("server");
         return EXIT_FAILURE;
     }
 
+    // initialize the client mutexes
     for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
         if (pthread_mutex_init(&(client_mutex[i]), NULL)) {
             perror("server");
@@ -86,6 +96,7 @@ int main(int argc, char ** argv) {
         }
     }
 
+    // create the server instance
     server * inst = server_create(argv[1], argv[2], argv[3],
                                   &server_run_status, client_run_status, client_busy_status,
                                   client_mutex, thread_pool, &num_connections_queued,
@@ -96,9 +107,13 @@ int main(int argc, char ** argv) {
         return EXIT_FAILURE;
     }
 
+    // run the server instance
     server_run(inst);
+
+    // destroy the server instance
     server_destroy(inst);
 
+    // destroy the client mutexes
     for (int i = 0; i < RNO_G_CLIENT_LIM; i++) {
         if (pthread_mutex_destroy(&(client_mutex[i]))) {
             perror("server");
@@ -117,6 +132,7 @@ int main(int argc, char ** argv) {
         }
     }
 
+    // destroy the connection queue mutex
     if (pthread_mutex_destroy(&connection_queue_mutex)) {
         perror("server");
         return EXIT_FAILURE;
