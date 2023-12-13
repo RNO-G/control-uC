@@ -352,6 +352,7 @@ int prefix_matches(const char * haystack, const char * prefix)
   int i = 0; 
   while(prefix[i]) 
   {
+    if (!haystack[i]) return 0; 
     if (haystack[i] != prefix[i]) return 0; 
     i++; 
   }
