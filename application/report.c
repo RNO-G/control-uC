@@ -18,11 +18,14 @@
 
 #ifdef _RNO_G_REV_D
 #define REPORT_TYPE RNO_G_MSG_REPORT
+#define REPORT_INIT {0} 
 #else
 #define REPORT_TYPE RNO_G_MSG_REPORT_V2
+#define REPORT_INIT {.rev_plus_E = (APP_REV-'E') }
 #endif
 
-static RNO_G_REPORT_T report; 
+
+static RNO_G_REPORT_T report = REPORT_INIT; 
 
 static int report_scheduled_navg = 0; 
 void report_schedule(int navg) 

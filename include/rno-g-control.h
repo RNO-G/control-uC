@@ -78,6 +78,8 @@ typedef struct rno_g_power_state
   "\"surf_amp_power\":[%s,%s,%s,%s,%s,%s], "\
   "\"j29_power\": %s, \"output_bus_enable\": %s }"  
 
+#define RNO_G_POWER_STATE_JSON_VALS_V3 RNO_G_POWER_STATE_JSON_VALS_V2
+
 #define RNO_G_POWER_STATE_JSON_VALS(ps) \
   STRBL(ps.low_power_mode),\
   STRBL(ps.sbc_power),\
@@ -207,6 +209,7 @@ enum rno_g_msg_type
   RNO_G_MSG_LORA_STATS = 3, 
   RNO_G_MSG_SBC = 4,
   RNO_G_MSG_REPORT_V2 = 5, 
+  RNO_G_MSG_REPORT_V3 = 6, 
 }; 
 
 /** 
@@ -294,25 +297,45 @@ typedef struct rno_g_report_v2
   rno_g_power_state_t power_state;  //see rno_g_power_state
   //38 bytes 
   uint16_t V_5_div1p5 : 12;  // measurement of 5V rail
-  uint8_t reserved : 3; 
+  uint8_t rev_plus_E : 3;  //used to be reserved, can be used to change behvaior of measurements. 
   int8_t heater : 1; // heater on/off  
   //40 bytes?
   uint8_t V_lte_div16; //measurement of LTE rail
   uint8_t V_33_div16; //measurement of 3.3 V rail
+//48 bytes 
+
+}rno_g_report_v2_t;
+
+
+typedef struct rno_g_report_v3
+{
+  rno_g_report_v2_t v2; 
   //42 bytes
-}rno_g_report_v2_t; 
+  uint16_t V_turb_div25 : 12; 
+  uint16_t i_turb_div4p167 : 12; 
+  uint16_t i_lte_div3p125 : 12; 
+  uint16_t V_lte_div25 : 12; //this is redundant, but what can you do 
+ //48 bytes ??
+}rno_g_report_v3_t;
 
 
-#define RNO_G_REPORT_V2_JSON_FMT "{\"when\":%d,\"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
+#define RNO_G_REPORT_V2_JSON_FMT "{\"when\":%d,\"rev\":\"%c\", \"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
                               "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lt\": %0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f }, "\
                               "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %u, \"3.3v\": %u, \"lte\": %u,  \"batt\": %u, \"pv\": %d }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
                               "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
                               "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V2 "}" 
 
+#define RNO_G_REPORT_V3_JSON_FMT "{\"when\":%d,\"rev\":\"%c\", \"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
+                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lt_a\": %0.3f, \"lt_d\":%0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f \"turb\": %0.3f }, "\
+                              "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %u, \"3.3v\": %u, \"lte_a\": %u,  \"lte_d\": %u, \"batt\": %u, \"pv\": %d, \"turb\": %u }, "\
+                              "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
+                              "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
+                              "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V3 "}" 
+
 
 #define RNO_G_REPORT_V2_JSON_VALS(r) \
-  r->when, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
+  r->when,'E'+r->rev_plus_E, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
   r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4, r->i_surf_div4[3]*4,r->i_surf_div4[4]*4, r->i_surf_div4[5]*4,\
   r->i_dh_div4[0]*4, r->i_dh_div4[1]*4,r->i_dh_div4[2]*4,\
   r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), \
@@ -323,6 +346,19 @@ typedef struct rno_g_report_v2
   r->T_micro_times16/16., \
   r->when + r->analog_delta_when, r->when + r->digi_delta_when, r->when + r->power_delta_when, r->when + r->temp_delta_when, r->heater, \
   RNO_G_POWER_STATE_JSON_VALS_V2(r->power_state)
+
+#define RNO_G_REPORT_V3_JSON_VALS(r) \
+  r->when,'E'+r->rev_plus_E, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
+  r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4, r->i_surf_div4[3]*4,r->i_surf_div4[4]*4, r->i_surf_div4[5]*4,\
+  r->i_dh_div4[0]*4, r->i_dh_div4[1]*4,r->i_dh_div4[2]*4,\
+  r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), \
+  r->V_lt_div25*25, r->V_radiant_div25*25, r->V_5_div1p5 * 3/2, r->V_33_div16 * 16, r->V_lte_div16 * 16, r->V_lte_div25 * 25,  r->V_batt_div25*25, r->V_pv_div25*25, r->V_turb_div25*25\
+  r->T_local_times16/16., \
+  r->T_remote_1_times16/16., \
+  r->T_remote_2_times16/16., \
+  r->T_micro_times16/16., \
+  r->when + r->analog_delta_when, r->when + r->digi_delta_when, r->when + r->power_delta_when, r->when + r->temp_delta_when, r->heater, \
+  RNO_G_POWER_STATE_JSON_VALS_V3(r->power_state)
 
 
 
@@ -372,6 +408,7 @@ enum rno_g_msg_size
   RNO_G_LORA_STATS_SIZE = sizeof(rno_g_lora_stats_t), 
   RNO_G_SBC_MSG_SIZE = sizeof(rno_g_sbc_msg_t),
   RNO_G_REPORT_V2_SIZE = sizeof(rno_g_report_v2_t),
+  RNO_G_REPORT_V3_SIZE = sizeof(rno_g_report_v3_t),
 }; 
 
 
