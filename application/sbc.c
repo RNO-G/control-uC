@@ -667,7 +667,7 @@ static int sbc_io_process()
         printf("#GET-TIMESYNC-INTERVAL: %d\r\n", config_block()->app_cfg.timesync_interval); 
         valid = 1; 
       }
-      else if (strcmp(in,"SET-TIMESYNC-INTERVAL"))
+      else if (prefix_matches(in,"SET-TIMESYNC-INTERVAL"))
       {
         const char * nxt; 
         int interval; 
