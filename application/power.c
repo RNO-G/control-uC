@@ -1,8 +1,10 @@
 #include "power.h" 
 #include "i2cbus.h" 
 #include "driver_init.h" 
+#include "config/config.h" 
 #include "application/time.h" 
 
+#define LTC2992_ADDR_TURBLTE 0x6a
 #define LTC2992_ADDR_POWER 0x6f
 #define LTC2992_ADDR_DIGI 0x6b
 
@@ -61,9 +63,15 @@ struct ltc2992_ctx
 
 static struct ltc2992_ctx power_ctx = { .addr = LTC2992_ADDR_POWER };
 
-#ifndef _RNO_G_REV_D
+#ifdef REV_AT_LEAST_E
 static struct ltc2992_ctx digi_ctx = {.addr = LTC2992_ADDR_DIGI };
 #endif
+
+#ifdef REV_AT_LEAST_F
+static struct ltc2992_ctx turblte_ctx = {.addr = LTC2992_ADDR_TURBLTE };
+#endif
+
+
 
 
 
@@ -92,10 +100,15 @@ int power_monitor_schedule()
   i2c_task_t ltc_task = {.addr = LTC2992_ADDR_POWER, .write=1, .reg =LTC2992_REG_CTRL_A, .data = ctrl_a_data }; 
   i2c_enqueue(&ltc_task); 
 
-#ifndef _RNO_G_REV_D
+#ifdef REV_AT_LEAST_E
   //and the digitizers
   i2c_task_t ltc_digi_task = {.addr = LTC2992_ADDR_DIGI, .write=1, .reg =LTC2992_REG_CTRL_A, .data = ctrl_a_data }; 
   i2c_enqueue(&ltc_digi_task); 
+#endif
+
+#ifdef REV_AT_LEAST_F
+  i2c_task_t ltc_turblte_task = { .addr = LTC2992_ADDR_TURBLTE, .write = 1, .reg = LTC2992_REG_CTRL_A, .data = ctrl_a_data}; 
+  i2c_enqueue(&ltc_turblte_task); 
 #endif
 
   //schedule a read of the temperatures 
@@ -179,9 +192,13 @@ int power_monitor_fill(rno_g_report_v2_t * r)
   //check to make sure we're not busy 
   
   update_ltc_if_ready(&power_ctx);
-#ifndef _RNO_G_REV_D
+#ifdef REV_AT_LEAST_E
   update_ltc_if_ready(&digi_ctx);
 #endif
+#ifdef REV_AT_LEAST_F
+  update_ltc_if_ready(&turblte_ctx);
+#endif
+
   update_temps_if_ready(); 
 
   //fill in the current/voltage monitors 
@@ -219,6 +236,18 @@ int power_monitor_fill(rno_g_report_v2_t * r)
   r->temp_delta_when = last_temp_read - r->when  ;
   r->power_delta_when = power_ctx.last_read - r->when;
   r->digi_delta_when = digi_ctx.last_read - r->when;
+
+#ifdef REV_AT_LEAST_F
+//  r->V_turb_div25 = turblte_ctx.sense1; 
+//  r->i_turb_div4p167 = turblte_ctx.delta_sense1; 
+//  r->V_lte_div25 = turblte_ctx.sense2; 
+//  r->i_lte_div3p125 = turblte_ctx.delta_sense2; 
+
+  //end rev at least F 
+#endif 
+
+
+
 #endif
 
 
