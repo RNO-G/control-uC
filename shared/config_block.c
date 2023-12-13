@@ -35,11 +35,12 @@ static  application_cfg_t dflt_ac =
      .lora_stats_interval_low_power_mode = 600, 
      .timesync_interval = 1800,
 #ifdef _RNO_REV_D
-     .turnon_voltage = 13, 
-     .turnoff_voltage = 12 
+     .turnon_voltage = 0, 
+     .turnoff_voltage = 0 
+
 #else
-     .turnon_voltage = 30, 
-     .turnoff_voltage = 20 
+     .turnon_voltage = 0, 
+     .turnoff_voltage = 0 
 #endif 
    }; 
 
