@@ -2,7 +2,7 @@
 #include "application/i2cbus.h" 
 #include "shared/driver_init.h" 
 
-//only available on REV E
+//only available on REV E+
 #ifndef _RNO_G_REV_D
 #define I2C_BUSMUX_ADDR 0x70 
 
