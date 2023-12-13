@@ -441,6 +441,10 @@ config_block_t * config_block()
     spi_flash_read_config_block(&the_config_block); 
     already_read_config_block = 1; 
   }
+#ifdef _BEACON_ 
+  the_config_block.app_cfg.wanted_state = RNO_G_SBC_ONLY_MODE;
+#endif
+
   return &the_config_block;
 }
 

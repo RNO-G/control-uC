@@ -20,6 +20,11 @@ ifeq ($(DEBUG_FLAG),1)
 	CFLAGS += -DDEBUG
 endif
 
+ifeq ($(BEACON),1)
+	CFLAGS += -D_BEACON_
+endif
+
+
 CFLAGS+=-D_RNO_G_REV_$(REV)
 VERSION_FLAGS+=-D_RNO_G_REV_$(REV)
 

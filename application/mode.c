@@ -10,6 +10,7 @@ static rno_g_mode_t the_mode = RNO_G_INIT;
 
 void mode_init() 
 {
+  the_mode = RNO_G_SBC_ONLY_MODE; 
 
   if ( config_block()->app_cfg.wanted_state == RNO_G_LOW_POWER_MODE) 
   {
@@ -70,11 +71,17 @@ static void turn_off_peripherals()
 
 int mode_set(rno_g_mode_t mode) 
 {
+
   if (the_mode == RNO_G_INIT) mode_init(); 
+
   if (mode == RNO_G_INIT) 
   {
     return 0; //don't do anything in this case... wasn't initialized properly 
   }
+
+#ifdef _BEACON_ 
+  mode = RNO_G_SBC_ONLY_MODE; 
+#endif
 
   if (the_mode == mode) return 0; 
 

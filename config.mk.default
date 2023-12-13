@@ -22,3 +22,5 @@ BUILD_DIR=build$(REV)
 ASF4_PREFIX=asf4
 
 
+# BEACON mode (no LORA, low power mode) 
+BEACON=0

@@ -663,6 +663,7 @@ int lorawan_process(int up)
     //check the interrupts
     int cant_sleep = 1; 
 
+#ifndef _BEACON_
         
     TimerProcess( );
     // Process Radio IRQ
@@ -884,8 +885,10 @@ int lorawan_process(int up)
      cant_sleep=1; 
    }
 
+#endif 
 
   return cant_sleep;
+
 }
 
 
