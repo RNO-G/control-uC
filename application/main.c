@@ -196,10 +196,18 @@ int main(void)
       // See if we meet/exceed thresholds
       if (!low_power_mode) 
       {
+        static int nunder = 0; 
         float turnoff = config_block()->app_cfg.turnoff_voltage; 
         if (turnoff > 0 &&  BATTERY_VOLTAGE(maybe_a_report) < turnoff)
         {
-          mode_set(RNO_G_LOW_POWER_MODE); 
+          if (++nunder > 3) 
+          {
+            mode_set(RNO_G_LOW_POWER_MODE); 
+          }
+        }
+        else
+        {
+          nunder = 0; 
         }
       }
       else 
