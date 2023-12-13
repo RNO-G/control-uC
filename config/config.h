@@ -19,16 +19,25 @@
 
 
 #if defined(_RNO_G_REV_D)
-#define APP_REV "REVD"
+#define APP_REV 'D' 
+#define APP_REV_STR "D" 
 #elif defined(_RNO_G_REV_E)
-#define APP_REV "REVE"
+#define APP_REV 'E'
+#define APP_REV_STR "E"
+#define REV_AT_LEAST_E
 #elif defined(_RNO_G_REV_F)
-#define APP_REV "REVF" 
+#define APP_REV 'F'
+#define APP_REV_STR "F"
+#define REV_AT_LEAST_E
+#define REV_AT_LEAST_F
 #else
 #error "Unknown revision!"
 #endif
 
-#define APP_VERSION "Chicago.051023.0-" APP_REV
+#define REV_AT_LEAST(X) (X >= APP_REV)
+#define REV_BELOW(X) (X < APP_REV)
+
+#define APP_VERSION "Chicago.082123.0-REV" APP_REV_STR
 
 #define MODE_CHANGE_MINTICKS 100
 
