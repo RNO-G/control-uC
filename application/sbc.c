@@ -730,6 +730,7 @@ static int sbc_io_process()
 #ifdef _RNO_G_REV_F
       else if (!strcmp(in,"USBHUB_RESET"))
       {
+        printf("#USBHUB_RESET: ACK\r\n", APP_VERSION); 
         valid = 1; 
         usb_reset(); 
       }
