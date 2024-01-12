@@ -162,11 +162,14 @@ static int handle_cmd_reset(rno_g_cmd_reset_t * cmd)
       return lorawan_reset(); 
     case RNO_G_RESET_LTE: 
       return lte_reset(cmd->opt.lte.reset_type); 
+#if REV_AT_LEAST_F
+    case RNO_G_RESET_USB: 
+      return usb_reset(); 
+#endif
     default: 
       return -1; 
 
   }
-
 
 }
 
