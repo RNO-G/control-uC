@@ -62,7 +62,7 @@ APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, usb.o)
 endif
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o time.o reset.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, mode.o lowpower.o commands.o report.o)
-APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, i2cbusmux.o )
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, i2cbusmux.o heater.o  )
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
 

@@ -429,7 +429,8 @@ enum rno_g_cmd_type
   RNO_G_CMD_SET_BATTERY_THRESHOLDS=7, 
   RNO_G_CMD_SBC=8, 
   RNO_G_CMD_RESET=9, 
-  RNO_G_CMD_TOO_LARGE = 10
+  RNO_G_CMD_HEATER = 10, 
+  RNO_G_CMD_TOO_LARGE = 11
 } ; 
 
 /* Sets the running mode */ 
@@ -515,7 +516,8 @@ typedef struct rno_g_cmd_reset
     RNO_G_RESET_MICRO, 
     RNO_G_RESET_I2C, 
     RNO_G_RESET_LORA, 
-    RNO_G_RESET_LTE
+    RNO_G_RESET_LTE,
+    RNO_G_RESET_USB
   } what; 
 
   union 
@@ -537,6 +539,11 @@ typedef struct rno_g_cmd_reset
   } opt; 
 } rno_g_cmd_reset_t; 
 
+typedef struct rno_g_cmd_heater_t 
+{
+  uint32_t heater;  // for now 1 if on, 0 if not. maybe add more flags later. 
+} rno_g_cmd_heater_t; 
+
 enum rno_g_cmd_size
 {
   RNO_G_CMD_SET_MODE_SIZE = sizeof(rno_g_cmd_set_mode_t), 
@@ -547,7 +554,8 @@ enum rno_g_cmd_size
   RNO_G_CMD_SET_GPS_SECS_OFFSET_SIZE = sizeof(rno_g_cmd_set_gps_secs_offset_t), 
   RNO_G_CMD_SET_BATTERY_THRESHOLDS_SIZE = sizeof(rno_g_cmd_battery_thresholds_t), 
   RNO_G_CMD_SBC_SIZE = sizeof(rno_g_cmd_sbc_t), 
-  RNO_G_CMD_RESET_SIZE = sizeof(rno_g_cmd_reset_t)
+  RNO_G_CMD_RESET_SIZE = sizeof(rno_g_cmd_reset_t),
+  RNO_G_CMD_HEATER_SIZE = sizeof(rno_g_cmd_heater_t)
 }; 
 
 

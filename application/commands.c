@@ -3,6 +3,7 @@
 #include "shared/spi_flash.h" 
 #include "shared/config_block.h" 
 #include "application/report.h" 
+#include "application/heater.h" 
 #include "application/mode.h" 
 #include "lorawan/lorawan.h"
 #include "application/i2cbus.h"
@@ -134,6 +135,12 @@ static int handle_cmd_sbc(rno_g_cmd_sbc_t * cmd)
 
 }
 
+static int handle_cmd_heater(rno_g_cmd_heater_t * cmd) 
+{
+  if (cmd->heater & 1) return heater_on(); 
+  else return heater_off(); 
+}
+
 static int handle_cmd_reset(rno_g_cmd_reset_t * cmd) 
 {
   switch (cmd->what) 
@@ -242,11 +249,23 @@ int commands_put(uint8_t  opcode, uint8_t payload_len, const uint8_t * payload)
     }
 
     case RNO_G_CMD_RESET: 
-    if (payload_len != RNO_G_CMD_RESET_SIZE) 
     {
-      return -1; 
+      if (payload_len != RNO_G_CMD_RESET_SIZE) 
+      {
+        return -1; 
+      }
+      return handle_cmd_reset((rno_g_cmd_reset_t*) payload); 
     }
-    return handle_cmd_reset((rno_g_cmd_reset_t*) payload); 
+
+    case RNO_G_CMD_HEATER: 
+    {
+      if (payload_len != RNO_G_CMD_HEATER_SIZE)
+      {
+        return -1; 
+      }
+
+      return handle_cmd_heater((rno_g_cmd_heater_t*) payload); 
+    }
 
     default:
       return -1; 

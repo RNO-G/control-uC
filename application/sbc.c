@@ -20,6 +20,7 @@
 #include "application/monitors.h" 
 #include "application/report.h" 
 #include "application/usb.h" 
+#include "application/heater.h" 
 #include "lorawan/lorawan.h" 
 
 //these define the maximum line length! 
@@ -356,8 +357,7 @@ static int sbc_io_process()
       {
 #ifndef _RNO_G_REV_D
         valid=1; 
-        gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OUT); 
-        gpio_set_pin_level(HEATER_FET_CNTRL, true);
+        heater_on(); 
         printf("#HEATER-ON: ACK\r\n"); 
 #else
         printf("#ERR: No heater in RevD\r\n"); 
@@ -368,8 +368,7 @@ static int sbc_io_process()
       {
 #ifndef _RNO_G_REV_D
         valid=1;
-        gpio_set_pin_level(HEATER_FET_CNTRL, false);
-        gpio_set_pin_direction(HEATER_FET_CNTRL, GPIO_DIRECTION_OFF); 
+        heater_off(); 
         printf("#HEATER-OFF: ACK\r\n"); 
 #else
         printf("#ERR: No heater in RevD \r\n"); 
