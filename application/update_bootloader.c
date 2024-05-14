@@ -1,5 +1,6 @@
 #include <string.h>
 #include "application/update_bootloader.h"
+#include "shared/printf.h"
 #include "linker/map.h"
 #include "bootloader_bin.h"
 #include "shared/driver_init.h"
@@ -18,6 +19,7 @@ int bootloader_check()
     int checklen = bootloader_image_len - i  > sizeof(buf) ? sizeof(buf) : bootloader_image_len-i;
     if (memcmp(buf, bootloader_image+i, checklen))
     {
+      printf("#INFO: MISMATCH AT offset %d\r\n",i);
       return 1;
     }
   }
@@ -29,7 +31,7 @@ int bootloader_check()
 int bootloader_update()
 {
   if (bootloader_is_locked()) return -1;
-  return bootloader_image_len!= flash_write(&FLASH, (uint32_t) &__boot_rom_start__, (uint8_t*) bootloader_image,bootloader_image_len);
+  return flash_write(&FLASH, (uint32_t) &__boot_rom_start__, (uint8_t*) bootloader_image,bootloader_image_len);
 }
 
 int bootloader_is_locked()
