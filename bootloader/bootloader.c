@@ -145,7 +145,7 @@ int main(void)
       printf("#BOOTLOADER: NO VALID APPLICATION IN FLASH!\n");
     }
 
-    printf("#INFO: COPYING FROM SLOT %d to FLASH\n", copy_application);
+    printf("#INFO: COPYING FROM SLOT %d to FLASH\r\n", copy_application);
 
 
     programmer_copy_application_to_flash(copy_application);
@@ -189,7 +189,7 @@ int main(void)
         {
           if (!have_application)
           {
-            printf("#ERROR: CAN'T EXIT WITHOUT APPLICATION!\n");
+            printf("#ERROR: CAN'T EXIT WITHOUT APPLICATION!\\n");
           }
           else
           {
@@ -212,11 +212,12 @@ int main(void)
   // if no application in first slot, write one (this way we always have a backup)
   if (have_application)
   {
+    sbc_io_init();
     for (int islot = 1; islot <= 4; islot++)
     {
       if (!check_application(islot))
       {
-        printf("#INFO: SLOT %d is empty, copying current image\n");
+        printf("#INFO: SLOT %d is empty, copying current image\r\n", islot);
         programmer_copy_flash_to_application(islot);
       }
     }
