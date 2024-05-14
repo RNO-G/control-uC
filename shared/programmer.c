@@ -139,7 +139,7 @@ int programmer_cmd(char * in, int in_len)
           {
             int howmany = i + 32  > len ? len-i : 32; 
             if (slot > 0) spi_flash_application_read(slot, howmany, buf); 
-            else flash_read(&FLASH, (uint32_t) &__rom_start__+i,  buf, howmany); 
+            else flash_read(&FLASH, ((uint32_t) &__rom_start__)+offset+i,  buf, howmany); 
             printf("# %04x ", offset + i); 
             for (int j = 0; j < howmany; j++) 
             {
