@@ -2,6 +2,7 @@
 #include "application/gpio_expander.h" 
 #include "application/lte.h" 
 #include "shared/driver_init.h" 
+#include "application/update_bootloader.h"
 #include "shared/io.h" 
 #include "application/time.h" 
 #include "application/reset.h" 
@@ -40,6 +41,7 @@ static int noff_tries = 0; //give it up to 20 secs to turn off, I guess?
 static int up_turning_off = 0; 
 static int up_turning_on = 0; 
 static int ready_to_turn_off = 0; 
+static int reset_queued = 0;
 
 
 static int16_t sbc_V() 
@@ -53,7 +55,7 @@ void sbc_init()
 {
   i2c_gpio_expander_t i2c_gpio; 
   get_gpio_expander_state(&i2c_gpio,1); //this must be called after i2cbus_init, so we'll have a value; 
-  
+
 
   //current is off but power is on, so we're probably out of sync... 
   if (sbc_V() < SBC_CURRENT_THRESH && i2c_gpio.sbc)  
@@ -119,7 +121,6 @@ int sbc_turn_on(sbc_boot_mode_t boot_mode)
   }
   return 0; 
 }
-
 
 
 
@@ -666,6 +667,31 @@ static int sbc_io_process()
         printf("#GET-TIMESYNC-INTERVAL: %d\r\n", config_block()->app_cfg.timesync_interval); 
         valid = 1; 
       }
+      else if (!strcmp(in,"IS-BOOTLOADER-LOCKED"))
+      {
+        printf("#IS-BOOTLOADER-LOCKED: %d\r\n", bootloader_is_locked());
+        valid =1;
+      }
+      else if (!strcmp(in,"IS-BOOTLOADER-UP-TO-DATE"))
+      {
+        printf("#IS-BOOTLOADER-UP-TO-DATE: %d\r\n", bootloader_check());
+        valid =1;
+      }
+      else if (!strcmp(in,"DO-BOOTLOADER-UPDATE"))
+      {
+        printf("#DO-BOOTLOADER-UPDATE: %s\r\n", bootloader_update() ? "FAIL" : "SUCCESS");
+        valid =1;
+      }
+      else if (!strcmp(in,"BOOTLOADER-LOCK"))
+      {
+        printf("#BOOTLOADER-LOCK: %s\r\n", bootloader_lock() ? "FAIL" : "SUCCESS");
+        valid =1;
+      }
+      else if (!strcmp(in,"BOOTLOADER-UNLOCK"))
+      {
+        printf("#BOOTLOADER-UNLOCK: %s\r\n", bootloader_unlock() ? "FAIL" : "SUCCESS");
+        valid =1;
+      }
       else if (prefix_matches(in,"SET-TIMESYNC-INTERVAL"))
       {
         const char * nxt; 
@@ -722,10 +748,9 @@ static int sbc_io_process()
 
       else if (!strcmp(in,"REV"))
       {
-        printf("#REV: %s\r\n", APP_REV); 
-        valid =1; 
+        printf("#REV: %c\r\n", APP_REV);
+        valid =1;
       }
-
 #ifdef _RNO_G_REV_F
       else if (!strcmp(in,"USBHUB_RESET"))
       {
@@ -769,9 +794,9 @@ int sbc_process (int up)
     sbc_io_process(); 
   }
 
-  else if (the_sbc_state == SBC_TURNING_OFF) 
+  else if (the_sbc_state == SBC_TURNING_OFF)
   {
-    if (!ready_to_turn_off && noff_tries++ < 5 && up_turning_off > 0  && up > up_turning_off + 3 )
+    if (!ready_to_turn_off &&  up_turning_off > 0  && up > up_turning_off + 3  && noff_tries++ < 5)
     {
       if (sbc_V() < SBC_CURRENT_THRESH)
       {
@@ -790,9 +815,9 @@ int sbc_process (int up)
       i2c_gpio_expander_t turn_off_sbc = {.sbc=0}; 
       i2c_gpio_expander_t turn_off_mask = {.sbc=1}; 
       set_gpio_expander_state (turn_off_sbc,turn_off_mask); 
-      the_sbc_state = SBC_OFF; 
+      the_sbc_state = SBC_OFF;
       report_schedule(50); 
-      noff_tries = 0; 
+      noff_tries = 0;
     }
   }
   else if (the_sbc_state == SBC_TURNING_ON && up > up_turning_on+1) 
