@@ -47,7 +47,10 @@ LD_FLAGS_PRE= -Wl,--start-group -lm -Wl,--end-group -mthumb
 LD_FLAGS_POST=-Llinker/ --specs=nano.specs -mcpu=cortex-m0plus -Wl,--gc-sections 
 
 
-INCLUDES=$(ASF4_INCLUDES) -I./ -Iinclude/
+GENERATED_INCLUDES=$(BUILD_DIR)/generated/
+INCLUDES=$(ASF4_INCLUDES) -I./ -Iinclude/ -I$(GENERATED_INCLUDES)
+GENERATED_FILES=$(GENERATED_INCLUDES)/bootloader_bin.h
+
 
 SHARED_OBJS=config_block.o spi_flash.o shared_memory.o programmer.o io.o printf.o driver_init.o base64.o
  
@@ -63,6 +66,7 @@ endif
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o time.o reset.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, mode.o lowpower.o commands.o report.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, i2cbusmux.o heater.o  )
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, update_bootloader.o )
 BL_OBJS=$(BUILD_DIR)/bootloader/bootloader.o  $(ASF4_BL_OBJS) $(BL_SHARED_OBJS) 
 
 
@@ -75,7 +79,7 @@ PREFIX?=$(RNO_G_INSTALL_DIR)
 
 
 
-MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application $(BUILD_DIR)/bootloader  $(BUILD_DIR)/shared $(BUILD_DIR)/bootloader/shared
+MKDIRS:= $(BUILD_DIR) $(ASF4_MKDIRS) $(LORAWAN_MKDIRS) $(BUILD_DIR)/application $(BUILD_DIR)/bootloader  $(BUILD_DIR)/shared $(BUILD_DIR)/bootloader/shared $(GENERATED_INCLUDES)
 OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-main
 BL_OUTPUT_NAME := $(BUILD_DIR)/rno-G-uC-bootloader
 COMBO_NAME := $(BUILD_DIR)/rno-G-uC-combined
@@ -139,6 +143,12 @@ endif
 $(BL_OUTPUT_NAME).bin: $(BL_OUTPUT_NAME).elf
 	$(OC) --pad-to=0x4000 --gap-fill=0xff -O binary $< $@
 
+$(BL_OUTPUT_NAME)_unpadded.bin: $(BL_OUTPUT_NAME).elf
+	$(OC) --gap-fill=0xff -O binary $< $@
+
+$(GENERATED_INCLUDES)/bootloader_bin.h: $(BL_OUTPUT_NAME)_unpadded.bin
+	xxd -i $<  | sed 's/unsigned/const unsigned/' | sed 's/build.*unpadded_bin/bootloader_image/' > $@
+
 
 $(COMBO_NAME).bin: $(BL_OUTPUT_NAME).bin $(OUTPUT_NAME).bin 
 	cat $^ > $@ 
@@ -200,10 +210,19 @@ $(BUILD_DIR)/shared/config_block.o: shared/config_block.c Makefile config.mk sta
 
 
 # Compiler targets
-$(BUILD_DIR)/%.o: %.c Makefile config.mk
+
+$(BUILD_DIR)/application/%.o: application/%.c Makefile config.mk $(GENERATED_FILES)
+	@echo $(GENERATED_FILES)
+	@echo Building application file: $<
+	$(CC) $(CFLAGS) $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o) -o $@ $<
+	@echo Finished building: $<
+
+
+$(BUILD_DIR)/%.o: %.c Makefile config.mk 
 	@echo Building file: $<
 	$(CC) $(CFLAGS) $(INCLUDES) -MF$(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o) -o $@ $<
 	@echo Finished building: $<
+
 
 
 $(BUILD_DIR)/%.o: %.s
