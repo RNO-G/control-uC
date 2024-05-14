@@ -398,7 +398,7 @@ typedef struct rno_g_report_v3
   r->when,'E'+r->rev_plus_E, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
   r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4, r->i_surf_div4[3]*4,r->i_surf_div4[4]*4, r->i_surf_div4[5]*4,\
   r->i_dh_div4[0]*4, r->i_dh_div4[1]*4,r->i_dh_div4[2]*4,\
-  r->i_lte_div3p125 * (125/40.), r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), \
+  r->i_lte_div3p125 * (125/40.), r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), r->i_turb_div4p167 * (125./30), \
   r->V_lt_div25*25, r->V_radiant_div25*25, r->V_5_div1p5 * 3/2, r->V_33_div16 * 16, r->V_lte_div16 * 16, r->V_lte_div25 * 25,  r->V_batt_div25*25, r->V_pv_div25*25, r->V_turb_div25*25, \
   r->T_local_times16/16., \
   r->T_remote_1_times16/16., \
