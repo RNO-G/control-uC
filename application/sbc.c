@@ -681,7 +681,7 @@ static int sbc_io_process()
       }
       else if (!strcmp(in,"IS-BOOTLOADER-UP-TO-DATE"))
       {
-        printf("#IS-BOOTLOADER-UP-TO-DATE: %d\r\n", bootloader_check());
+        printf("#IS-BOOTLOADER-UP-TO-DATE: %d\r\n", !bootloader_check());
         valid =1;
       }
       else if (!strcmp(in,"DO-BOOTLOADER-UPDATE"))
