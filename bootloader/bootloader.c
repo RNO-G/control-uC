@@ -48,7 +48,6 @@ int check_application(int slot)
 {
 
   uint32_t check_buf[2];
-  spi_flash_wakeup();
 
   if (slot == 0)
   {
@@ -56,6 +55,7 @@ int check_application(int slot)
   }
   else
   {
+    spi_flash_wakeup();
     spi_flash_application_seek(slot,0);
     spi_flash_application_read(slot, 8, (uint8_t*) check_buf);
   }
@@ -118,7 +118,7 @@ int main(void)
     shm->boot_option = 0; //reset to ROM after
   }
   //otherwise check if we are in a bad state and need to try to recover
-  // This is either because we've reflashed too many times our application is gone.
+  // This is either because we've reflashed too many times or our application is gone.
   // In this case, we loop through the priority list trying to find a valid application and copy it.
   else if ((cfg->n_resets_before_reflash >0  && shm->nresets > cfg->n_resets_before_reflash) || !have_application)
   {
@@ -187,7 +187,15 @@ int main(void)
         }
         else if (!strcmp(sbc.buf,"#EXIT"))
         {
-          break;
+          if (!have_application)
+          {
+            printf("#ERROR: CAN'T EXIT WITHOUT APPLICATION!\n");
+          }
+          else
+          {
+            printf("#EXIT\n");
+            break;
+          }
         }
         else if (!strcmp(sbc.buf,"#AM-I-BOOTLOADER"))
         {
@@ -200,5 +208,20 @@ int main(void)
     }
   }
 
+  //Make sure each slot has an application (otherwise recovery depends on someone thinking to do it)
+  // if no application in first slot, write one (this way we always have a backup)
+  if (have_application)
+  {
+    for (int islot = 1; islot <= 4; islot++)
+    {
+      if (!check_application(islot))
+      {
+        printf("#INFO: SLOT %d is empty, copying current image\n");
+        programmer_copy_flash_to_application(islot);
+      }
+    }
+  }
+
   relenquish();
+  return 0;
 }
