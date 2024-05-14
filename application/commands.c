@@ -165,6 +165,7 @@ static int handle_cmd_reset(rno_g_cmd_reset_t * cmd)
     case RNO_G_RESET_SBC:
       config_block()->app_cfg.sbc_boot_mode = cmd->opt.sbc.boot_mode;
       config_block_sync();
+      return 0;
       break;
 #if REV_AT_LEAST_F
     case RNO_G_RESET_USB:
