@@ -439,8 +439,15 @@ static int sbc_io_process()
                  st.low_power_mode, st.sbc_power, st.lte_power, st.radiant_power, st.lowthresh_power, st.dh_amp_power, st.surf_amp_power); 
 
 #else
+#ifdef _RNO_G_REV_E
        const rno_g_report_v2_t * report = report_get(); 
        printf(RNO_G_REPORT_V2_JSON_FMT "\r\n", RNO_G_REPORT_V2_JSON_VALS(report)); 
+#endif
+
+#ifdef _RNO_G_REV_F
+       const rno_g_report_v3_t * report = report_get(); 
+       printf(RNO_G_REPORT_V3_JSON_FMT "\r\n", RNO_G_REPORT_V3_JSON_VALS(report)); 
+#endif
 #endif
          valid=1; 
       }

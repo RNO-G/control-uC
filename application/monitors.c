@@ -265,7 +265,11 @@ int monitor_fill(rno_g_monitor_t * m, int navg)
 
 #else
 
+#ifdef _RNO_G_REV_E
 int monitor_fill(rno_g_report_v2_t * r, int navg)
+#else
+int monitor_fill(rno_g_report_v3_t * r, int navg)
+#endif
 {
   int i;
   int when = get_time() ; 

@@ -185,8 +185,12 @@ void update_temps_if_ready()
 
 #ifdef _RNO_G_REV_D
 int power_monitor_fill(rno_g_power_system_monitor_t * state) 
-#else
+#endif
+#ifdef _RNO_G_REV_E
 int power_monitor_fill(rno_g_report_v2_t * r) 
+#endif
+#ifdef _RNO_G_REV_F
+int power_monitor_fill(rno_g_report_v3_t * r) 
 #endif
 {
   //check to make sure we're not busy 
@@ -238,10 +242,10 @@ int power_monitor_fill(rno_g_report_v2_t * r)
   r->digi_delta_when = digi_ctx.last_read - r->when;
 
 #ifdef REV_AT_LEAST_F
-//  r->V_turb_div25 = turblte_ctx.sense1; 
-//  r->i_turb_div4p167 = turblte_ctx.delta_sense1; 
-//  r->V_lte_div25 = turblte_ctx.sense2; 
-//  r->i_lte_div3p125 = turblte_ctx.delta_sense2; 
+  r->V_turb_div25 = turblte_ctx.sense1; 
+  r->i_turb_div4p167 = turblte_ctx.delta_sense1; 
+  r->V_lte_div25 = turblte_ctx.sense2; 
+  r->i_lte_div3p125 = turblte_ctx.delta_sense2; 
 
   //end rev at least F 
 #endif 

@@ -43,9 +43,15 @@ int16_t monitor(monitor_t what, int navg);
 /** Fill all analog monitor values */ 
 #ifdef _RNO_G_REV_D
 int monitor_fill(rno_g_monitor_t * m, int navg); 
-#else
+#endif
+#ifdef _RNO_G_REV_E
 int monitor_fill(rno_g_report_v2_t * r, int navg); 
 #endif
+
+#ifdef _RNO_G_REV_F
+int monitor_fill(rno_g_report_v3_t * r, int navg); 
+#endif
+
 
 int monitor_init(); 
 void monitor_deinit(); 

@@ -19,10 +19,18 @@
 #ifdef _RNO_G_REV_D
 #define REPORT_TYPE RNO_G_MSG_REPORT
 #define REPORT_INIT {0} 
-#else
+#endif
+
+#ifdef _RNO_G_REV_E
 #define REPORT_TYPE RNO_G_MSG_REPORT_V2
 #define REPORT_INIT {.rev_plus_E = (APP_REV-'E') }
 #endif
+
+#ifdef _RNO_G_REV_F
+#define REPORT_TYPE RNO_G_MSG_REPORT_V3
+#define REPORT_INIT {.rev_plus_E = (APP_REV-'E') }
+#endif
+
 
 
 static RNO_G_REPORT_T report = REPORT_INIT; 
