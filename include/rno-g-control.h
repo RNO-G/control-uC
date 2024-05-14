@@ -374,7 +374,7 @@ typedef struct rno_g_report_v3
                               "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V2 "}"
 
 #define RNO_G_REPORT_V3_JSON_FMT "{\"when\":%d,\"rev\":\"%c\", \"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
-                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lt_a\": %0.3f, \"lt_d\":%0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f \"turb\": %0.3f }, "\
+                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lte\": %0.3f, \"lt\":%0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f \"turb\": %0.3f }, "\
                               "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %u, \"3.3v\": %u, \"lte_a\": %u,  \"lte_d\": %u, \"batt\": %u, \"pv\": %d, \"turb\": %u }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
                               "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
@@ -398,7 +398,7 @@ typedef struct rno_g_report_v3
   r->when,'E'+r->rev_plus_E, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
   r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4, r->i_surf_div4[3]*4,r->i_surf_div4[4]*4, r->i_surf_div4[5]*4,\
   r->i_dh_div4[0]*4, r->i_dh_div4[1]*4,r->i_dh_div4[2]*4,\
-  r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), \
+  r->i_lte_div3p125 * (125/40.), r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), \
   r->V_lt_div25*25, r->V_radiant_div25*25, r->V_5_div1p5 * 3/2, r->V_33_div16 * 16, r->V_lte_div16 * 16, r->V_lte_div25 * 25,  r->V_batt_div25*25, r->V_pv_div25*25, r->V_turb_div25*25, \
   r->T_local_times16/16., \
   r->T_remote_1_times16/16., \
