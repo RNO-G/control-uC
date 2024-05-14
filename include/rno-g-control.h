@@ -374,7 +374,7 @@ typedef struct rno_g_report_v3
                               "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V2 "}"
 
 #define RNO_G_REPORT_V3_JSON_FMT "{\"when\":%d,\"rev\":\"%c\", \"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
-                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lte\": %0.3f, \"lt\":%0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f \"turb\": %0.3f }, "\
+                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lte\": %0.3f, \"lt\":%0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f, \"turb\": %0.3f }, "\
                               "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %u, \"3.3v\": %u, \"lte_a\": %u,  \"lte_d\": %u, \"batt\": %u, \"pv\": %d, \"turb\": %u }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
                               "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
