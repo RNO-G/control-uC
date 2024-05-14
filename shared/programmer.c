@@ -344,7 +344,14 @@ int programmer_copy_flash_to_application(int slot)
 
   uint8_t* offset = (uint8_t*) &__rom_start__; 
   int N = (int) &__rom_size__; 
+
+
   wakeup_spi_flash(); 
+
+  //we gotta erase first
+
+  spi_flash_application_erase_sync(slot, 0, (N + 4095) >> 12); 
+
   spi_flash_application_seek(slot,0); 
 
   uint8_t buf[256]; 
