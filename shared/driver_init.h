@@ -8,6 +8,7 @@
 #ifndef DRIVER_INIT_INCLUDED
 #define DRIVER_INIT_INCLUDED
 
+#include "config/config.h"
 #include "atmel_start_pins.h"
 
 #include <peripheral_clk_config.h>

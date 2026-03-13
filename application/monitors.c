@@ -267,8 +267,12 @@ int monitor_fill(rno_g_monitor_t * m, int navg)
 
 #ifdef _RNO_G_REV_E
 int monitor_fill(rno_g_report_v2_t * r, int navg)
-#else
+#endif
+#ifdef _RNO_G_REV_F
 int monitor_fill(rno_g_report_v3_t * r, int navg)
+#endif
+#ifdef _RNO_G_REV_N
+int monitor_fill(rno_g_report_v4_t * r, int navg)
 #endif
 {
   int i;

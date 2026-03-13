@@ -63,6 +63,9 @@ APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, main.o debug.o sbc.o monitors.o
 ifeq ($(REV),F) 
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, usb.o)
 endif
+ifeq ($(REV),N) 
+APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, usb.o)
+endif
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, lte.o i2cbus.o gpio_expander.o time.o reset.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, mode.o lowpower.o commands.o report.o)
 APP_OBJS+=$(addprefix $(BUILD_DIR)/application/, i2cbusmux.o heater.o  )

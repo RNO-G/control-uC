@@ -179,7 +179,7 @@ int programmer_cmd(char * in, int in_len)
 #ifdef _BOOTLOADER_ 
           if (slot == 0) 
           {
-            flash_append(&FLASH, &__rom_start__ + offset, decoded, converted); 
+            flash_append(&FLASH,(uint32_t)  (&__rom_start__ + offset), decoded, converted); 
           }
 #endif
           if (slot > 0 && slot <=4) 
@@ -240,7 +240,7 @@ int programmer_cmd(char * in, int in_len)
               return 1; 
             }
             //ok that this is synchronous
-            ret = flash_erase(&FLASH, &__rom_start__ + offset, len >> 12); 
+            ret = flash_erase(&FLASH,  (uint32_t) (&__rom_start__ + offset), len >> 12); 
           }
 #endif
           if (slot > 0 && slot <=4) 
@@ -390,7 +390,7 @@ int programmer_copy_application_to_flash(int slot)
   {
     int howmany = i + 256 < N ? 256 : N-i; 
     spi_flash_application_read(slot,howmany, flash_buffer); 
-    flash_write(&FLASH, offset+i,flash_buffer,howmany); 
+    flash_write(&FLASH, (uint32_t) (offset+i),flash_buffer,howmany); 
     i+=howmany; 
   }
   

@@ -603,7 +603,7 @@ void system_init(void)
 //	gpio_set_pin_function(LED_GREEN, GPIO_PIN_FUNCTION_OFF);
 
 
-#ifdef _RNO_G_REV_F
+#ifdef REV_AT_LEAST_F
   gpio_set_pin_level(USBHUB_RESET, 1); 
   gpio_set_pin_direction(USBHUB_RESET, GPIO_DIRECTION_OUT); 
   gpio_set_pin_pull_mode(USBHUB_RESET, GPIO_PULL_OFF); 

@@ -30,6 +30,9 @@ static void autoprobe_i2c_expander(void)
   i2c_task_t probe = {.addr = 0, .write = 0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0, .done = 1}; 
   for (unsigned i = 0; i < 4; i++) 
   {
+#ifdef REV_AT_LEAST_N
+    if (i % 2) i++;  // REV_N only has A and C
+#endif
     for (unsigned j = 0; j < 2; j++) 
     {
       probe.addr = autoprobe_addr_expander_options[i][j]; 
@@ -44,10 +47,14 @@ static void autoprobe_i2c_expander(void)
   }
 }
 
+
 #define I2C_EXPANDER_A (autoprobe_addr_expander[0])
-#define I2C_EXPANDER_B (autoprobe_addr_expander[1])
 #define I2C_EXPANDER_C (autoprobe_addr_expander[2])
+
+#ifndef REV_AT_LEAST_N
+#define I2C_EXPANDER_B (autoprobe_addr_expander[1])
 #define I2C_EXPANDER_D (autoprobe_addr_expander[3])
+#endif
 
 //not probing
 #else
@@ -57,15 +64,32 @@ static void autoprobe_i2c_expander(void)
 #define I2C_EXPANDER_C 0x3c 
 #define I2C_EXPANDER_D 0x3f
 #else
+#ifdef _RNO_G_REV_N
+#define I2C_EXPANDER_A 0x38
+#define I2C_EXPANDER_C 0x3A 
+#else
 #define I2C_EXPANDER_A 0x20
 #define I2C_EXPANDER_B 0x22
 #define I2C_EXPANDER_C 0x24 
 #define I2C_EXPANDER_D 0x27
 #endif
+#endif
 
 //not probing
 #endif
 
+
+#ifdef REV_AT_LEAST_N
+
+#define I2C_EXPANDER_AMP_3_BIT 0
+#define I2C_EXPANDER_AMP_4_BIT 1
+#define I2C_EXPANDER_AMP_1_BIT 2
+#define I2C_EXPANDER_AMP_5_BIT 3
+#define I2C_EXPANDER_AMP_2_BIT 4
+#define I2C_EXPANDER_AMP_6_BIT 5
+#define I2C_EXPANDER_SBC_BIT 6
+
+#else
 #define I2C_EXPANDER_SURF_AMP_3_BIT 0
 #define I2C_EXPANDER_SURF_AMP_4_BIT 1
 #define I2C_EXPANDER_SURF_AMP_1_BIT 2
@@ -84,33 +108,55 @@ static void autoprobe_i2c_expander(void)
 #define I2C_EXPANDER_J29_BIT 6
 #define I2C_EXPANDER_EXT_BUS_BIT 7
 
+#endif
 
 
 
-//these keep the state 
+//these keep the state
 
 static i2c_task_t A_state  = { .addr = 0, .write =1, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0xff, .done = 1}; 
+#ifndef REV_AT_LEAST_N
 static i2c_task_t B_state  = { .addr = 0, .write =1, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0xff, .done = 1}; 
+#endif
 
 //this is used to actually perform a query. We query the direction, which will be out if on, in if not in all cases (even if polarity is inverted) 
 static i2c_task_t A_query_dir  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 1}; 
+#ifndef REV_AT_LEAST_N
 static i2c_task_t B_query_dir  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0x0, .done = 1}; 
+#endif
 
 static i2c_task_t A_query_state  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0x0, .done = 1}; 
+#ifndef REV_AT_LEAST_N
 static i2c_task_t B_query_state  = { .addr = 0, .write =0, .reg=I2C_EXPANDER_SET_REGISTER, .data = 0x0, .done = 1}; 
+#endif
 
 
 
 //used to set direction
 static i2c_task_t A_dir = { .addr = 0, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
+#ifndef REV_AT_LEAST_N
 static i2c_task_t B_dir = { .addr = 0, .write = 1, .reg=I2C_EXPANDER_CONFIGURE_REGISTER, .data = 0xff, .done = 1}; 
+#endif
 
 
 //these are only used for reads
 static i2c_task_t C =  { .addr = 0, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ;
+#ifndef REV_AT_LEAST_N
 static i2c_task_t D = { .addr = 0, .write = 0, .reg=I2C_EXPANDER_GET_REGISTER, .data = 0x0, .done = 1} ; 
+#endif
 
+#ifdef REV_AT_LEAST_N
 
+static const uint8_t amp_map[6] = {
+  I2C_EXPANDER_AMP_1_BIT, 
+  I2C_EXPANDER_AMP_2_BIT, 
+  I2C_EXPANDER_AMP_3_BIT, 
+  I2C_EXPANDER_AMP_4_BIT, 
+  I2C_EXPANDER_AMP_5_BIT, 
+  I2C_EXPANDER_AMP_6_BIT, 
+};
+
+#else
 static const uint8_t surf_amp_map[6] = {
   I2C_EXPANDER_SURF_AMP_1_BIT, 
   I2C_EXPANDER_SURF_AMP_2_BIT, 
@@ -126,6 +172,7 @@ static const uint8_t dh_amp_map[3] = {
   I2C_EXPANDER_DH_AMP_2_BIT, 
   I2C_EXPANDER_DH_AMP_3_BIT, 
 }; 
+#endif
 
 
 int gpio_expander_init() 
@@ -138,20 +185,61 @@ int gpio_expander_init()
   A_query_dir.addr = I2C_EXPANDER_A;
   A_dir.addr = I2C_EXPANDER_A;
   A_query_state.addr = I2C_EXPANDER_A;
+
+#ifndef REV_AT_LEAST_N
   B_state.addr = I2C_EXPANDER_B;
   B_query_dir.addr = I2C_EXPANDER_B;
   B_dir.addr = I2C_EXPANDER_B;
   B_query_state.addr = I2C_EXPANDER_B;
+#endif
   C.addr = I2C_EXPANDER_C;
+
+#ifndef REV_AT_LEAST_N
   D.addr = I2C_EXPANDER_D;
+#endif
 
   return get_gpio_expander_state(0,0); 
 }
+
+#define GPIO_EXPANDER_SET_OUTPUT(exp, bit, val)\
+  if (val) { exp##_state.data |= (1 << bit); exp##_dir.data &= ~(1 << bit); }\
+  else { exp##_dir.data |= (1 << bit); exp##_state.data &= ~(1 << bit); }
+
+#define GPIO_EXPANDER_SET_INV_OUTPUT(exp, bit, val)\
+  if (val) { exp##_state.data &= ~(1 << bit); exp##_dir.data &= ~(1 << bit); }\
+  else { exp##_dir.data |= (1 << bit); exp##_state.data |= (1 << bit); }
+
 
 
 //yuck
 int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask) 
 {
+
+#ifdef REV_AT_LEAST_N
+  int need_A = mask.amps || mask.sbc;
+  if (!need_A) return 0;
+
+  if (!A_state.done) i2c_queue_flush();
+
+  for (int i =0; i < 6; i++)
+  {
+    if (mask.amps & (1 << i))
+    {
+       GPIO_EXPANDER_SET_OUTPUT(A,amp_map[i], value.amps & (1 << i)) ;
+    }
+  }
+
+  if (mask.sbc)
+  {
+       GPIO_EXPANDER_SET_OUTPUT(A,I2C_EXPANDER_SBC_BIT, value.sbc) ;
+  }
+
+  i2c_enqueue(&A_state);
+  i2c_enqueue(&A_dir);
+
+
+
+#else
   //check to make sure we don't need to wait for previous command to take
 #ifdef _RNO_G_REV_D
   int need_A =!! (mask.surface_amps ); 
@@ -167,17 +255,8 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
 
   // 
 
-#define GPIO_EXPANDER_SET_OUTPUT(exp, bit, val)\
-  if (val) { exp##_state.data |= (1 << bit); exp##_dir.data &= ~(1 << bit); }\
-  else { exp##_dir.data |= (1 << bit); exp##_state.data &= ~(1 << bit); }
 
-#define GPIO_EXPANDER_SET_INV_OUTPUT(exp, bit, val)\
-  if (val) { exp##_state.data &= ~(1 << bit); exp##_dir.data &= ~(1 << bit); }\
-  else { exp##_dir.data |= (1 << bit); exp##_state.data |= (1 << bit); }
-
-
-
-  if (need_A) 
+  if (need_A)
   {
 
 
@@ -245,6 +324,8 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
     i2c_enqueue(&B_dir);
   }
 
+#endif  //REV_AT_LEAST_N
+
   return 0;
 }
 
@@ -265,6 +346,7 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
     }
 
 
+#ifndef REV_AT_LEAST_N
     if (B_query_dir.done)
     {
       i2c_enqueue(&B_query_dir); 
@@ -274,16 +356,19 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
     {
       i2c_enqueue(&B_query_state); 
     }
+#endif
 
 
 
     i2c_queue_flush(); //either way we need to wait 
 
     A_state.data = A_query_state.data; 
-    B_state.data = B_query_state.data; 
-
     A_dir.data = A_query_dir.data; 
+
+#ifndef REV_AT_LEAST_N
+    B_state.data = B_query_state.data; 
     B_dir.data = B_query_dir.data; 
+#endif
   }
 
   if (!value) 
@@ -291,6 +376,15 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
     return 0; 
   }
 
+#ifdef REV_AT_LEAST_N
+  value->sbc =  !(A_dir.data & ( 1 << I2C_EXPANDER_SBC_BIT));
+  value->amps = 0;
+  for (int i = 0; i < 6; i++) 
+  {
+    if (!(A_dir.data & ( 1 << amp_map[i])))
+      value->amps |= (1 << i); 
+  }
+#else
   value->sbc = !(B_dir.data & ( 1 << I2C_EXPANDER_SBC_BIT));
   value->radiant = !(B_dir.data & ( 1 << I2C_EXPANDER_5V_1_BIT));
   value->lt = !(B_dir.data & ( 1 << I2C_EXPANDER_5V_2_BIT));
@@ -316,6 +410,7 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
   value->j29 = !(A_dir.data & (1 << I2C_EXPANDER_J29_BIT));
   value->ext_bus = !(A_dir.data & (1 << I2C_EXPANDER_EXT_BUS_BIT));
 #endif
+#endif
 
   return 0; 
 }
@@ -330,13 +425,25 @@ int get_gpio_expander_fault_state(i2c_gpio_expander_t * faults)
     i2c_enqueue(&C); 
   }
 
+#ifndef REV_AT_LEAST_N
   if (D.done)
   {
     i2c_enqueue(&D); 
   }
+#endif
 
   i2c_queue_flush(); //either way we need to wait 
 
+#ifdef REV_AT_LEAST_N
+
+  faults->sbc =!!( C.data & ( 1 << I2C_EXPANDER_SBC_BIT));
+  faults->amps =0; 
+  for (int i = 0; i < 6; i++) 
+  {
+    if (C.data & ( 1 << amp_map[i]))
+      faults->amps |= (1 << i); 
+  }
+#else
 
   faults->sbc =!!( D.data & ( 1 << I2C_EXPANDER_SBC_BIT));
   faults->radiant = !!( D.data & ( 1 << I2C_EXPANDER_5V_1_BIT));
@@ -356,6 +463,7 @@ int get_gpio_expander_fault_state(i2c_gpio_expander_t * faults)
     if (D.data & ( 1 << dh_amp_map[i]))
       faults->dh_amps |= (1 << i); 
   }
+#endif
 
   return 0; 
 }

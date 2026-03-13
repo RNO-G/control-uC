@@ -52,6 +52,10 @@ int monitor_fill(rno_g_report_v2_t * r, int navg);
 int monitor_fill(rno_g_report_v3_t * r, int navg); 
 #endif
 
+#ifdef _RNO_G_REV_N
+int monitor_fill(rno_g_report_v4_t * r, int navg); 
+#endif
+
 
 int monitor_init(); 
 void monitor_deinit(); 

@@ -192,6 +192,9 @@ int power_monitor_fill(rno_g_report_v2_t * r)
 #ifdef _RNO_G_REV_F
 int power_monitor_fill(rno_g_report_v3_t * r) 
 #endif
+#ifdef _RNO_G_REV_N
+int power_monitor_fill(rno_g_report_v4_t * r) 
+#endif
 {
   //check to make sure we're not busy 
   

@@ -13,6 +13,10 @@
 #ifdef _RNO_G_REV_F
 #define RNO_G_REPORT_T rno_g_report_v3_t
 #endif
+#ifdef _RNO_G_REV_N
+#define RNO_G_REPORT_T rno_g_report_v4_t
+#endif
+
 
 const RNO_G_REPORT_T * report_process(int up, uint32_t * extrawake) ; 
 const RNO_G_REPORT_T * report_get(); 

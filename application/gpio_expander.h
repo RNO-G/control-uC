@@ -1,5 +1,14 @@
 #include <stdint.h> 
+#include "config/config.h"
 
+#ifdef REV_AT_LEAST_N
+typedef struct i2c_gpio_expander
+{
+  uint8_t amps : 6;
+  uint8_t sbc : 1;
+} i2c_gpio_expander_t;
+
+#else
 typedef struct i2c_gpio_expander
 {
   //ARGH, I wish C supported bitfield arrays 
@@ -12,6 +21,7 @@ typedef struct i2c_gpio_expander
   uint8_t j29 : 1; 
   uint8_t ext_bus : 1; 
 } i2c_gpio_expander_t; 
+#endif
 
 
 /* Set the GPIO Expander State. 

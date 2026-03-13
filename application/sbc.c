@@ -289,70 +289,100 @@ static int sbc_io_process()
         printf("              rsrp:%hhd, rssi: %hhd, rsrqx10: -%hhu, \r\n", st->rsrp, st->rssi, st->neg_rsrq_x10); 
         printf("              band: %hhu, svcdom: %hhd, prseok: %hhd } \r\n", st->band, st->service_domain, st->parsed_ok); 
       }
- 
       else if (!strcmp(in,"RADIANT-ON"))
       {
+#ifdef REV_AT_LEAST_N
+        printf("#RADIANT-ON IS OBSOLETE\r\n");
+#else
         valid=1; 
         i2c_gpio_expander_t turn_on_radiant = {.radiant = 1}; 
         set_gpio_expander_state(turn_on_radiant, turn_on_radiant); 
         printf("#RADIANT-ON: ACK\r\n"); 
+#endif
       }
 
       else if (!strcmp(in,"RADIANT-OFF") )
       {
+#ifdef REV_AT_LEAST_N
+        printf("#RADIANT-OFF IS OBSOLETE\r\n");
+#else
         valid=1;
         i2c_gpio_expander_t turn_off_radiant = {0}; 
         i2c_gpio_expander_t turn_off_radiant_mask = {.radiant = 1}; 
         set_gpio_expander_state(turn_off_radiant, turn_off_radiant_mask); 
         printf("#RADIANT-OFF: ACK\r\n"); 
+#endif
       }
       else if (!strcmp(in,"J29-ON"))
       {
+#ifdef REV_AT_LEAST_N
+        printf("#J29-ON IS OBSOLETE\r\n");
+#else
         valid=1; 
         i2c_gpio_expander_t turn_on_j29 = {.j29 = 1}; 
         set_gpio_expander_state(turn_on_j29, turn_on_j29); 
         printf("#J29-ON: ACK\r\n"); 
+#endif
       }
 
       else if (!strcmp(in,"J29-OFF") )
       {
+#ifdef REV_AT_LEAST_N
+        printf("#J29-OFF IS OBSOLETE\r\n");
+#else
         valid=1;
         i2c_gpio_expander_t turn_off_j29 = {0}; 
         i2c_gpio_expander_t turn_off_j29_mask = {.j29 = 1}; 
         set_gpio_expander_state(turn_off_j29, turn_off_j29_mask); 
         printf("#J29-OFF: ACK\r\n"); 
+#endif
       }
        else if (!strcmp(in,"EXTBUS-ON"))
       {
+#ifdef REV_AT_LEAST_N
+        printf("#EXTBUS-ON IS OBSOLETE\r\n");
+#else
         valid=1; 
         i2c_gpio_expander_t turn_on_extbus = {.ext_bus = 1}; 
         set_gpio_expander_state(turn_on_extbus, turn_on_extbus); 
         printf("#EXTBUS-ON: ACK\r\n"); 
+#endif
       }
-
       else if (!strcmp(in,"EXTBUS-OFF") )
       {
+#ifdef REV_AT_LEAST_N
+        printf("#EXTBUS-OFF IS OBSOLETE\r\n");
+#else
         valid=1;
         i2c_gpio_expander_t turn_off_extbus = {0}; 
         i2c_gpio_expander_t turn_off_extbus_mask = {.ext_bus = 1}; 
         set_gpio_expander_state(turn_off_extbus, turn_off_extbus_mask); 
         printf("#EXTBUS-OFF: ACK\r\n"); 
+#endif
       }
       else if (!strcmp(in,"LOWTHRESH-ON"))
       {
+#ifdef REV_AT_LEAST_N
+        printf("#LOWTHRESH-ON IS OBSOLETE\r\n");
+#else
         valid=1; 
         i2c_gpio_expander_t turn_on_lt = {.lt = 1}; 
         set_gpio_expander_state(turn_on_lt, turn_on_lt); 
         printf("#LOWTHRESH-ON: ACK\r\n"); 
+#endif
       }
 
       else if (!strcmp(in,"LOWTHRESH-OFF") )
       {
+#ifdef REV_AT_LEAST_N
+        printf("#LOWTHRESH-OFF IS OBSOLETE\r\n");
+#else
         valid=1;
         i2c_gpio_expander_t turn_off_lt = {0}; 
         i2c_gpio_expander_t turn_off_lt_mask = {.lt = 1}; 
         set_gpio_expander_state(turn_off_lt, turn_off_lt_mask); 
         printf("#LOWTHRESH-OFF: ACK\r\n"); 
+#endif
       }
         else if (!strcmp(in,"HEATER-ON"))
       {
@@ -375,16 +405,30 @@ static int sbc_io_process()
         printf("#ERR: No heater in RevD \r\n"); 
 #endif
       }
- 
       else if (prefix_matches(in,"AMPS-SET"))
       {
-        uint8_t surf, dh; 
+#ifdef REV_AT_LEAST_N
+        uint8_t amps = 0;
+        const char * nxt = 0;
+        if (parse_hex(in + sizeof("AMPS-SET"), &nxt, &amps))
+        {
+          printf("#ERR: Failed to interpret #%s\r\n", in);
+        }
+        else
+        {
+          i2c_gpio_expander_t set = { .amps = amps };
+          i2c_gpio_expander_t mask = { .amps = 0x3f };
+          set_gpio_expander_state(set,mask); 
+          printf("#AMPS-SET: %x\r\n", amps);
+        }
+#else
+        uint8_t surf, dh;
         const char * nxt=0;
-        valid =1; 
+        valid =1;
         if (parse_hex(in+sizeof("AMPS-SET"),&nxt, &surf) ||
             parse_hex(nxt,&nxt,&dh) || (surf >> 6) || (dh >> 3) )
         {
-          printf("#ERR: Failed to interpret #%s\r\n",in); 
+          printf("#ERR: Failed to interpret #%s\r\n",in);
         }
         else
         {
@@ -393,6 +437,7 @@ static int sbc_io_process()
           set_gpio_expander_state(set,mask); 
           printf("#AMPS-SET: %x %x\r\n", surf, dh); 
         }
+#endif
       }
       else if (!strcmp(in,"EXPANDER-STATE"))
       {
@@ -401,18 +446,25 @@ static int sbc_io_process()
         valid =1; 
         i2c_gpio_expander_t exp_state; 
         get_gpio_expander_state(&exp_state,!force); 
+#ifdef REV_AT_LEAST_N
+        printf("#EXPANDER-STATE: amp: %x, sbc: %x\r\n", exp_state.amps, exp_state.sbc);
+#else
         printf("#EXPANDER-STATE: surf: %x, dh: %x, radiant: %x, lt: %x, sbc: %x, j29: %x, ext_bus: %x\r\n", exp_state.surface_amps, exp_state.dh_amps, 
             exp_state.radiant, exp_state.lt, exp_state.sbc, exp_state.j29, exp_state.ext_bus); 
+#endif
       }
       else if (!strcmp(in,"FAULT-STATE"))
       {
-        valid =1; 
-        i2c_gpio_expander_t exp_faults; 
-        get_gpio_expander_fault_state(&exp_faults); 
+        valid =1;
+        i2c_gpio_expander_t exp_faults;
+        get_gpio_expander_fault_state(&exp_faults);
+#ifdef REV_AT_LEAST_N
+        printf("#FAULT-STATE: amp: %x, sbc: %x\r\n", exp_faults.amps, exp_faults.sbc);
+#else
         printf("#FAULT-STATE: surf: %x, dh: %x, radiant: %x, lt: %x, sbc: %x\r\n", exp_faults.surface_amps, exp_faults.dh_amps, 
             exp_faults.radiant, exp_faults.lt, exp_faults.sbc); 
+#endif
       }
- 
       else if (!strcmp(in,"MONITOR"))
       {
 #ifdef _RNO_G_REV_D
@@ -438,18 +490,24 @@ static int sbc_io_process()
          printf("#MONITOR: power_state: { low_power: %d, sbc_power: %d, lte_power: %d, radiant_power: %d, lowthresh_power: %d, dh_amp_power: %x, surf_amp_power: %x}\r\n", 
                  st.low_power_mode, st.sbc_power, st.lte_power, st.radiant_power, st.lowthresh_power, st.dh_amp_power, st.surf_amp_power); 
 
-#else
+#endif
 #ifdef _RNO_G_REV_E
-       const rno_g_report_v2_t * report = report_get(); 
-       printf(RNO_G_REPORT_V2_JSON_FMT "\r\n", RNO_G_REPORT_V2_JSON_VALS(report)); 
+       const rno_g_report_v2_t * report = report_get();
+       printf(RNO_G_REPORT_V2_JSON_FMT "\r\n", RNO_G_REPORT_V2_JSON_VALS(report));
 #endif
 
 #ifdef _RNO_G_REV_F
-       const rno_g_report_v3_t * report = report_get(); 
-       printf(RNO_G_REPORT_V3_JSON_FMT "\r\n", RNO_G_REPORT_V3_JSON_VALS(report)); 
+       const rno_g_report_v3_t * report = report_get();
+       printf(RNO_G_REPORT_V3_JSON_FMT "\r\n", RNO_G_REPORT_V3_JSON_VALS(report)) 
 #endif
+
+#ifdef _RNO_G_REV_N
+       const rno_g_report_v4_t * report = report_get();
+       printf(RNO_G_REPORT_V4_JSON_FMT "\r\n", RNO_G_REPORT_V4_JSON_VALS(report));
 #endif
-         valid=1; 
+
+
+         valid=1;
       }
       else if (!strcmp(in,"B64MON"))
       {
@@ -457,7 +515,7 @@ static int sbc_io_process()
         printf("#B64MON: "); 
         base64_print(SBC_UART_DESC, sizeof(RNO_G_REPORT_T), (uint8_t*) report); 
         printf("\r\n"); 
-        valid=1; 
+        valid=1;
       }
       else if (prefix_matches(in,"SET-BATT-MILLIVS"))
       {
@@ -758,7 +816,7 @@ static int sbc_io_process()
         printf("#REV: %c\r\n", APP_REV);
         valid =1;
       }
-#ifdef _RNO_G_REV_F
+#ifdef REV_AT_LEAST_F
       else if (!strcmp(in,"USBHUB_RESET"))
       {
         printf("#USBHUB_RESET: ACK\r\n", APP_VERSION); 

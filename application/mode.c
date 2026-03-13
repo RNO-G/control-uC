@@ -56,16 +56,23 @@ void mode_init()
 rno_g_mode_t mode_query()  { return the_mode; } 
 
 
-static void turn_off_peripherals() 
+static void turn_off_peripherals()
 {
-  i2c_gpio_expander_t off = {0}; 
-  i2c_gpio_expander_t mask = {.surface_amps = 0x3f, .dh_amps =0x7, .radiant=0, .lt=1}; 
+  i2c_gpio_expander_t off = {0};
+#ifdef REV_AT_LEAST_N
+  i2c_gpio_expander_t mask = {.amps = 0x3f};
+#else
+  i2c_gpio_expander_t mask = {.surface_amps = 0x3f, .dh_amps =0x7, .radiant=0, .lt=1};
+#endif
   //everything but the radiant
-  set_gpio_expander_state(off,mask); 
-  delay_ms(5); 
+  set_gpio_expander_state(off,mask);
+
+#ifndef REV_AT_LEAST_N
+  delay_ms(5);
   i2c_gpio_expander_t mask_radiant = {.radiant=1}; 
   //then the radiant
   set_gpio_expander_state(off,mask_radiant); 
+#endif
 }
 
 

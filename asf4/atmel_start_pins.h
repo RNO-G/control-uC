@@ -78,7 +78,7 @@
 #define I2C_SCL GPIO(GPIO_PORTB, 31)
 
 
-#ifdef _RNO_G_REV_F
+#ifdef REV_AT_LEAST_F
 #define USBHUB_RESET GPIO(GPIO_PORTB, 2)
 #endif
 

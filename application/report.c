@@ -31,6 +31,11 @@
 #define REPORT_INIT {.rev_plus_E = (APP_REV-'E') }
 #endif
 
+#ifdef _RNO_G_REV_N
+#define REPORT_TYPE RNO_G_MSG_REPORT_V4
+#define REPORT_INIT {.rev_plus_E = (APP_REV-'E') }
+#endif
+
 
 
 static RNO_G_REPORT_T report = REPORT_INIT; 
@@ -130,12 +135,17 @@ const RNO_G_REPORT_T * report_get()
 #ifdef _RNO_G_REV_D
   report.when = get_time(); 
 #else
+#ifdef REV_AT_LEAST_N
+  report.power_state.heater = gpio_get_pin_level(HEATER_FET_CNTRL); 
+#else
   report.heater = gpio_get_pin_level(HEATER_FET_CNTRL); 
+#endif
 #endif
   i2c_gpio_expander_t exp; 
   get_gpio_expander_state(&exp,1); 
   report.power_state.low_power_mode = low_power_mode; 
   report.power_state.sbc_power = exp.sbc;
+#ifndef REV_AT_LEAST_N
   report.power_state.radiant_power = exp.radiant;
   report.power_state.lowthresh_power = exp.lt;
   report.power_state.lte_power = lte_get_state() != LTE_OFF; 
@@ -143,6 +153,9 @@ const RNO_G_REPORT_T * report_get()
   report.power_state.surf_amp_power = exp.surface_amps; 
   report.power_state.j29_power = exp.j29; 
   report.power_state.output_bus_enable = exp.ext_bus; 
+#else
+  report.power_state.amp_power = exp.amps;
+#endif
   report.mode = mode_query(); 
   report.lte_state = lte_get_state(); 
   report.sbc_state = sbc_get_state(); 
