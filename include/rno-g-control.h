@@ -399,7 +399,7 @@ typedef struct rno_g_report_v3
 
 typedef struct rno_g_report_v4
 {
-  int when; //Time report is generated
+  uint32_t when; //Time report is generated
   //4 bytes
   uint8_t mode : 3; // see rno_g_mode_t
   uint8_t lte_state : 3; // see lte_state_t
@@ -411,32 +411,36 @@ typedef struct rno_g_report_v4
   uint8_t i_sbc_div4;  // use 8 bits for SBC current, divided by 4 so max is about 1 A with 4 mA resolution.
                        // This is an analog measurement.
   //7 bytes
-  uint8_t i_surf_div4[6]; // surface amplifier chain component currents
-                          // ([0],[2],[3],[4] are optical receivers, [1] and [5] are surface amps),
+  uint8_t i_surf_div4[3]; // surface amplifier chain component currents
+                          //  mapping TBD
                           // 8 bits, divided by 4 so max is about 1 A with 4 mA resolution.
                           // This is an analog measurement
-  // 13 bytes
+  // 10 bytes?
   uint8_t i_dh_div4[3]; // downhole string currents, 8 bits, divided by 4 so max is about 1 A with 4 mA resolution.
                         // This is an analog measurement
-  //16 bytes
+  uint8_t amps_fault: 6;
+  uint8_t sbc_pgood ;
+  uint8_t sbc_fault;
+
+  //14 bytes
   uint16_t i_lt_div3p125 : 12; //  low threshold board current, 12 bits,  mA conversion is 125/40, max is 12.8 A.  This is a digital measurement.
   uint16_t i_radiant_div3p125 : 12; //  radiant board current, 12 bits,  mA conversion is 125/40, max is 12.8 A. This is a digital measurement
   uint8_t  V_radiant_div25; //  radiant voltage, 8 bits, resolution is 25 mV, allowing for 6.4V range.  This is a digital measurement.
-  //20 bytes
+  //18 bytes
   uint8_t  V_lt_div25; //low threshold board voltage, 8 bits, resolution is 25 mV, allowing for 6.4 V range. this is a digital measruement.
   int8_t  digi_delta_when; //time difference in seconds between digital measurements and when;
   int8_t power_delta_when;  //time difference in seconds between power measurements and when
   int8_t temp_delta_when; //time difference in seconds between  temp measurements and when
-  //24 bytes
-  uint16_t i_pv_div4p167 : 12 ; // PV current in mA. mA converstion is 12.5 uV/3 mohms, so 17.1 A max. This is a power measurement.
-  uint16_t V_pv_div25 : 12 ; // PV voltage in mV, divided by 25, 25 mV resolution, 102.4 V max. This is a power measurement.
-  uint16_t i_batt_div1p25 : 12 ; // Battery current in mA, ma conversion is 12.5 uV /10 mohms, 5.12 A max. This is a power measurement.
-  uint16_t V_batt_div25 : 12 ; // Battery current in mV, divided by 25, so 25 mV resolution, 102.4 V max. This is a power measurement.
-  int16_t T_local_times16 : 12;  // This is the ``local temperature'' of the TMP432 on the controller board in C, multiplied by 16. This is a temperature measurement.
-  int16_t T_remote_1_times16 : 12; // This is the probe on the amp boxes in C,  multiplied by 16. This is a temperature measurement.  
-  int16_t T_remote_2_times16 : 12;  // This is the probe in the vault in C,  multiplied by 16. This is a temperature measurement.    
-  int16_t T_micro_times16 : 12;    // This is the temperature of the control microcontroller in C,  multiplied by 16. This is an analog measurement.  
-  //36 bytes
+  //22 bytes
+  uint64_t i_pv_div4p167 : 12 ; // PV current in mA. mA converstion is 12.5 uV/3 mohms, so 17.1 A max. This is a power measurement.
+  uint64_t V_pv_div25 : 12 ; // PV voltage in mV, divided by 25, 25 mV resolution, 102.4 V max. This is a power measurement.
+  uint64_t i_batt_div1p25 : 12 ; // Battery current in mA, ma conversion is 12.5 uV /10 mohms, 5.12 A max. This is a power measurement.
+  uint64_t V_batt_div25 : 12 ; // Battery current in mV, divided by 25, so 25 mV resolution, 102.4 V max. This is a power measurement.
+  int64_t T_local_times16 : 12;  // This is the ``local temperature'' of the TMP432 on the controller board in C, multiplied by 16. This is a temperature measurement.
+  int32_t T_remote_1_times16 : 12; // This is the probe on the amp boxes in C,  multiplied by 16. This is a temperature measurement.  
+  int32_t T_remote_2_times16 : 12;  // This is the probe in the vault in C,  multiplied by 16. This is a temperature measurement.    
+  int16_t T_micro_times2 : 8;    // This is the temperature of the control microcontroller in C,  multiplied by 2. This is an analog measurement.  
+  //34 bytes
   rno_g_power_state_v4_t power_state;  //see rno_g_power_state
   //38 bytes
   uint16_t V_5_div1p5 : 12;  // measurement of 5V rail
@@ -449,7 +453,7 @@ typedef struct rno_g_report_v4
   uint16_t V_turb_div25 : 12;
   uint16_t i_turb_div4p167 : 12;
   uint16_t i_lte_div3p125 : 12;
-  uint16_t V_lte_div25 : 12; //this is redundant, but what can you do
+  uint16_t V_lte_div25 : 12; //this is redundant
  //48 bytes ??
 }rno_g_report_v4_t;
 
@@ -469,11 +473,11 @@ typedef struct rno_g_report_v4
                               "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
                               "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V3 "}"
 
-#define RNO_G_REPORT_V4_JSON_FMT "{\"when\":%d,\"rev\":\"%c\", \"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
-                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d,%d,%d,%d], \"dh\": [%d,%d,%d], \"lte\": %0.3f, \"lt\":%0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f, \"turb\": %0.3f }, "\
+#define RNO_G_REPORT_V4_JSON_FMT "{\"when\":%u,\"rev\":\"%c\", \"mode\":\"%s\",\"lte_state\":\"%s\",\"sbc_state\":\"%s\",\"sbc_boot_mode\":\"%s\", "\
+                              "\"currents\": {\"sbc\": %d, \"surf\": [%d,%d,%d], \"dh\": [%d,%d,%d], \"lte\": %0.3f, \"lt\":%0.3f, \"radiant\": %0.3f, \"batt\": %0.3f, \"pv\": %0.3f, \"turb\": %0.3f }, "\
                               "\"voltages\": {\"lt\": %d, \"radiant\": %d, \"5v\": %u, \"3.3v\": %u, \"lte_a\": %u,  \"lte_d\": %u, \"batt\": %u, \"pv\": %d, \"turb\": %u }, "\
                               "\"temps\": {\"local\": %0.3f, \"remote_1\": %0.3f, \"remote_2\": %0.3f, \"micro\": %0.3f }, "\
-                              "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, "\
+                              "\"when_analog\": %d, \"when_digi\": %d, \"when_power\": %d, \"when_temp\": %d, \"heater:\": %d, amps_fault: 0x%x, sbc_pgood: %u,sbc_fault: %u"\
                               "\"power_state\":" RNO_G_POWER_STATE_JSON_FMT_V4 "}"
 
 
@@ -505,15 +509,16 @@ typedef struct rno_g_report_v4
 
 #define RNO_G_REPORT_V4_JSON_VALS(r) \
   r->when,'E'+r->rev_plus_E, RNO_G_MODE_STR(r->mode), LTE_STATE_STR(r->lte_state), SBC_STATE_STR(r->sbc_state), SBC_BOOT_MODE_STR(r->sbc_boot_mode),\
-  r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4, r->i_surf_div4[3]*4,r->i_surf_div4[4]*4, r->i_surf_div4[5]*4,\
+  r->i_sbc_div4*4, r->i_surf_div4[0]*4, r->i_surf_div4[1]*4,r->i_surf_div4[2]*4,\
   r->i_dh_div4[0]*4, r->i_dh_div4[1]*4,r->i_dh_div4[2]*4,\
   r->i_lte_div3p125 * (125/40.), r->i_lt_div3p125 * (125/40.),r->i_radiant_div3p125 * (125/40.), r->i_batt_div1p25 * (1.25),r->i_pv_div4p167* (125/30.), r->i_turb_div4p167 * (125./30), \
   r->V_lt_div25*25, r->V_radiant_div25*25, r->V_5_div1p5 * 3/2, r->V_33_div16 * 16, r->V_lte_div16 * 16, r->V_lte_div25 * 25,  r->V_batt_div25*25, r->V_pv_div25*25, r->V_turb_div25*25, \
   r->T_local_times16/16., \
   r->T_remote_1_times16/16., \
   r->T_remote_2_times16/16., \
-  r->T_micro_times16/16., \
+  r->T_micro_times2/2., \
   r->when + r->analog_delta_when, r->when + r->digi_delta_when, r->when + r->power_delta_when, r->when + r->temp_delta_when, r->power_state.heater, \
+  r->amps_fault, r->sbc_pgood, r->sbc_fault, \
   RNO_G_POWER_STATE_JSON_VALS_V4(r->power_state)
 
 
@@ -714,6 +719,21 @@ enum rno_g_cmd_size
   RNO_G_CMD_RESET_SIZE = sizeof(rno_g_cmd_reset_t),
   RNO_G_CMD_HEATER_SIZE = sizeof(rno_g_cmd_heater_t)
 };
+
+//helpers for on the MCU
+#ifdef _RNO_G_REV_D
+#define RNO_G_REPORT_T rno_g_report_t
+#endif
+#ifdef _RNO_G_REV_E
+#define RNO_G_REPORT_T rno_g_report_v2_t
+#endif
+#ifdef _RNO_G_REV_F
+#define RNO_G_REPORT_T rno_g_report_v3_t
+#endif
+#ifdef _RNO_G_REV_N
+#define RNO_G_REPORT_T rno_g_report_v4_t
+#endif
+
 
 
 #ifdef __cplusplus
