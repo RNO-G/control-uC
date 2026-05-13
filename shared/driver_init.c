@@ -571,9 +571,11 @@ void system_init(void)
 	gpio_set_pin_pull_mode(NALERT, GPIO_PULL_OFF);
 	gpio_set_pin_function(NALERT, GPIO_PIN_FUNCTION_OFF);
 
+#ifndef _RNO_G_REV_N
 	gpio_set_pin_level(LTE_REG_EN, false);
 	gpio_set_pin_direction(LTE_REG_EN, GPIO_DIRECTION_OUT);
 	gpio_set_pin_function(LTE_REG_EN, GPIO_PIN_FUNCTION_OFF);
+#endif
 
 
 #ifdef _RNO_G_REV_D 

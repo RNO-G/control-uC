@@ -4,6 +4,7 @@
 #include "hal_usart_async.h" 
 #include "shared/io.h" 
 #include "shared/spi_flash.h" 
+#include "application/gpio_expander.h"
 #include "shared/printf.h" 
 #include "application/time.h" 
 #include "lorawan/lorawan.h" 
@@ -105,7 +106,12 @@ static struct timer_task lte_turn_on_task = { .cb  = lte_turn_on_cb, .interval =
 static void lte_power_off_cb(const struct timer_task * const task) 
 {
   (void) task; 
+#ifndef _RNO_G_REV_N
   gpio_set_pin_level(LTE_REG_EN,0);
+#else
+  set_gpio_expander_state ( (i2c_gpio_expander_t) { .lte = 0},  (i2c_gpio_expander_t) { .lte = 1 });
+#endif
+
   lte_state = LTE_OFF; 
 }
 static struct timer_task lte_power_off_task = { .cb  = lte_power_off_cb, .interval = LTE_INTERVAL(5), .mode = TIMER_TASK_ONE_SHOT }; 
@@ -130,8 +136,12 @@ static void lte_check_on_cb(const struct timer_task * const task)
     {
       lte_state = LTE_ON; 
       //note: the SBC must be keeping this up, but let's not count on it 
-      gpio_set_pin_direction(LTE_REG_EN,GPIO_DIRECTION_OUT);
-      gpio_set_pin_level(LTE_REG_EN,1);
+#ifndef _RNO_G_REV_N 
+  gpio_set_pin_direction(LTE_REG_EN, GPIO_DIRECTION_OUT);
+  gpio_set_pin_level(LTE_REG_EN,1);
+#else
+      set_gpio_expander_state ( (i2c_gpio_expander_t) { .lte = 0},  (i2c_gpio_expander_t) { .lte = 1 });
+#endif
       return; 
     }
   }
@@ -155,16 +165,20 @@ int lte_turn_on(int force)
 {
   if (force!=1 && lte_state != LTE_OFF) 
   {
-    return -1; 
+    return -1;
   }
 
   if (force!=2 && mode_query()!= RNO_G_NORMAL_MODE)
   {
-    return -2; 
+    return -2;
   }
 
-  gpio_set_pin_direction(LTE_REG_EN,GPIO_DIRECTION_OUT);
+#ifndef _RNO_G_REV_N 
+  gpio_set_pin_direction(LTE_REG_EN, GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_REG_EN,1);
+#else
+  set_gpio_expander_state ( (i2c_gpio_expander_t) { .lte = 1},  (i2c_gpio_expander_t) { .lte = 1 });
+#endif
 
   gpio_set_pin_direction(LTE_ON_OFF, GPIO_DIRECTION_OUT);
   gpio_set_pin_level(LTE_ON_OFF,0); 

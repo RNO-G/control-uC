@@ -88,6 +88,7 @@ static void autoprobe_i2c_expander(void)
 #define I2C_EXPANDER_AMP_2_BIT 4
 #define I2C_EXPANDER_AMP_6_BIT 5
 #define I2C_EXPANDER_SBC_BIT 6
+#define I2C_EXPANDER_LTE_BIT 7
 
 #else
 #define I2C_EXPANDER_SURF_AMP_3_BIT 0
@@ -216,7 +217,7 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
 {
 
 #ifdef REV_AT_LEAST_N
-  int need_A = mask.amps || mask.sbc;
+  int need_A = mask.amps || mask.sbc || mask.lte;
   if (!need_A) return 0;
 
   if (!A_state.done) i2c_queue_flush();
@@ -233,6 +234,12 @@ int set_gpio_expander_state(i2c_gpio_expander_t value, i2c_gpio_expander_t mask)
   {
        GPIO_EXPANDER_SET_OUTPUT(A,I2C_EXPANDER_SBC_BIT, value.sbc) ;
   }
+
+  if (mask.lte)
+  {
+       GPIO_EXPANDER_SET_OUTPUT(A,I2C_EXPANDER_LTE_BIT, value.lte) ;
+  }
+
 
   i2c_enqueue(&A_state);
   i2c_enqueue(&A_dir);
@@ -378,6 +385,7 @@ int get_gpio_expander_state(i2c_gpio_expander_t * value,  int cached)
 
 #ifdef REV_AT_LEAST_N
   value->sbc =  !(A_dir.data & ( 1 << I2C_EXPANDER_SBC_BIT));
+  value->lte =  !(A_dir.data & ( 1 << I2C_EXPANDER_LTE_BIT));
   value->amps = 0;
   for (int i = 0; i < 6; i++) 
   {
@@ -437,6 +445,7 @@ int get_gpio_expander_fault_state(i2c_gpio_expander_t * faults)
 #ifdef REV_AT_LEAST_N
 
   faults->sbc =!!( C.data & ( 1 << I2C_EXPANDER_SBC_BIT));
+  faults->lte =!!( C.data & ( 1 << I2C_EXPANDER_LTE_BIT));
   faults->amps =0; 
   for (int i = 0; i < 6; i++) 
   {
