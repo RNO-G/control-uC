@@ -43,7 +43,7 @@
 #define REV_AT_LEAST(X) (X >= APP_REV)
 #define REV_BELOW(X) (X < APP_REV)
 
-#define APP_VERSION "Chicago.01029.0-REV" APP_REV_STR
+#define APP_VERSION "Chicago.26.05.20-REV" APP_REV_STR
 
 #define MODE_CHANGE_MINTICKS 100
 
