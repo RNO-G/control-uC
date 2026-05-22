@@ -416,9 +416,10 @@ static int sbc_io_process()
         }
         else
         {
+          valid = 1;
           i2c_gpio_expander_t set = { .amps = amps };
           i2c_gpio_expander_t mask = { .amps = 0x3f };
-          set_gpio_expander_state(set,mask); 
+          set_gpio_expander_state(set,mask);
           printf("#AMPS-SET: %x\r\n", amps);
         }
 #else
